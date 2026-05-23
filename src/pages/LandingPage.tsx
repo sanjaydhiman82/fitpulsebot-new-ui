@@ -512,6 +512,7 @@ export default function LandingPage() {
             <div className={styles.footerBottomLinks}>
               <button style={{background:'none',border:'none',cursor:'pointer',color:'inherit',fontFamily:'inherit',fontSize:'inherit',padding:0}} onClick={() => setPage('privacy' as any)}>Privacy</button>
               <button style={{background:'none',border:'none',cursor:'pointer',color:'inherit',fontFamily:'inherit',fontSize:'inherit',padding:0}} onClick={() => setPage('terms' as any)}>Terms</button>
+              <a href="/play-store.html" target="_blank" rel="noopener">Play Store</a>
               <a href="mailto:info@fitpulsebot.fit">Contact</a>
             </div>
           </div>
