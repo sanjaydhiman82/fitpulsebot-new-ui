@@ -1,278 +1,461 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy — FitPulseBot</title>
   <meta name="description" content="FitPulseBot Privacy Policy — how we collect, use, and protect your health data." />
   <link rel="canonical" href="https://fitpulsebot.fit/privacy.html" />
+  <link rel="icon" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --green: #3dbf96; --green-dark: #2ea882; --teal: #5bc8e0;
-      --bg: #f5fdfb; --surface: #ffffff;
-      --border: rgba(61,191,150,.16); --border-s: rgba(61,191,150,.30);
-      --text: #0d2137; --text-2: #3d5c74; --text-3: #7a9ab0;
-      --accent-bg: #e2f8f0;
-      --r: 14px; --r-sm: 8px;
       --font: 'Plus Jakarta Sans', sans-serif;
+      --brand-teal: #5bc8e0;
+      --brand-green: #3dbf96;
+      --brand-green-dark: #2ea882;
+      --radius-sm: 10px; --radius-md: 14px; --radius-lg: 20px; --radius-full: 9999px;
+      --transition: 180ms cubic-bezier(.4,0,.2,1);
     }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #060f1b; --surface: #0f1f30;
-        --border: rgba(91,200,224,.12); --border-s: rgba(91,200,224,.25);
-        --text: #e8f4fa; --text-2: #a8cddd; --text-3: #6d94a8;
-        --accent-bg: #0d2535;
-      }
-    }
-    body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.65; font-size: 15px; }
-    a { color: var(--green-dark); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    strong { color: var(--text); font-weight: 700; }
 
-    nav {
+    [data-theme="light"] {
+      --bg-base: #f5fdfb; --bg-surface: #fff; --bg-card: #fff;
+      --bg-subtle: #e8f8f2; --bg-input: #f0f9f6;
+      --border: rgba(61,191,150,.14); --border-strong: rgba(61,191,150,.28);
+      --text-primary: #0d2137; --text-secondary: #3d5c74; --text-muted: #7a9ab0;
+      --accent: #3dbf96; --accent-2: #2ea882; --accent-3: #5bc8e0;
+      --accent-glow: rgba(61,191,150,.18); --accent-light: #e2f8f0;
+      --nav-bg: rgba(255,255,255,.92); --metric-bg: #f0fdf8;
+      --badge-bg: #d4f5e9; --badge-text: #1a7a58;
+      --shadow-sm: 0 2px 8px rgba(26,58,92,.06);
+      --shadow: 0 4px 20px rgba(26,58,92,.08);
+      --shadow-lg: 0 8px 40px rgba(26,58,92,.12);
+    }
+
+    [data-theme="dark"] {
+      --bg-base: #050f1a; --bg-surface: #0d1f30; --bg-card: #122336;
+      --bg-subtle: #1a3247; --bg-input: #0d1f30;
+      --border: rgba(91,200,224,.1); --border-strong: rgba(91,200,224,.22);
+      --text-primary: #e8f4fa; --text-secondary: #a8cddd; --text-muted: #83a6b8;
+      --accent: #3dbf96; --accent-2: #4dd4a8; --accent-3: #5bc8e0;
+      --accent-glow: rgba(61,191,150,.15); --accent-light: rgba(61,191,150,.18);
+      --nav-bg: rgba(13,31,48,.92); --metric-bg: rgba(91,200,224,.11);
+      --badge-bg: rgba(61,191,150,.22); --badge-text: #6ee7b7;
+      --shadow-sm: 0 2px 8px rgba(0,0,0,.3);
+      --shadow: 0 4px 20px rgba(0,0,0,.35);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,.45);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font); background: var(--bg-base); color: var(--text-primary);
+      line-height: 1.65; font-size: 15px;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { color: var(--accent-2); text-decoration: underline; }
+    strong { color: var(--text-primary); font-weight: 700; }
+    h1,h2,h3 { font-family: var(--font); font-weight: 800; line-height: 1.2; }
+    ::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+    /* ── NAV ── */
+    .nav {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(245,253,251,.92); backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 28px; height: 58px;
-      display: flex; align-items: center; justify-content: space-between;
+      background: var(--nav-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border); box-shadow: var(--shadow-sm);
     }
-    @media (prefers-color-scheme: dark) { nav { background: rgba(6,15,27,.88); } }
-    .brand { font-size: 17px; font-weight: 800; color: var(--green); letter-spacing: -.3px; display: flex; align-items: center; gap: 8px; }
-    .brand svg { flex-shrink: 0; }
-    .nav-back {
-      display: flex; align-items: center; gap: 6px;
-      padding: 7px 14px; border-radius: var(--r-sm);
-      background: var(--surface); border: 1.5px solid var(--border-s);
-      color: var(--text-2); font-size: 13px; font-weight: 600;
-      cursor: pointer; text-decoration: none; transition: color .15s, border-color .15s;
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 28px; height: 68px;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
     }
-    .nav-back:hover { color: var(--green); border-color: var(--green); text-decoration: none; }
-
-    .hero { max-width: 720px; margin: 0 auto; padding: 52px 24px 36px; text-align: center; }
-    .hero-icon {
-      width: 64px; height: 64px; border-radius: 20px;
+    .logo-wrap { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-svg { height: 44px; width: auto; }
+    .logo-name { font-size: 18px; font-weight: 800; color: var(--accent); letter-spacing: -.4px; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .theme-toggle {
+      width: 38px; height: 38px; border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border); background: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(61,191,150,.13); border: 1.5px solid rgba(61,191,150,.32);
-      margin: 0 auto 16px;
+      color: var(--text-secondary); transition: all var(--transition);
     }
-    .hero-icon svg { width: 28px; height: 28px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .hero h1 { font-size: clamp(24px,5vw,34px); font-weight: 800; letter-spacing: -.5px; line-height: 1.15; margin-bottom: 12px; }
-    .hero p { color: var(--text-2); font-size: 15px; max-width: 500px; margin: 0 auto 20px; }
-    .hero-meta { font-size: 12px; color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 5px 16px; display: inline-block; }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-strong); background: none;
+      color: var(--text-secondary); font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: all var(--transition); font-family: var(--font);
+    }
+    .btn-back:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .btn-cta {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 20px; border-radius: var(--radius-md);
+      background: var(--accent); border: none;
+      color: #fff; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: all var(--transition); font-family: var(--font);
+    }
+    .btn-cta:hover { background: var(--accent-2); transform: translateY(-1px); }
 
-    .content { max-width: 720px; margin: 0 auto; padding: 0 24px 64px; display: flex; flex-direction: column; gap: 14px; }
+    /* ── HERO BANNER ── */
+    .hero-bg {
+      background:
+        radial-gradient(ellipse 60% 60% at 80% 30%, rgba(61,191,150,.1) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 40% at 15% 80%, rgba(91,200,224,.07) 0%, transparent 55%);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-inner {
+      max-width: 1100px; margin: 0 auto; padding: 60px 28px 52px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px 6px 10px;
+      background: var(--badge-bg); border: 1px solid var(--border-strong);
+      border-radius: var(--radius-full); margin-bottom: 20px;
+      font-size: 11.5px; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: .07em;
+    }
+    .hero-badge-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      animation: ping 2s ease-in-out infinite; flex-shrink: 0;
+    }
+    @keyframes ping { 0%,100%{transform:scale(1);opacity:.7;} 50%{transform:scale(1.5);opacity:0;} }
+    .hero-title {
+      font-size: clamp(28px, 5vw, 42px); font-weight: 800; letter-spacing: -.6px;
+      color: var(--text-primary); margin-bottom: 14px;
+    }
+    .hero-title span { color: var(--accent); }
+    .hero-sub { font-size: 16px; color: var(--text-secondary); max-width: 520px; margin: 0 auto 22px; }
+    .hero-meta {
+      display: inline-block; font-size: 12px; color: var(--text-muted);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-full); padding: 5px 16px;
+    }
+
+    /* ── CONTENT ── */
+    .page-body { max-width: 1100px; margin: 0 auto; padding: 40px 28px 72px; }
+    .sections { display: flex; flex-direction: column; gap: 14px; }
 
     .card {
-      background: var(--surface); border: 1.5px solid var(--border);
-      border-radius: var(--r); padding: 22px 26px; transition: border-color .18s;
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px 28px;
+      transition: border-color var(--transition);
     }
-    .card:hover { border-color: var(--border-s); }
-    .card-hd { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .card:hover { border-color: var(--border-strong); }
+    .card-hd { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
     .card-icon {
-      width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+      width: 38px; height: 38px; border-radius: var(--radius-sm); flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      background: var(--accent-bg); border: 1px solid var(--border-s);
+      background: var(--metric-bg); border: 1px solid var(--border-strong);
     }
-    .card-icon svg { width: 18px; height: 18px; stroke: var(--green); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-    .card-title { font-size: 15px; font-weight: 700; color: var(--text); }
-    .card-body { display: flex; flex-direction: column; gap: 9px; }
-    .card-body p { font-size: 14px; color: var(--text-2); line-height: 1.7; }
-    .bullet { color: var(--green); font-weight: 800; }
+    .card-icon svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .card-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+    .card-body { display: flex; flex-direction: column; gap: 10px; }
+    .card-body p { font-size: 14px; color: var(--text-secondary); line-height: 1.75; }
+    .bullet { color: var(--accent); font-weight: 800; margin-right: 2px; }
 
     .contact-card {
-      background: linear-gradient(135deg, rgba(61,191,150,.08), rgba(91,200,224,.05));
-      border: 1.5px solid var(--border-s); border-radius: var(--r); padding: 24px 26px;
+      background: linear-gradient(135deg, rgba(61,191,150,.07) 0%, rgba(91,200,224,.04) 100%);
+      border: 1.5px solid var(--border-strong);
+      border-radius: var(--radius-lg); padding: 28px;
     }
-    .contact-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-    .contact-card > p { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
-    .contact-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
-    .contact-row svg { width: 15px; height: 15px; stroke: var(--green); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-    .contact-row a { color: var(--green-dark); font-weight: 600; }
+    .contact-card h3 { font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+    .contact-card > p { font-size: 14px; color: var(--text-secondary); margin-bottom: 18px; }
+    .contact-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-secondary); margin-bottom: 10px; }
+    .contact-row svg { width: 16px; height: 16px; stroke: var(--accent); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .contact-row a { color: var(--accent); font-weight: 600; }
+    .contact-row a:hover { color: var(--accent-2); }
 
-    footer {
-      border-top: 1px solid var(--border); padding: 20px 28px;
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      font-size: 13px; color: var(--text-3);
+    /* ── FOOTER ── */
+    .site-footer {
+      border-top: 1px solid var(--border); background: var(--bg-surface);
+      padding: 32px 28px;
     }
-    footer a { color: var(--text-3); }
-    footer a:hover { color: var(--green); }
-    .footer-links { display: flex; gap: 16px; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; }
+    .footer-top {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 40px; flex-wrap: wrap; padding-bottom: 28px;
+      border-bottom: 1px solid var(--border); margin-bottom: 20px;
+    }
+    .footer-brand { flex: 0 0 260px; }
+    .footer-brand-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .footer-brand-logo .logo-svg { height: 36px; }
+    .footer-brand-logo .logo-name { font-size: 16px; font-weight: 800; color: var(--accent); }
+    .footer-tagline { font-size: 13px; color: var(--text-muted); font-style: italic; margin-bottom: 6px; }
+    .footer-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .footer-cols { display: flex; gap: 48px; flex-wrap: wrap; }
+    .footer-col { display: flex; flex-direction: column; gap: 10px; }
+    .footer-col-title { font-size: 12px; font-weight: 800; color: var(--text-primary); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+    .footer-col a, .footer-col button {
+      font-size: 13px; color: var(--text-muted); transition: color var(--transition);
+      font-weight: 500; background: none; border: none; cursor: pointer;
+      font-family: var(--font); padding: 0; text-align: left;
+    }
+    .footer-col a:hover, .footer-col button:hover { color: var(--accent); text-decoration: none; }
+    .footer-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 12px; color: var(--text-muted); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a, .footer-links button {
+      font-size: 12px; color: var(--text-muted); transition: color var(--transition);
+      background: none; border: none; cursor: pointer; font-family: var(--font); padding: 0;
+    }
+    .footer-links a:hover, .footer-links button:hover { color: var(--accent); text-decoration: none; }
+    .footer-current { color: var(--accent) !important; font-weight: 700 !important; }
 
-    @media (max-width: 600px) {
-      nav { padding: 0 16px; }
-      .hero { padding: 36px 16px 28px; }
-      .content { padding-left: 16px; padding-right: 16px; }
-      .card { padding: 18px; }
-      footer { flex-direction: column; align-items: flex-start; }
+    @media (max-width: 768px) {
+      .nav-inner { padding: 0 16px; }
+      .logo-name { display: none; }
+      .hero-inner { padding: 44px 16px 36px; }
+      .page-body { padding: 28px 16px 56px; }
+      .card { padding: 18px 20px; }
+      .footer-top { flex-direction: column; gap: 28px; }
+      .footer-brand { flex: none; }
+      .footer-bottom { flex-direction: column; align-items: flex-start; }
+      .site-footer { padding: 24px 16px; }
     }
   </style>
 </head>
 <body>
 
-<nav>
-  <div class="brand">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-    FitPulseBot
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo-wrap" href="/">
+      <svg class="logo-svg" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="256" height="256" rx="64" fill="#0D2137"/>
+        <path d="M56 138C67.5 138 72.8 126 80 104L90 74L112 180L130 114L143 138H164C173 138 178.6 133.1 184 124L200 96" stroke="#5BC8E0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M56 138C67.5 138 72.8 126 80 104L90 74L112 180L130 114L143 138H164C173 138 178.6 133.1 184 124L200 96" stroke="#3DBF96" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="198" cy="94" r="17" fill="#3DBF96"/>
+      </svg>
+      <span class="logo-name">FitPulseBot</span>
+    </a>
+    <div class="nav-right">
+      <button class="theme-toggle" id="themeBtn" aria-label="Toggle theme">
+        <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+      <button class="btn-back" onclick="history.back()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back
+      </button>
+      <button class="btn-cta" onclick="location.href='/'">Get Started</button>
+    </div>
   </div>
-  <a class="nav-back" href="/">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-    Back to app
-  </a>
 </nav>
 
-<section class="hero">
-  <div class="hero-icon">
-    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+<!-- HERO -->
+<div class="hero-bg">
+  <div class="hero-inner">
+    <div class="hero-badge"><span class="hero-badge-dot"></span> Legal &amp; Privacy</div>
+    <h1 class="hero-title">Privacy <span>Policy</span></h1>
+    <p class="hero-sub">We believe your health data is deeply personal. Here's exactly how we handle it.</p>
+    <span class="hero-meta">Last updated: 23 May 2025 &nbsp;·&nbsp; Effective: 1 June 2025</span>
   </div>
-  <h1>Privacy Policy</h1>
-  <p>We believe your health data is deeply personal. Here's exactly how we handle it.</p>
-  <span class="hero-meta">Last updated: 23 May 2025 &nbsp;·&nbsp; Effective: 1 June 2025</span>
-</section>
-
-<div class="content">
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
-      <div class="card-title">1. Information We Collect</div>
-    </div>
-    <div class="card-body">
-      <p>We collect information you provide directly when you create an account, complete onboarding, or use the app. This includes:</p>
-      <p><span class="bullet">•</span> <strong>Account data</strong> – name, email address, password (hashed), Google OAuth identity.</p>
-      <p><span class="bullet">•</span> <strong>Health &amp; fitness data</strong> – activity logs, food intake, water consumption, sleep records, weight entries, and AI-generated insights.</p>
-      <p><span class="bullet">•</span> <strong>Device &amp; usage data</strong> – browser type, IP address, pages visited, feature interactions, and crash reports.</p>
-      <p><span class="bullet">•</span> <strong>Payment data</strong> – subscription tier and transaction status. We do not store raw card numbers; payments are processed via Razorpay.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
-      <div class="card-title">2. How We Use Your Information</div>
-    </div>
-    <div class="card-body">
-      <p>We use your data to:</p>
-      <p><span class="bullet">•</span> Provide, maintain, and improve FitPulseBot features and AI insights.</p>
-      <p><span class="bullet">•</span> Send transactional emails (password reset, subscription receipts) and in-app notifications you enable.</p>
-      <p><span class="bullet">•</span> Detect and prevent fraud, abuse, or security incidents.</p>
-      <p><span class="bullet">•</span> Comply with applicable Indian laws, including the Digital Personal Data Protection Act, 2023 (DPDPA).</p>
-      <p>We do <strong>not</strong> sell your personal data to third parties, and we do not use your health data for advertising.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg></div>
-      <div class="card-title">3. Data Sharing</div>
-    </div>
-    <div class="card-body">
-      <p>We share data only in these limited circumstances:</p>
-      <p><span class="bullet">•</span> <strong>Service providers</strong> – AWS (cloud hosting, India region ap-south-1), OpenAI (AI processing for nutrition/activity insights), Razorpay (payments). Each provider processes data solely on our behalf.</p>
-      <p><span class="bullet">•</span> <strong>Legal obligations</strong> – when required by a court order, government authority, or to protect the rights of FitPulseBot and its users.</p>
-      <p><span class="bullet">•</span> <strong>Business transfers</strong> – in the event of a merger or acquisition, your data may be transferred with prior notice.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-      <div class="card-title">4. Data Security</div>
-    </div>
-    <div class="card-body">
-      <p>We apply industry-standard safeguards including:</p>
-      <p><span class="bullet">•</span> AES-256 encryption at rest and TLS 1.2+ in transit.</p>
-      <p><span class="bullet">•</span> JWT-based authentication with short-lived access tokens and refresh-token rotation.</p>
-      <p><span class="bullet">•</span> Regular vulnerability assessments and dependency audits.</p>
-      <p>While we take every reasonable precaution, no system is perfectly secure. Please keep your credentials confidential and notify us immediately at <a href="mailto:security@fitpulsebot.fit">security@fitpulsebot.fit</a> if you suspect unauthorised access.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
-      <div class="card-title">5. Data Retention &amp; Deletion</div>
-    </div>
-    <div class="card-body">
-      <p>We retain your account data for as long as your account is active or as needed to provide services. You may:</p>
-      <p><span class="bullet">•</span> <strong>Export</strong> your health data at any time from Settings → Data &amp; Privacy → Export.</p>
-      <p><span class="bullet">•</span> <strong>Delete</strong> your account and all associated data permanently from Settings → Data &amp; Privacy → Delete Account. Deletion is irreversible and takes effect within 30 days.</p>
-      <p>Aggregated, anonymised analytics derived from your data may be retained after deletion.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
-      <div class="card-title">6. Your Rights (DPDPA 2023)</div>
-    </div>
-    <div class="card-body">
-      <p>As a data principal under the DPDPA, you have the right to:</p>
-      <p><span class="bullet">•</span> <strong>Access</strong> a summary of your personal data we process.</p>
-      <p><span class="bullet">•</span> <strong>Correction</strong> – request rectification of inaccurate data.</p>
-      <p><span class="bullet">•</span> <strong>Erasure</strong> – request deletion of your personal data.</p>
-      <p><span class="bullet">•</span> <strong>Grievance redressal</strong> – raise a complaint with our Data Protection Officer.</p>
-      <p>To exercise any of these rights, email <a href="mailto:privacy@fitpulsebot.fit">privacy@fitpulsebot.fit</a> with the subject "Data Rights Request".</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></div>
-      <div class="card-title">7. Cookies &amp; Tracking</div>
-    </div>
-    <div class="card-body">
-      <p>FitPulseBot uses essential cookies for authentication (JWT in httpOnly cookies) and localStorage for theme preferences. We do not use advertising trackers, cross-site tracking pixels, or third-party analytics SDKs that identify you personally.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-      <div class="card-title">8. Children's Privacy</div>
-    </div>
-    <div class="card-body">
-      <p>FitPulseBot is not directed at children under 18. We do not knowingly collect personal data from minors. If you believe a child has provided us data, contact us at <a href="mailto:privacy@fitpulsebot.fit">privacy@fitpulsebot.fit</a> and we will delete it promptly.</p>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <div class="card-icon"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.63"/></svg></div>
-      <div class="card-title">9. Changes to This Policy</div>
-    </div>
-    <div class="card-body">
-      <p>We may update this Privacy Policy to reflect changes in our practices or legal requirements. We will notify you via email or an in-app banner at least 14 days before material changes take effect. Continued use after that date constitutes acceptance.</p>
-    </div>
-  </div>
-
-  <div class="contact-card">
-    <h3>Contact Our Privacy Team</h3>
-    <p>For any privacy-related queries or to exercise your rights under DPDPA 2023, please reach out:</p>
-    <div class="contact-row">
-      <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-      <a href="mailto:privacy@fitpulsebot.fit">privacy@fitpulsebot.fit</a>
-    </div>
-    <div class="contact-row">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      <span>FitPulseBot &nbsp;·&nbsp; Bengaluru, Karnataka, India</span>
-    </div>
-  </div>
-
 </div>
 
-<footer>
-  <p>© 2025 FitPulseBot · All rights reserved</p>
-  <div class="footer-links">
-    <a href="/privacy.html" aria-current="page">Privacy Policy</a>
-    <a href="/terms.html">Terms of Service</a>
-    <a href="/play-store.html">Play Store</a>
-    <a href="mailto:info@fitpulsebot.fit">Contact</a>
+<!-- BODY -->
+<div class="page-body">
+  <div class="sections">
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="card-title">1. Information We Collect</div>
+      </div>
+      <div class="card-body">
+        <p>We collect information you provide directly when you create an account, complete onboarding, or use the app. This includes:</p>
+        <p><span class="bullet">•</span> <strong>Account data</strong> – name, email address, password (hashed), Google OAuth identity.</p>
+        <p><span class="bullet">•</span> <strong>Health &amp; fitness data</strong> – activity logs, food intake, water consumption, sleep records, weight entries, and AI-generated insights.</p>
+        <p><span class="bullet">•</span> <strong>Device &amp; usage data</strong> – browser type, IP address, pages visited, feature interactions, and crash reports.</p>
+        <p><span class="bullet">•</span> <strong>Payment data</strong> – subscription tier and transaction status. We do not store raw card numbers; payments are processed via Razorpay.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div class="card-title">2. How We Use Your Information</div>
+      </div>
+      <div class="card-body">
+        <p>We use your data to:</p>
+        <p><span class="bullet">•</span> Provide, maintain, and improve FitPulseBot features and AI insights.</p>
+        <p><span class="bullet">•</span> Send transactional emails (password reset, subscription receipts) and in-app notifications you enable.</p>
+        <p><span class="bullet">•</span> Detect and prevent fraud, abuse, or security incidents.</p>
+        <p><span class="bullet">•</span> Comply with applicable Indian laws, including the Digital Personal Data Protection Act, 2023 (DPDPA).</p>
+        <p>We do <strong>not</strong> sell your personal data to third parties, and we do not use your health data for advertising.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg></div>
+        <div class="card-title">3. Data Sharing</div>
+      </div>
+      <div class="card-body">
+        <p>We share data only in these limited circumstances:</p>
+        <p><span class="bullet">•</span> <strong>Service providers</strong> – AWS (cloud hosting, India region ap-south-1), OpenAI (AI processing for nutrition/activity insights), Razorpay (payments). Each provider processes data solely on our behalf.</p>
+        <p><span class="bullet">•</span> <strong>Legal obligations</strong> – when required by a court order, government authority, or to protect the rights of FitPulseBot and its users.</p>
+        <p><span class="bullet">•</span> <strong>Business transfers</strong> – in the event of a merger or acquisition, your data may be transferred with prior notice.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <div class="card-title">4. Data Security</div>
+      </div>
+      <div class="card-body">
+        <p>We apply industry-standard safeguards including:</p>
+        <p><span class="bullet">•</span> AES-256 encryption at rest and TLS 1.2+ in transit.</p>
+        <p><span class="bullet">•</span> JWT-based authentication with short-lived access tokens and refresh-token rotation.</p>
+        <p><span class="bullet">•</span> Regular vulnerability assessments and dependency audits.</p>
+        <p>While we take every reasonable precaution, no system is perfectly secure. Please keep your credentials confidential and notify us immediately at <a href="mailto:security@fitpulsebot.fit">security@fitpulsebot.fit</a> if you suspect unauthorised access.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></div>
+        <div class="card-title">5. Data Retention &amp; Deletion</div>
+      </div>
+      <div class="card-body">
+        <p>We retain your account data for as long as your account is active or as needed to provide services. You may:</p>
+        <p><span class="bullet">•</span> <strong>Export</strong> your health data at any time from Settings → Data &amp; Privacy → Export.</p>
+        <p><span class="bullet">•</span> <strong>Delete</strong> your account and all associated data permanently from Settings → Data &amp; Privacy → Delete Account. Deletion is irreversible and takes effect within 30 days.</p>
+        <p>Aggregated, anonymised analytics derived from your data may be retained after deletion.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+        <div class="card-title">6. Your Rights (DPDPA 2023)</div>
+      </div>
+      <div class="card-body">
+        <p>As a data principal under the DPDPA, you have the right to:</p>
+        <p><span class="bullet">•</span> <strong>Access</strong> a summary of your personal data we process.</p>
+        <p><span class="bullet">•</span> <strong>Correction</strong> – request rectification of inaccurate data.</p>
+        <p><span class="bullet">•</span> <strong>Erasure</strong> – request deletion of your personal data.</p>
+        <p><span class="bullet">•</span> <strong>Grievance redressal</strong> – raise a complaint with our Data Protection Officer.</p>
+        <p>To exercise any of these rights, email <a href="mailto:privacy@fitpulsebot.fit">privacy@fitpulsebot.fit</a> with the subject "Data Rights Request".</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 22C6.5 22 2 17.5 2 12S6.5 2 12 2s10 4.5 10 10-4.5 10-10 10z"/><path d="M12 8v4l3 3"/></svg></div>
+        <div class="card-title">7. Cookies &amp; Tracking</div>
+      </div>
+      <div class="card-body">
+        <p>FitPulseBot uses essential cookies for authentication (JWT in httpOnly cookies) and localStorage for theme preferences. We do not use advertising trackers, cross-site tracking pixels, or third-party analytics SDKs that identify you personally.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="card-title">8. Children's Privacy</div>
+      </div>
+      <div class="card-body">
+        <p>FitPulseBot is not directed at children under 18. We do not knowingly collect personal data from minors. If you believe a child has provided us data, contact us at <a href="mailto:privacy@fitpulsebot.fit">privacy@fitpulsebot.fit</a> and we will delete it promptly.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-icon"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.63"/></svg></div>
+        <div class="card-title">9. Changes to This Policy</div>
+      </div>
+      <div class="card-body">
+        <p>We may update this Privacy Policy to reflect changes in our practices or legal requirements. We will notify you via email or an in-app banner at least 14 days before material changes take effect. Continued use after that date constitutes acceptance.</p>
+      </div>
+    </div>
+
+    <div class="contact-card">
+      <h3>Contact Our Privacy Team</h3>
+      <p>For any privacy-related queries or to exercise your rights under DPDPA 2023, please reach out:</p>
+      <div class="contact-row">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        <a href="mailto:privacy@fitpulsebot.fit">privacy@fitpulsebot.fit</a>
+      </div>
+      <div class="contact-row">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span>FitPulseBot &nbsp;·&nbsp; Bengaluru, Karnataka, India</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div class="footer-brand-logo">
+          <svg class="logo-svg" viewBox="0 0 256 256" fill="none"><rect width="256" height="256" rx="64" fill="#0D2137"/><path d="M56 138C67.5 138 72.8 126 80 104L90 74L112 180L130 114L143 138H164C173 138 178.6 133.1 184 124L200 96" stroke="#5BC8E0" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M56 138C67.5 138 72.8 126 80 104L90 74L112 180L130 114L143 138H164C173 138 178.6 133.1 184 124L200 96" stroke="#3DBF96" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="198" cy="94" r="17" fill="#3DBF96"/></svg>
+          <span class="logo-name">FitPulseBot</span>
+        </div>
+        <p class="footer-tagline">Stay on Track, Stay in Pulse.</p>
+        <p class="footer-desc">Empowering 50,000+ Indians to live healthier, happier lives through intelligent fitness tracking.</p>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <div class="footer-col-title">Product</div>
+          <a href="/#features">Features</a>
+          <a href="/#pricing">Pricing</a>
+          <a href="/#how-it-works">How It Works</a>
+          <a href="/#faq">FAQ</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Legal</div>
+          <a href="/privacy.html" class="footer-current">Privacy Policy</a>
+          <a href="/terms.html">Terms of Service</a>
+          <a href="/play-store.html">Play Store</a>
+          <a href="mailto:info@fitpulsebot.fit">Contact Us</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-title">Get Started</div>
+          <a href="/">Start Free</a>
+          <a href="/">Sign In</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2025 FitPulseBot &nbsp;·&nbsp; info@fitpulsebot.fit &nbsp;·&nbsp; All rights reserved.</p>
+      <div class="footer-links">
+        <a href="/privacy.html" class="footer-current">Privacy</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/play-store.html">Play Store</a>
+        <a href="mailto:info@fitpulsebot.fit">Contact</a>
+      </div>
+    </div>
   </div>
 </footer>
 
+<script>
+  const html = document.documentElement;
+  const btn = document.getElementById('themeBtn');
+  const icon = document.getElementById('themeIcon');
+  const SUN = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  const MOON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+  const saved = localStorage.getItem('fitpulse_theme') || 'dark';
+  html.dataset.theme = saved;
+  icon.innerHTML = saved === 'dark' ? SUN : MOON;
+  btn.addEventListener('click', () => {
+    const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
+    html.dataset.theme = next;
+    localStorage.setItem('fitpulse_theme', next);
+    icon.innerHTML = next === 'dark' ? SUN : MOON;
+  });
+</script>
 </body>
 </html>
