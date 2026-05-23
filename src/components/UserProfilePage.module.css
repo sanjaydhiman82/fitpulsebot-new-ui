@@ -1,0 +1,180 @@
+.successBanner {
+  padding: 11px 14px;
+  background: rgba(61,191,150,.1);
+  border: 1px solid rgba(61,191,150,.3);
+  border-radius: var(--radius-md);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── AI Goal Panel ─────────────────────────────────── */
+.aiGoalPanel {
+  background: linear-gradient(135deg, rgba(99,102,241,.06), rgba(168,85,247,.06));
+  border: 1.5px solid rgba(99,102,241,.25);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aiPanelHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.aiPanelIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(99,102,241,.35);
+}
+
+.aiPanelTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.aiPanelSub {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+/* Checklist */
+.aiChecklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+}
+
+.aiCheckItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+/* Generate button */
+.aiGenerateBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 24px;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: all 0.2s;
+  box-shadow: 0 4px 18px rgba(99,102,241,.35);
+  margin-top: 4px;
+}
+
+.aiGenerateBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(99,102,241,.45);
+}
+
+/* Loading state */
+.aiLoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.aiSpinner {
+  color: #818cf8;
+  animation: aiSpin 0.9s linear infinite;
+}
+
+@keyframes aiSpin { to { transform: rotate(360deg); } }
+
+.aiLoadingTitle {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.aiLoadingSub {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  max-width: 340px;
+  line-height: 1.6;
+}
+
+/* Done state */
+.aiDone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.aiDoneIcon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(61,191,150,.12);
+  border: 1.5px solid rgba(61,191,150,.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.aiDoneTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.aiDoneSub {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  max-width: 360px;
+  line-height: 1.6;
+}
+
+.aiRetryBtn {
+  padding: 9px 20px;
+  border: 1.5px solid rgba(99,102,241,.4);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  color: #818cf8;
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.aiRetryBtn:hover {
+  background: rgba(99,102,241,.1);
+  border-color: #818cf8;
+}

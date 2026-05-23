@@ -1,0 +1,65 @@
+{
+  "activity": {
+    "exerciseTypes": [
+      "Running",
+      "Walking",
+      "Cycling",
+      "Swimming",
+      "Yoga",
+      "Strength Training",
+      "HIIT",
+      "Custom"
+    ]
+  },
+  "nutrition": {
+    "meals": [
+      "Breakfast",
+      "Lunch",
+      "Dinner",
+      "Snack"
+    ],
+    "mealEmojis": {
+      "breakfast": "🌅",
+      "lunch": "☀️",
+      "dinner": "🌙",
+      "snack": "🍎"
+    }
+  },
+  "hydration": {
+    "drinkTypes": [
+      { "name": "Water", "icon": "💧", "color": "#5bc8e0", "amountMl": 250 },
+      { "name": "Tea", "icon": "🍵", "color": "#3dbf96", "amountMl": 200 },
+      { "name": "Coffee", "icon": "☕", "color": "#ed8936", "amountMl": 150 },
+      { "name": "Juice", "icon": "🥤", "color": "#f97316", "amountMl": 200 },
+      { "name": "Milk", "icon": "🥛", "color": "#94a3b8", "amountMl": 250 }
+    ],
+    "quickMl": [150, 250, 350, 500]
+  },
+  "charts": {
+    "pieColors": ["#3dbf96", "#5bc8e0", "#9f7aea", "#ed8936", "#e53e3e", "#f59e0b", "#2d6fd6", "#94a3b8"],
+    "planColors": {
+      "Start": "#5bc8e0",
+      "Pro": "#3dbf96",
+      "Elite": "#f59e0b",
+      "default": "#9f7aea"
+    }
+  },
+  "plans": {
+    "periods": ["monthly", "yearly", "quarterly", "weekly", "one-time"],
+    "popularOptions": [
+      { "value": "none", "label": "None" },
+      { "value": "popular", "label": "Popular" },
+      { "value": "recommended", "label": "Recommended" }
+    ],
+    "limitTypes": ["daily", "monthly", "total", "boolean", "per_request", "unlimited"]
+  },
+  "dashboard": {
+    "timeRanges": [
+      { "id": "day", "label": "Today", "days": 1, "aliases": ["day", "today"] },
+      { "id": "week", "label": "Week", "days": 7, "aliases": ["week", "7days", "sevenDays", "seven_days"] },
+      { "id": "month", "label": "Month", "days": 30, "aliases": ["month", "30days", "thirtyDays", "thirty_days"] },
+      { "id": "3month", "label": "3 Months", "days": 90, "aliases": ["3month", "3months", "threeMonths", "three_months", "90days"] },
+      { "id": "year", "label": "Year", "days": 365, "aliases": ["year", "365days"] }
+    ]
+  }
+}
