@@ -41,7 +41,7 @@ export default function NotificationsPage() {
     try {
       const codes = allNotifs.filter(n => selected[n.id]).map(n => n.code);
       await api.notifications.saveNotifications(user.userId, codes);
-      setSuccess('Notification preferences saved!');
+      setSuccess('Reminder preferences saved!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (e: any) { setError(e.message); }
     setSaving(false);
@@ -54,7 +54,7 @@ export default function NotificationsPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <div><h2 className={styles.pageTitle}>Notifications</h2><p className={styles.pageDesc}>Choose which alerts you want to receive</p></div>
+        <div><h2 className={styles.pageTitle}>Reminders</h2><p className={styles.pageDesc}>Choose which reminders you want to receive</p></div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className={styles.refreshBtn} onClick={load}><RefreshCw size={14} className={loading ? styles.spinning : ''} /></button>
           <button className={styles.addBtn} onClick={handleSave} disabled={saving}><Save size={15} />{saving ? 'Saving…' : 'Save'}</button>
@@ -62,7 +62,7 @@ export default function NotificationsPage() {
       </div>
       {error && <div className={styles.errorBanner}>{error}</div>}
       {success && <div style={{ padding: '11px 14px', background: 'rgba(61,191,150,.1)', border: '1px solid rgba(61,191,150,.3)', borderRadius: 12, color: 'var(--accent)', fontSize: 13, fontWeight: 600 }}>{success}</div>}
-      {loading && <div className={styles.loadingRow}>Loading notifications…</div>}
+      {loading && <div className={styles.loadingRow}>Loading reminders…</div>}
 
       {Object.entries(groups).map(([cat, items]) => (
         <div key={cat} className={styles.formCard}>
@@ -84,7 +84,7 @@ export default function NotificationsPage() {
         </div>
       ))}
 
-      {!loading && allNotifs.length === 0 && <div className={styles.emptyRow}>No notifications available for your plan.</div>}
+      {!loading && allNotifs.length === 0 && <div className={styles.emptyRow}>No reminders available for your plan.</div>}
     </div>
   );
 }

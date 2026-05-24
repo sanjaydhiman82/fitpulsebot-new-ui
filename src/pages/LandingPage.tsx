@@ -517,6 +517,9 @@ export default function LandingPage() {
             <p className={styles.footerCopy}>
               © 2025 FitPulseBot · info@fitpulsebot.fit · All rights reserved.
               <span className={styles.footerVersion}>v{siteVersion.version}</span>
+              <span className={styles.footerDesigner}>
+                Designed by <a href="https://www.avarnix.com/" target="_blank" rel="noopener noreferrer">Avarnix Technologies</a>
+              </span>
             </p>
             <div className={styles.footerBottomLinks}>
               <button style={{background:'none',border:'none',cursor:'pointer',color:'inherit',fontFamily:'inherit',fontSize:'inherit',padding:0}} onClick={() => setPage('privacy' as any)}>Privacy</button>

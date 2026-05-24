@@ -33,7 +33,7 @@ const NAV_ITEMS: { id: DashTab; icon: any; label: string; group?: string }[] = [
   { id: 'weight', icon: Scale, label: 'Weight', group: 'Tracking' },
   { id: 'reports', icon: BarChart2, label: 'Reports', group: 'Insights' },
   { id: 'profile', icon: User, label: 'Profile', group: 'Account' },
-  { id: 'notifications', icon: Bell, label: 'Notifications', group: 'Account' },
+  { id: 'notifications', icon: Bell, label: 'Reminders', group: 'Account' },
   { id: 'support', icon: HeadphonesIcon, label: 'Support', group: 'Account' },
   { id: 'messages', icon: MessageSquare, label: 'Messages', group: 'Account' },
   { id: 'settings', icon: Settings, label: 'Settings', group: 'Account' },
@@ -70,6 +70,11 @@ export default function Dashboard() {
   const avatarUrl = typeof user?.avatarUrl === 'string' ? normalizeProfileImageUrl(user.avatarUrl) : '';
   const avatarFallback = (user?.firstName || user?.userName || 'U').charAt(0).toUpperCase();
   const logoSrc = '/coach.png';
+  const handleTabSelect = (next: DashTab) => {
+    setTab(next);
+    setSidebarOpen(false);
+    setAccountMenuOpen(false);
+  };
 
   useEffect(() => {
     if (user?.userId) {
@@ -103,7 +108,7 @@ export default function Dashboard() {
                 {group && <div className={styles.navGroup}>{group}</div>}
                 {items.map(item => (
                   <button key={item.id} className={`${styles.navItem} ${tab === item.id ? styles.navActive : ''}`}
-                    onClick={() => { setTab(item.id); setSidebarOpen(false); }}>
+                    onClick={() => handleTabSelect(item.id)}>
                     <item.icon size={16} />
                     <span>{item.label}</span>
                   </button>
@@ -143,10 +148,10 @@ export default function Dashboard() {
                 <span>{credit.availableCredit.toFixed(1)}</span>
               </div>
             )}
-            <button className={styles.iconBtn} onClick={() => { setTab('notifications'); setSidebarOpen(false); setAccountMenuOpen(false); }} title="Notifications"><Bell size={18} /></button>
+            <button className={styles.iconBtn} onClick={() => handleTabSelect('notifications')} title="Reminders"><Bell size={18} /></button>
             <button 
               className={styles.iconBtn} 
-              onClick={() => { setTab('messages'); setSidebarOpen(false); setAccountMenuOpen(false); refreshUnreadCount(); }} 
+              onClick={() => { handleTabSelect('messages'); refreshUnreadCount(); }}
               title="Messages"
               style={{ position: 'relative' }}
             >
@@ -190,7 +195,7 @@ export default function Dashboard() {
                   <button
                     className={styles.accountMenuItem}
                     role="menuitem"
-                    onClick={() => { setTab('profile'); setSidebarOpen(false); setAccountMenuOpen(false); }}
+                    onClick={() => handleTabSelect('profile')}
                   >
                     <User size={15} />
                     <span>Profile</span>
@@ -209,7 +214,7 @@ export default function Dashboard() {
           </div>
         </header>
         <div className={styles.content}>
-          {tab === 'home' && <DashboardHome setTab={setTab} />}
+          {tab === 'home' && <DashboardHome setTab={handleTabSelect} />}
           {tab === 'activity' && <ActivityLog />}
           {tab === 'nutrition' && <NutritionLog />}
           {tab === 'hydration' && <HydrationLog />}

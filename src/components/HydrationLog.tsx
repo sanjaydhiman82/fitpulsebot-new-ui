@@ -103,7 +103,13 @@ export default function HydrationLog() {
       </div>
 
       {showForm && (
-        <div className={styles.formCard}>
+        <div className={`${styles.formCard} ${styles.formModal}`}>
+          <div className={styles.formModalHeader}>
+            <div>
+              <div className={styles.formModalEyebrow}>Add log</div>
+              <h3 className={styles.formModalTitle}>Log Drink</h3>
+            </div>
+          </div>
           <ModeToggle mode={mode} onChange={setMode} />
 
           {mode === 'manual' ? (

@@ -91,7 +91,13 @@ export default function SleepLog() {
       </div>
 
       {showForm && (
-        <div className={styles.formCard}>
+        <div className={`${styles.formCard} ${styles.formModal}`}>
+          <div className={styles.formModalHeader}>
+            <div>
+              <div className={styles.formModalEyebrow}>Add log</div>
+              <h3 className={styles.formModalTitle}>Log Sleep</h3>
+            </div>
+          </div>
           {/* Mode toggle */}
           <ModeToggle mode={mode} onChange={setMode} />
 

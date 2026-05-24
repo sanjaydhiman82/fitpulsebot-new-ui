@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { RefreshCw, Droplets, Flame, Moon, Activity, ChevronRight, Sparkles, Map, UtensilsCrossed } from 'lucide-react';
+import { RefreshCw, Droplets, Flame, Moon, Activity, ChevronRight, Sparkles, Map, UtensilsCrossed, Scale, TrendingUp } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { api } from '../api';
 import { RangeId } from '../utils/dateRange';
 import { useCountUp } from '../utils/useCountUp';
@@ -219,10 +220,10 @@ function SleepCard({ sleepHrs, goalHrs, sleepPct, sleepPctRaw }: {
   useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
   const n = useCountUp(sleepHrs, 1000);
 
-  const rawPct    = sleepPctRaw ?? sleepPct;       // uncapped (can be > 100)
-  const overGoal  = sleepHrs > goalHrs;
-  const extraHrs  = overGoal ? Math.round((sleepHrs - goalHrs) * 10) / 10 : 0;
-  const deficit   = !overGoal ? Math.round((goalHrs - sleepHrs) * 10) / 10 : 0;
+  const metGoal   = sleepHrs >= goalHrs;
+  const extraHrs  = metGoal ? Math.round((sleepHrs - goalHrs) * 10) / 10 : 0;
+  const deficit   = !metGoal ? Math.round((goalHrs - sleepHrs) * 10) / 10 : 0;
+  const fmtHrs    = (v: number) => Number.isInteger(v) ? String(v) : v.toFixed(1);
 
   // Arc fills to 100% if met/exceeded, partial if not
   const arcPct = Math.min(100, sleepPct);
@@ -251,9 +252,9 @@ function SleepCard({ sleepHrs, goalHrs, sleepPct, sleepPctRaw }: {
           <span style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Sleep Last Night</span>
         </div>
         {/* Over-goal badge */}
-        {overGoal && (
+        {metGoal && (
           <span style={{ fontSize:10, fontWeight:700, background:'rgba(61,191,150,0.18)', color:'#3dbf96', padding:'3px 8px', borderRadius:99, border:'1px solid rgba(61,191,150,0.3)', whiteSpace:'nowrap' }}>
-            +{extraHrs}h over goal 🎉
+            ↑ {fmtHrs(extraHrs)}h from goal
           </span>
         )}
       </div>
@@ -264,8 +265,8 @@ function SleepCard({ sleepHrs, goalHrs, sleepPct, sleepPctRaw }: {
           <svg width="72" height="72" viewBox="0 0 72 72">
             <defs>
               <linearGradient id="sleepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor={overGoal ? '#3dbf96' : '#7f77dd'}/>
-                <stop offset="100%" stopColor={overGoal ? '#5bc8e0' : '#9f7aea'}/>
+                <stop offset="0%" stopColor={metGoal ? '#3dbf96' : '#7f77dd'}/>
+                <stop offset="100%" stopColor={metGoal ? '#5bc8e0' : '#9f7aea'}/>
               </linearGradient>
             </defs>
             <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6"/>
@@ -274,14 +275,14 @@ function SleepCard({ sleepHrs, goalHrs, sleepPct, sleepPctRaw }: {
               transform={`rotate(-90 ${cx} ${cy})`}
               style={{ transition:'stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1)' }}/>
             <text x={cx} y={cy - 3} textAnchor="middle" fontSize="14" fontWeight="800" fill="white">
-              {n.toFixed(1)}<tspan fontSize="8" fill="rgba(255,255,255,0.5)">h</tspan>
+              {fmtHrs(Math.round(n * 10) / 10)}<tspan fontSize="8" fill="rgba(255,255,255,0.5)">h</tspan>
             </text>
             <text x={cx} y={cy + 11} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.35)">
               goal {goalHrs}h
             </text>
           </svg>
           {/* Checkmark overlay when goal met */}
-          {overGoal && (
+          {metGoal && (
             <div style={{ position:'absolute', top:-4, right:-4, width:16, height:16, borderRadius:'50%', background:'#3dbf96', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'#fff', fontWeight:800 }}>✓</div>
           )}
         </div>
@@ -289,8 +290,8 @@ function SleepCard({ sleepHrs, goalHrs, sleepPct, sleepPctRaw }: {
         <div style={{ flex:1 }}>
           {/* Actual vs goal numbers */}
           <div style={{ display:'flex', alignItems:'baseline', gap:4, marginBottom:4 }}>
-            <span style={{ fontSize:28, fontWeight:800, color: overGoal ? '#3dbf96' : '#7f77dd', letterSpacing:'-0.04em', lineHeight:1 }}>{n.toFixed(1)}</span>
-            <span style={{ fontSize:11, color:'var(--text-muted)' }}>h / {goalHrs}h goal</span>
+            <span style={{ fontSize:28, fontWeight:800, color: metGoal ? '#3dbf96' : '#7f77dd', letterSpacing:'-0.04em', lineHeight:1 }}>{fmtHrs(Math.round(n * 10) / 10)}</span>
+            <span style={{ fontSize:11, color:'var(--text-muted)' }}>h / {fmtHrs(goalHrs)}h goal</span>
           </div>
 
           {/* Hours bar: show actual vs goal */}
@@ -299,7 +300,7 @@ function SleepCard({ sleepHrs, goalHrs, sleepPct, sleepPctRaw }: {
               {/* Goal marker */}
               <div style={{ position:'absolute', left:`${Math.min(100, (goalHrs / Math.max(sleepHrs, goalHrs)) * 100)}%`, top:0, bottom:0, width:2, background:'rgba(255,255,255,0.3)', zIndex:2 }}/>
               {/* Actual fill */}
-              <div style={{ height:'100%', width: mounted ? `${Math.min(100, (sleepHrs / Math.max(sleepHrs, goalHrs)) * 100)}%` : '0%', background: overGoal ? 'linear-gradient(90deg,#7f77dd,#3dbf96)' : 'linear-gradient(90deg,#7f77dd99,#7f77dd)', borderRadius:99, transition:'width 900ms cubic-bezier(.4,0,.2,1)' }}/>
+              <div style={{ height:'100%', width: mounted ? `${Math.min(100, (sleepHrs / Math.max(sleepHrs, goalHrs)) * 100)}%` : '0%', background: metGoal ? 'linear-gradient(90deg,#7f77dd,#3dbf96)' : 'linear-gradient(90deg,#7f77dd99,#7f77dd)', borderRadius:99, transition:'width 900ms cubic-bezier(.4,0,.2,1)' }}/>
             </div>
           </div>
 
@@ -314,11 +315,11 @@ function SleepCard({ sleepHrs, goalHrs, sleepPct, sleepPctRaw }: {
       </div>
 
       {/* Status line */}
-      <div style={{ fontSize:12, fontWeight:700, color: overGoal ? '#3dbf96' : deficit > 2 ? '#e53e3e' : '#d97706' }}>
-        {overGoal
-          ? `✓ Well rested — ${extraHrs}h over goal`
+      <div style={{ fontSize:12, fontWeight:700, color: metGoal ? '#3dbf96' : deficit > 2 ? '#e53e3e' : '#d97706' }}>
+        {metGoal
+          ? `✓ On track — ↑ ${fmtHrs(extraHrs)}h from ${fmtHrs(goalHrs)}h goal`
           : deficit > 0
-          ? `↓ ${deficit}h short of ${goalHrs}h goal`
+          ? `↓ ${fmtHrs(deficit)}h short of ${fmtHrs(goalHrs)}h goal`
           : '✓ Sleep goal met!'}
       </div>
     </div>
@@ -429,10 +430,124 @@ function MealRow({ meal, isLast }: { meal:any; isLast:boolean }) {
   );
 }
 
+function WeightTrendCard({ data }: { data: any }) {
+  const summary = data?.summary || {};
+  const latest = Number(summary.latestWeight ?? summary.latest ?? 0);
+
+  if (!data || !latest) {
+    return (
+      <div style={{ background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:20, minHeight:260 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+          <Scale size={14} color="#9f7aea"/>
+          <span style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em' }}>Weight Trend</span>
+        </div>
+        <div style={{ minHeight:190, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:13, border:'1px dashed var(--border)', borderRadius:12 }}>
+          No weight data logged.
+        </div>
+      </div>
+    );
+  }
+
+  const chartData = (data.data || data.trend || []).map((t: any) => ({
+    date: t.date,
+    weight: Number(t.weight || 0),
+    movingAvg: Number(t.movingAvg || t.weight || 0),
+  })).filter((d: any) => d.weight > 0);
+  const weights = chartData.map((d: any) => d.weight);
+  const yMin = weights.length ? Math.max(0, Math.floor(Math.min(...weights) - 2)) : 0;
+  const yMax = weights.length ? Math.ceil(Math.max(...weights) + 2) : 120;
+  const change = Number(summary.changeKg || 0);
+  const target = Number(summary.targetWeight || data.goal?.targetWeight || 0);
+  const toGo = target ? Math.abs(latest - target) : 0;
+  const improving = target
+    ? Math.abs(latest - target) <= Math.abs((Number(summary.startWeight) || latest) - target)
+    : change <= 0;
+
+  return (
+    <div style={{ background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:20, minHeight:300, overflow:'hidden' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', gap:12, marginBottom:12 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:34, height:34, borderRadius:10, background:'rgba(159,122,234,.18)', display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(159,122,234,.3)' }}>
+            <Scale size={16} color="#9f7aea"/>
+          </div>
+          <div>
+            <div style={{ fontSize:15, fontWeight:800, color:'var(--text-primary)' }}>Weight Trend</div>
+            <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:2 }}>Track your progress over time</div>
+          </div>
+        </div>
+        <div style={{ textAlign:'right', flexShrink:0 }}>
+          <div style={{ fontSize:13, fontWeight:800, color: change > 0 ? '#d97706' : '#3dbf96' }}>
+            {change > 0 ? '▲' : change < 0 ? '▼' : '•'} {Math.abs(change).toFixed(1)} kg
+          </div>
+          <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:2 }}>vs period start</div>
+        </div>
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'minmax(0,1fr) 160px', gap:14, alignItems:'stretch' }}>
+        <div style={{ height:205, minWidth:0 }}>
+          {chartData.length > 1 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="todayWeightGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#9f7aea" stopOpacity={0.28} />
+                    <stop offset="95%" stopColor="#9f7aea" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.5} />
+                <XAxis dataKey="date" tick={{ fill:'var(--text-muted)', fontSize:10 }} axisLine={false} tickLine={false} interval={0} minTickGap={12} />
+                <YAxis domain={[yMin, yMax]} tick={{ fill:'var(--text-muted)', fontSize:10 }} axisLine={false} tickLine={false} width={46} tickFormatter={v => `${v} kg`} />
+                <Tooltip content={({ active, payload, label }: any) => active && payload?.length ? (
+                  <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'8px 10px', fontSize:12 }}>
+                    <div style={{ color:'var(--text-muted)', marginBottom:4 }}>{label}</div>
+                    <div style={{ color:'#9f7aea', fontWeight:800 }}>{payload[0].value.toFixed(1)} kg</div>
+                  </div>
+                ) : null} />
+                <Area type="monotone" dataKey="weight" name="Weight" stroke="#818cf8" strokeWidth={2.5} fill="url(#todayWeightGrad)" dot={{ fill:'#818cf8', r:3 }} activeDot={{ r:5 }} />
+                <Area type="monotone" dataKey="movingAvg" name="7-day avg" stroke="#34d399" strokeWidth={1.5} strokeDasharray="4 3" fill="transparent" dot={false} connectNulls />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div style={{ height:'100%', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:13, border:'1px dashed var(--border)', borderRadius:12 }}>
+              Add more weight logs to see trend.
+            </div>
+          )}
+        </div>
+
+        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+          <div style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:12, padding:12 }}>
+            <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:4 }}>Latest</div>
+            <div style={{ fontSize:22, fontWeight:800, color:'var(--text-primary)' }}>{latest.toFixed(1)} <span style={{ fontSize:12, color:'var(--text-muted)' }}>kg</span></div>
+          </div>
+          <div style={{ display:'flex', gap:10, background:'rgba(61,191,150,0.1)', border:'1px solid rgba(61,191,150,0.2)', borderRadius:12, padding:12 }}>
+            <TrendingUp size={16} color="#3dbf96" style={{ flexShrink:0, marginTop:2 }} />
+            <div>
+              <div style={{ fontSize:12, fontWeight:800, color:'#3dbf96' }}>{improving ? 'Improving' : 'Watch trend'}</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', lineHeight:1.45, marginTop:2 }}>{improving ? 'Your weight is trending in the right direction.' : 'Your weight is moving away from target.'}</div>
+            </div>
+          </div>
+          {target > 0 && (
+            <div style={{ background:'rgba(45,111,214,0.1)', border:'1px solid rgba(45,111,214,0.2)', borderRadius:12, padding:12 }}>
+              <div style={{ fontSize:12, fontWeight:800, color:'#5bc8e0' }}>{toGo.toFixed(1)} kg to go</div>
+              <div style={{ fontSize:11, color:'var(--text-muted)', lineHeight:1.45, marginTop:2 }}>Target {target.toFixed(1)} kg</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{ display:'flex', gap:16, marginTop:10, fontSize:11, color:'var(--text-muted)' }}>
+        <span><span style={{ display:'inline-block', width:16, height:3, background:'#9f7aea', borderRadius:99, marginRight:6, verticalAlign:'middle' }} />Your Weight</span>
+        <span><span style={{ display:'inline-block', width:16, height:2, borderTop:'2px dashed #3dbf96', marginRight:6, verticalAlign:'middle' }} />Trend Line</span>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main component ─────────────────────────────────────────── */
 export default function TodaySection({ range }: Props) {
   const [data, setData]         = useState<any>(null);
   const [insight, setInsight]   = useState<any>(null);
+  const [weightData, setWeightData] = useState<any>(null);
   const [loading, setLoading]   = useState(true);
 
   const load = useCallback(async () => {
@@ -441,20 +556,32 @@ export default function TodaySection({ range }: Props) {
       const today = new Date();
       const d = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
       // Fetch today data + AI insight in parallel
-      const [todayRes, insightRes] = await Promise.allSettled([
+      const [todayRes, insightRes, weightRes] = await Promise.allSettled([
         api.dashboard.sectionToday(range === 'today' ? d : undefined),
         api.aiCoach.insight(),
+        api.dashboard.weightChart(7, 75),
       ]);
       if (todayRes.status === 'fulfilled')   setData(todayRes.value);
       if (insightRes.status === 'fulfilled') setInsight(insightRes.value);
+      if (weightRes.status === 'fulfilled')  setWeightData(weightRes.value);
     } catch { setData(null); } finally { setLoading(false); }
   }, [range]);
 
   useEffect(() => { load(); }, [load]);
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:200, gap:10, color:'var(--text-muted)', fontSize:13 }}>
-      <RefreshCw size={16} style={{ animation:'spin 0.8s linear infinite' }}/> Loading today's data…
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', width:'100%', minHeight:'calc(100vh - 180px)', gap:20, color:'var(--text-muted)', textAlign:'center' }}>
+      <div style={{ position:'relative', width:168, height:168, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ position:'absolute', inset:-10, borderRadius:36, background:'rgba(61,191,150,0.08)', border:'1px solid rgba(91,200,224,0.18)' }} />
+        <img
+          src="/coach.png"
+          alt="FitPulseBot"
+          style={{ width:152, height:152, objectFit:'cover', borderRadius:32, border:'2px solid rgba(61,191,150,0.35)', boxShadow:'0 16px 44px rgba(61,191,150,0.22)', position:'relative', zIndex:1 }}
+        />
+      </div>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, color:'var(--brand-teal)', fontSize:20, fontWeight:800 }}>
+        <RefreshCw size={20} style={{ animation:'spin 0.8s linear infinite' }}/> Loading today's data…
+      </div>
     </div>
   );
   if (!data) return <div style={{ minHeight:100, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:13, border:'1px dashed var(--border)', borderRadius:16 }}>No data for today.</div>;
@@ -465,7 +592,7 @@ export default function TodaySection({ range }: Props) {
 
   /* Derived status */
   const actStatus: 'good'|'ok'|'bad' = bars.calBurnPct >= 80 ? 'good' : bars.calBurnPct >= 40 ? 'ok' : 'bad';
-  const sleepStatus: 'good'|'ok'|'bad' = bars.sleepPct >= 80 ? 'good' : bars.sleepPct >= 50 ? 'ok' : 'bad';
+  const sleepStatus: 'good'|'ok'|'bad' = bars.sleepHrs >= goals.sleepGoalHrs || bars.sleepPct >= 100 ? 'good' : bars.sleepPct >= 50 ? 'ok' : 'bad';
   const nutStatus: 'good'|'ok'|'bad' = bars.calInPct >= 60 && bars.calInPct <= 105 ? 'good' : bars.calInPct >= 30 ? 'ok' : 'bad';
 
   /* Macro ring pct */
@@ -526,11 +653,11 @@ export default function TodaySection({ range }: Props) {
         {/* Insight content */}
         <div style={{ flex:1, minWidth:220, zIndex:1 }}>
           <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:8 }}>
-            <Sparkles size={11} color="#3dbf96"/>
-            <span style={{ fontSize:10, fontWeight:700, color:'#3dbf96', textTransform:'uppercase', letterSpacing:'0.12em' }}>AI Coach</span>
+            <Sparkles size={18} color="#3dbf96"/>
+            <span style={{ fontSize:24, fontWeight:800, color:'#3dbf96', letterSpacing:'-0.02em', lineHeight:1 }}>AI Coach</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:8 }}>
-            <span style={{ fontSize:18, fontWeight:800, color:'#fff', letterSpacing:'-0.02em' }}>
+            <span style={{ fontSize:14, fontWeight:600, color:'rgba(255,255,255,0.78)', letterSpacing:0 }}>
               {hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Great effort today'}{name ? `, ${name}` : ''}! 💪
             </span>
             {streak > 0 && (
@@ -666,21 +793,24 @@ export default function TodaySection({ range }: Props) {
         </div>
       </div>
 
-      {/* ── Meals logged ── */}
-      {meals && meals.length > 0 && (
-        <div style={CARD_STYLE}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <UtensilsCrossed size={14} color="var(--text-muted)"/>
-              <span style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em' }}>Meals Logged</span>
+      {/* ── Weight trend + Meals logged ── */}
+      <div style={{ display:'grid', gridTemplateColumns: meals && meals.length > 0 ? '1fr 1fr' : '1fr', gap:12, alignItems:'stretch' }}>
+        <WeightTrendCard data={weightData} />
+        {meals && meals.length > 0 && (
+          <div style={CARD_STYLE}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <UtensilsCrossed size={14} color="var(--text-muted)"/>
+                <span style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em' }}>Meals Logged</span>
+              </div>
+              <span style={{ fontSize:12, color:'var(--text-muted)' }}>{meals.length} item{meals.length>1?'s':''}</span>
             </div>
-            <span style={{ fontSize:12, color:'var(--text-muted)' }}>{meals.length} item{meals.length>1?'s':''}</span>
+            {meals.map((meal: any, i: number) => (
+              <MealRow key={i} meal={meal} isLast={i === meals.length - 1}/>
+            ))}
           </div>
-          {meals.map((meal: any, i: number) => (
-            <MealRow key={i} meal={meal} isLast={i === meals.length - 1}/>
-          ))}
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ── AI Recommendations ── */}
       {recs.length > 0 && (
