@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { RefreshCw, Droplets, Flame, Moon, Activity, ChevronRight, Sparkles, Zap, Map, UtensilsCrossed } from 'lucide-react';
+import { RefreshCw, Droplets, Flame, Moon, Activity, ChevronRight, Sparkles, Map, UtensilsCrossed } from 'lucide-react';
 import { api } from '../api';
 import { RangeId } from '../utils/dateRange';
 import { useCountUp } from '../utils/useCountUp';
@@ -130,23 +130,32 @@ function seedSpark(current: number, count = 7): number[] {
   return pts;
 }
 
-/* ─── Status pill ────────────────────────────────────────────── */
-function StatusPill({ label, status, icon }: { label:string; status:'good'|'ok'|'bad'; icon:string }) {
+/* ─── Status row (reference style: icon + label + status + chevron) ── */
+function StatusRow({ label, status, iconEmoji }: { label:string; status:'good'|'ok'|'bad'; iconEmoji:string }) {
   const cfg = {
-    good: { bg:'rgba(61,191,150,.18)', color:'#3dbf96', text:'On Track' },
-    ok:   { bg:'rgba(217,119,6,.18)',  color:'#d97706', text:'Needs Work' },
-    bad:  { bg:'rgba(229,62,62,.18)',  color:'#e53e3e', text:'Behind' },
+    good: { color:'#3dbf96', text:'On Track' },
+    ok:   { color:'#d97706', text:'Needs Work' },
+    bad:  { color:'#e53e3e', text:'Behind' },
   }[status];
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:7, padding:'7px 12px',
-      background:cfg.bg, borderRadius:10, border:`1px solid ${cfg.color}40` }}>
-      <span style={{ fontSize:16 }}>{icon}</span>
-      <div>
-        <div style={{ fontSize:12, fontWeight:800, color:cfg.color }}>{cfg.text}</div>
-        <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:1 }}>{label}</div>
+    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', background:'rgba(255,255,255,0.04)', borderRadius:12, border:'1px solid rgba(255,255,255,0.07)', cursor:'pointer' }}>
+      <span style={{ fontSize:18 }}>{iconEmoji}</span>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:11, color:'rgba(255,255,255,0.45)', fontWeight:500 }}>{label}</div>
+        <div style={{ fontSize:13, fontWeight:800, color:cfg.color, lineHeight:1.3 }}>{cfg.text}</div>
       </div>
+      <ChevronRight size={14} color="rgba(255,255,255,0.25)"/>
     </div>
   );
+}
+
+/* ─── Score label ────────────────────────────────────────────── */
+function scoreLabel(pct: number): string {
+  if (pct >= 80) return 'Excellent';
+  if (pct >= 65) return 'Good';
+  if (pct >= 45) return 'Fair';
+  if (pct >= 25) return 'Needs Work';
+  return 'Behind';
 }
 
 /* ─── AI Rec card ────────────────────────────────────────────── */
@@ -201,15 +210,22 @@ function MealRow({ meal, isLast }: { meal:any; isLast:boolean }) {
 
 /* ─── Main component ─────────────────────────────────────────── */
 export default function TodaySection({ range }: Props) {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]         = useState<any>(null);
+  const [insight, setInsight]   = useState<any>(null);
+  const [loading, setLoading]   = useState(true);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const today = new Date();
       const d = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-      setData(await api.dashboard.sectionToday(range === 'today' ? d : undefined));
+      // Fetch today data + AI insight in parallel
+      const [todayRes, insightRes] = await Promise.allSettled([
+        api.dashboard.sectionToday(range === 'today' ? d : undefined),
+        api.aiCoach.insight(),
+      ]);
+      if (todayRes.status === 'fulfilled')   setData(todayRes.value);
+      if (insightRes.status === 'fulfilled') setInsight(insightRes.value);
     } catch { setData(null); } finally { setLoading(false); }
   }, [range]);
 
@@ -267,40 +283,78 @@ export default function TodaySection({ range }: Props) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }} key={range}>
 
-      {/* ── Hero: AI Coach + Daily Score ── */}
-      <div style={{ ...CARD_STYLE, display:'flex', alignItems:'center', gap:20, flexWrap:'wrap' }}>
-        <img src="/coach.png" alt="AI Coach" style={{ width:80, height:80, borderRadius:16, objectFit:'cover', flexShrink:0 }}/>
-        <div style={{ flex:1, minWidth:200 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
-            <Sparkles size={12} color="#3dbf96"/>
-            <span style={{ fontSize:10, fontWeight:700, color:'#3dbf96', textTransform:'uppercase', letterSpacing:'0.1em' }}>AI Coach Insight</span>
-            {streak > 0 && <span style={{ fontSize:10, fontWeight:700, background:'rgba(245,158,11,.2)', color:'#f59e0b', padding:'2px 8px', borderRadius:99, border:'1px solid rgba(245,158,11,.3)' }}>🔥 {streak}-day streak</span>}
+      {/* ── Merged AI Coach Hero ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0d1b2e 0%, #0f1f35 40%, #150d2e 100%)',
+        border: '1px solid rgba(61,191,150,0.2)',
+        borderRadius: 20, padding: '22px 24px',
+        display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Background glow blobs */}
+        <div style={{ position:'absolute', top:-40, left:-40, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(61,191,150,0.12) 0%, transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-60, right:80, width:260, height:260, borderRadius:'50%', background:'radial-gradient(circle, rgba(127,119,221,0.1) 0%, transparent 70%)', pointerEvents:'none' }}/>
+
+        {/* Coach avatar with glow rings */}
+        <div style={{ position:'relative', flexShrink:0 }}>
+          <div style={{ position:'absolute', inset:-8, borderRadius:'50%', background:'rgba(61,191,150,0.08)', border:'1.5px solid rgba(61,191,150,0.2)' }}/>
+          <div style={{ position:'absolute', inset:-18, borderRadius:'50%', background:'rgba(61,191,150,0.04)', border:'1px solid rgba(61,191,150,0.1)' }}/>
+          <img src="/coach.png" alt="AI Coach" style={{ width:90, height:90, borderRadius:'50%', objectFit:'cover', position:'relative', zIndex:1, border:'2px solid rgba(61,191,150,0.3)' }}/>
+        </div>
+
+        {/* Insight content */}
+        <div style={{ flex:1, minWidth:220, zIndex:1 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:8 }}>
+            <Sparkles size={11} color="#3dbf96"/>
+            <span style={{ fontSize:10, fontWeight:700, color:'#3dbf96', textTransform:'uppercase', letterSpacing:'0.12em' }}>AI Coach</span>
           </div>
-          <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', marginBottom:5 }}>
-            {hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Great effort today'}{name ? `, ${name}` : ''}! 💪
+          <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:8 }}>
+            <span style={{ fontSize:18, fontWeight:800, color:'#fff', letterSpacing:'-0.02em' }}>
+              {hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Great effort today'}{name ? `, ${name}` : ''}! 💪
+            </span>
+            {streak > 0 && (
+              <span style={{ fontSize:11, fontWeight:700, background:'rgba(217,119,6,0.25)', color:'#f59e0b', padding:'4px 12px', borderRadius:99, border:'1px solid rgba(217,119,6,0.4)', whiteSpace:'nowrap' }}>
+                🔥 {streak}-Day Streak
+              </span>
+            )}
           </div>
-          <div style={{ fontSize:13, color:'var(--text-muted)', lineHeight:1.6 }}>
-            {netCalories > 200 ? `You're ${Math.round(netCalories)} kcal above your goal. Consider a lighter dinner and prioritize sleep to boost recovery.`
-             : netCalories < -200 ? `You're ${Math.round(Math.abs(netCalories))} kcal under goal. Have a nutritious snack to fuel recovery.`
-             : `You're right on track today! Keep up the great balance between activity and nutrition.`}
-          </div>
+          {/* Insight text — GPT-4o if available, else fallback */}
+          <p style={{ fontSize:13, color:'rgba(255,255,255,0.65)', lineHeight:1.6, marginBottom: insight?.action ? 10 : 0 }}>
+            {insight?.insight || (
+              netCalories > 200
+                ? `You're ${Math.round(netCalories)} kcal above your goal. Consider a lighter dinner and prioritize sleep to boost recovery.`
+                : netCalories < -200
+                ? `You're ${Math.round(Math.abs(netCalories))} kcal under goal. Have a nutritious snack to fuel recovery.`
+                : `You're right on track today! Keep up the great balance between activity and nutrition.`
+            )}
+          </p>
+          {/* Action tip from GPT-4o */}
+          {insight?.action && (
+            <div style={{ display:'flex', alignItems:'flex-start', gap:10, background:'rgba(61,191,150,0.1)', border:'1px solid rgba(61,191,150,0.25)', borderRadius:10, padding:'10px 14px' }}>
+              <span style={{ fontSize:15, flexShrink:0 }}>💡</span>
+              <span style={{ fontSize:12, color:'rgba(255,255,255,0.75)', lineHeight:1.55 }}>{insight.action}</span>
+            </div>
+          )}
         </div>
 
         {/* Daily Score ring */}
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, flexShrink:0 }}>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flexShrink:0, zIndex:1 }}>
           <div style={{ position:'relative' }}>
-            <Ring pct={ringPct} color={['#3dbf96','#5bc8e0']} size={100} stroke={9}>
-              <text x="50" y="46" textAnchor="middle" fontSize="22" fontWeight="800" fill="white">{ringPct}</text>
-              <text x="50" y="60" textAnchor="middle" fontSize="10" fill="#888">Daily Score</text>
+            <Ring pct={ringPct} color={['#3dbf96','#5bc8e0']} size={110} stroke={10}>
+              <text x="55" y="50" textAnchor="middle" fontSize="26" fontWeight="800" fill="white">{ringPct}</text>
+              <text x="55" y="66" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.45)">Daily Score</text>
             </Ring>
+          </div>
+          <div style={{ fontSize:12, fontWeight:700, color: ringPct >= 65 ? '#3dbf96' : ringPct >= 45 ? '#d97706' : '#e53e3e', background: 'rgba(255,255,255,0.06)', padding:'3px 12px', borderRadius:99, border:'1px solid rgba(255,255,255,0.1)' }}>
+            {scoreLabel(ringPct)}
           </div>
         </div>
 
-        {/* Status pills */}
-        <div style={{ display:'flex', flexDirection:'column', gap:8, flexShrink:0 }}>
-          <StatusPill label="Activity" status={actStatus} icon="🔥"/>
-          <StatusPill label="Sleep" status={sleepStatus} icon="💧"/>
-          <StatusPill label="Nutrition" status={nutStatus} icon="🍽️"/>
+        {/* Status rows */}
+        <div style={{ display:'flex', flexDirection:'column', gap:8, minWidth:160, zIndex:1 }}>
+          <StatusRow label="Activity"  status={actStatus}   iconEmoji="🔥"/>
+          <StatusRow label="Sleep"     status={sleepStatus} iconEmoji="🌙"/>
+          <StatusRow label="Nutrition" status={nutStatus}   iconEmoji="🍽️"/>
         </div>
       </div>
 

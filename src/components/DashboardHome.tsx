@@ -3,8 +3,6 @@ import { Droplets, Flame, Activity, Moon, Scale, Target, Zap, CreditCard } from 
 import { DashTab } from '../pages/Dashboard';
 import { useApp } from '../App';
 import { RANGES, RangeId } from '../utils/dateRange';
-import AICoachSection   from './AICoachSection';
-import AccountSection   from './AccountSection';
 import TodaySection     from './TodaySection';
 import NutritionSection from './NutritionSection';
 import HydrationSection from './HydrationSection';
@@ -12,6 +10,7 @@ import ActivitySection  from './ActivitySection';
 import SleepSection     from './SleepSection';
 import WeightSection    from './WeightSection';
 import GoalsSection     from './GoalsSection';
+import AccountSection   from './AccountSection';
 import styles from './DashboardHome.module.css';
 
 export default function DashboardHome({ setTab }: { setTab: (t: DashTab) => void }) {
@@ -36,7 +35,7 @@ export default function DashboardHome({ setTab }: { setTab: (t: DashTab) => void
   return (
     <div className={styles.page}>
 
-      {/* ── Greeting ── */}
+      {/* ── Greeting + Range filter ── */}
       <div className={styles.greeting}>
         <div>
           <h2 className={styles.greetTitle}>{greet}, {name}! 👋</h2>
@@ -52,9 +51,6 @@ export default function DashboardHome({ setTab }: { setTab: (t: DashTab) => void
           ))}
         </div>
       </div>
-
-      {/* ── AI Coach insight — always at top ── */}
-      <AICoachSection />
 
       {/* ── Health sections stacked ── */}
       {HEALTH_SECTIONS.map(({ id, label, icon: Icon, color, tab }) => (
@@ -87,7 +83,7 @@ export default function DashboardHome({ setTab }: { setTab: (t: DashTab) => void
         </div>
       ))}
 
-      {/* ── Account / Meta — always at bottom ── */}
+      {/* ── Account / Meta ── */}
       <div>
         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
           <div style={{ width:28, height:28, borderRadius:'var(--radius-sm)', background:'rgba(159,122,234,.15)', border:'1px solid rgba(159,122,234,.3)', display:'flex', alignItems:'center', justifyContent:'center' }}>
