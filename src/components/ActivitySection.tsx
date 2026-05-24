@@ -3,6 +3,7 @@ import { RefreshCw, Activity, Route } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, PieChart, Pie } from 'recharts';
 import { api } from '../api';
 import { RangeId, getRangeDates, fmtLabel } from '../utils/dateRange';
+import { useCountUp } from '../utils/useCountUp';
 import s from './sections.module.css';
 interface Props { range: RangeId; }
 
@@ -11,6 +12,11 @@ const CustomTip = ({ active, payload, label }: any) =>
 
 const ACTIVITY_ICONS: Record<string, string> = { running:'🏃', walking:'🚶', cycling:'🚴', gym:'💪', yoga:'🧘', swimming:'🏊', default:'⚡' };
 const ACT_COLORS = ['#e53e3e','#3dbf96','#2d6fd6','#d97706','#9f7aea','#5bc8e0'];
+
+function AnimNum({ val, dec = 0 }: { val: number; dec?: number }) {
+  const n = useCountUp(val);
+  return <span className={s.animNum}>{dec > 0 ? n.toFixed(dec) : Math.round(n)}</span>;
+}
 
 export default function ActivitySection({ range }: Props) {
   const [data, setData] = useState<any>(null);
@@ -29,7 +35,7 @@ export default function ActivitySection({ range }: Props) {
   const donutData = Object.entries(byType || {}).map(([k, v]) => ({ name: k, value: v as number })).filter(d => d.value > 0);
 
   return (
-    <div className={s.section}>
+    <div className={s.section} key={range}>
       <div className={s.grid4}>
         {[
           { label: 'Cal Burned', val: period.days===1 ? totals.calBurn : avgPerDay.calBurn, unit:'kcal', color:'#e53e3e', total: totals.calBurn, goal: goals.calBurnGoal },
@@ -41,7 +47,10 @@ export default function ActivitySection({ range }: Props) {
           return (
             <div className={s.statCard} key={label}>
               <div className={s.statLabel}>{label}</div>
-              <div className={s.statValue} style={{ color }}>{period.days > 1 && label !== 'Total Sessions' ? `${val}` : total} <span className={s.statUnit}>{unit}</span></div>
+              <div className={s.statValue} style={{ color }}>
+                <AnimNum val={Number(period.days > 1 && label !== 'Total Sessions' ? val : total)} dec={unit === 'km' ? 1 : 0} />
+                {' '}<span className={s.statUnit}>{unit}</span>
+              </div>
               {period.days > 1 && label !== 'Total Sessions' && <div className={s.statSub}>avg/day · total {total}</div>}
               <div className={s.statBar}><div className={s.statBarFill} style={{ width:`${p}%`, background: color }} /></div>
             </div>
@@ -59,7 +68,7 @@ export default function ActivitySection({ range }: Props) {
                   <XAxis dataKey="day" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false} width={36} />
                   <Tooltip content={<CustomTip />} />
-                  <Bar dataKey="Cal Burned" radius={[4,4,0,0]}>
+                  <Bar dataKey="Cal Burned" radius={[4,4,0,0]} isAnimationActive animationBegin={0} animationDuration={800}>
                     {chartData.map((_: any, i: number) => <Cell key={i} fill={i===chartData.length-1 ? '#e53e3e' : '#e53e3e66'} />)}
                   </Bar>
                 </BarChart>
@@ -72,7 +81,7 @@ export default function ActivitySection({ range }: Props) {
               <div className={s.legendRow}>{donutData.map((d,i) => <span key={d.name} className={s.legendItem}><span className={s.legendDot} style={{ background:ACT_COLORS[i%ACT_COLORS.length] }} />{d.name} {d.value} kcal</span>)}</div>
               <div className={s.chartBox} style={{ height:150 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart><Pie data={donutData} cx="50%" cy="50%" innerRadius={35} outerRadius={65} paddingAngle={3} dataKey="value">{donutData.map((_,i)=><Cell key={i} fill={ACT_COLORS[i%ACT_COLORS.length]} />)}</Pie><Tooltip formatter={(v: any) => `${v} kcal`} contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, fontSize:12 }} /></PieChart>
+                  <PieChart><Pie data={donutData} cx="50%" cy="50%" innerRadius={35} outerRadius={65} paddingAngle={3} dataKey="value" isAnimationActive animationBegin={0} animationDuration={900}>{donutData.map((_,i)=><Cell key={i} fill={ACT_COLORS[i%ACT_COLORS.length]} />)}</Pie><Tooltip formatter={(v: any) => `${v} kcal`} contentStyle={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, fontSize:12 }} /></PieChart>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -86,7 +95,7 @@ export default function ActivitySection({ range }: Props) {
                     <XAxis dataKey="day" tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false} width={30} />
                     <Tooltip content={<CustomTip />} />
-                    <Area type="monotone" dataKey="Active Min" stroke="var(--accent)" strokeWidth={2} fill="url(#actGrad)" dot={false} />
+                    <Area type="monotone" dataKey="Active Min" stroke="var(--accent)" strokeWidth={2} fill="url(#actGrad)" dot={false} isAnimationActive animationBegin={0} animationDuration={900} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>

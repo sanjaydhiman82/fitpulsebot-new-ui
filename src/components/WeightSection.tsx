@@ -3,8 +3,14 @@ import { RefreshCw } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, CartesianGrid } from 'recharts';
 import { api } from '../api';
 import { RangeId, getRangeDates, fmtLabel } from '../utils/dateRange';
+import { useCountUp } from '../utils/useCountUp';
 import s from './sections.module.css';
 interface Props { range: RangeId; }
+
+function AnimNum({ val, dec = 1 }: { val: number; dec?: number }) {
+  const n = useCountUp(val, 1200);
+  return <span className={s.animNum}>{n.toFixed(dec)}</span>;
+}
 
 const CustomTip = ({ active, payload, label }: any) =>
   active && payload?.length ? <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', fontSize:12 }}><p style={{ color:'var(--text-muted)', marginBottom:4 }}>{label}</p>{payload.map((p: any) => <p key={p.name} style={{ color:p.color, fontWeight:700 }}>{p.name}: {p.value} kg</p>)}</div> : null;
@@ -37,27 +43,27 @@ export default function WeightSection({ range }: Props) {
   const changeColor = summary.changeKg > 0 ? 'var(--danger)' : summary.changeKg < 0 ? 'var(--accent)' : 'var(--text-muted)';
 
   return (
-    <div className={s.section}>
+    <div className={s.section} key={range}>
       <div className={s.grid4}>
         <div className={s.statCard}>
           <div className={s.statLabel}>Latest</div>
-          <div className={s.statValue}>{summary.latest} <span className={s.statUnit}>kg</span></div>
+          <div className={s.statValue}><AnimNum val={summary.latest} /> <span className={s.statUnit}>kg</span></div>
           <div className={s.statSub} style={{ color: changeColor, fontWeight:700 }}>
             {summary.changeKg > 0 ? '+' : ''}{summary.changeKg} kg vs start
           </div>
         </div>
         <div className={s.statCard}>
           <div className={s.statLabel}>{period.days<=7?'Week':'Period'} avg</div>
-          <div className={s.statValue}>{summary.avg30} <span className={s.statUnit}>kg</span></div>
+          <div className={s.statValue}><AnimNum val={summary.avg30} /> <span className={s.statUnit}>kg</span></div>
         </div>
         <div className={s.statCard}>
           <div className={s.statLabel}>Target</div>
-          <div className={s.statValue} style={{ color:'var(--accent)' }}>{summary.targetWeight} <span className={s.statUnit}>kg</span></div>
+          <div className={s.statValue} style={{ color:'var(--accent)' }}><AnimNum val={summary.targetWeight} dec={0} /> <span className={s.statUnit}>kg</span></div>
           <div className={s.statSub}>{Math.abs(summary.latest - summary.targetWeight).toFixed(1)} kg to go</div>
         </div>
         <div className={s.statCard}>
           <div className={s.statLabel}>BMI</div>
-          <div className={s.statValue}>{bmi ?? '—'}</div>
+          <div className={s.statValue}>{bmi ? <AnimNum val={bmi} /> : '—'}</div>
           {bmiCat && <span className={`${s.badge} ${s[bmiCat.cls]}`} style={{ marginTop:4, fontSize:10 }}>{bmiCat.label}</span>}
         </div>
       </div>

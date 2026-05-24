@@ -3,11 +3,17 @@ import { RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, ReferenceLine } from 'recharts';
 import { api } from '../api';
 import { RangeId, getRangeDates, fmtLabel } from '../utils/dateRange';
+import { useCountUp } from '../utils/useCountUp';
 import s from './sections.module.css';
 interface Props { range: RangeId; }
 
 const CustomTip = ({ active, payload, label }: any) =>
   active && payload?.length ? <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', fontSize:12 }}><p style={{ color:'var(--text-muted)', marginBottom:4 }}>{label}</p>{payload.map((p: any) => <p key={p.name} style={{ color:p.color, fontWeight:700 }}>{p.name}: {p.value}h</p>)}</div> : null;
+
+function AnimNum({ val, dec = 1 }: { val: number; dec?: number }) {
+  const n = useCountUp(val);
+  return <span className={s.animNum}>{n.toFixed(dec)}</span>;
+}
 
 export default function SleepSection({ range }: Props) {
   const [data, setData] = useState<any>(null);
@@ -27,7 +33,7 @@ export default function SleepSection({ range }: Props) {
   const offset = circ - (Math.min(pct,100)/100)*circ;
 
   return (
-    <div className={s.section}>
+    <div className={s.section} key={range}>
       <div className={s.grid2}>
         <div className={s.card}>
           <div className={s.cardHeader}><span className={s.cardTitle}>Sleep overview</span></div>
@@ -83,7 +89,7 @@ export default function SleepSection({ range }: Props) {
                   <YAxis domain={[0, Math.max(goalHrs+1, 10)]} tick={{ fill:'var(--text-muted)', fontSize:11 }} axisLine={false} tickLine={false} width={28} tickFormatter={v => `${v}h`} />
                   <ReferenceLine y={goalHrs} stroke="#7f77dd" strokeDasharray="4 3" strokeWidth={1.5} />
                   <Tooltip content={<CustomTip />} />
-                  <Bar dataKey="Sleep" radius={[4,4,0,0]}>
+                  <Bar dataKey="Sleep" radius={[4,4,0,0]} isAnimationActive animationBegin={0} animationDuration={800}>
                     {chartData.map((d: any, i: number) => <Cell key={i} fill={d.Sleep >= goalHrs ? '#7f77dd' : d.Sleep >= goalHrs*0.75 ? '#9f7aea99' : '#7f77dd44'} />)}
                   </Bar>
                 </BarChart>

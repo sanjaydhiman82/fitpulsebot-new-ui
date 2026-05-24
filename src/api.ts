@@ -229,6 +229,14 @@ export const api = {
       return apiFetch(`/dashboard/section/goals?${q}`);
     },
   },
+  aiCoach: {
+    insight: () => {
+      const q = new URLSearchParams({ userId: getUserId()! });
+      // Use full URL — this is under /api/ai/v1, not /api/v1
+      const url = `${API_ORIGIN.replace(/\/$/, '')}/api/ai/v1/dashboard/insight?${q}`;
+      return apiFetch(url);
+    },
+  },
 
   reports: {
     healthMetrics: (startDate: string, endDate: string) =>
