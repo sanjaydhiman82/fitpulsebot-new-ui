@@ -102,7 +102,184 @@ function MetricCard({ label, value, unit, sub1, sub2, sub2Color, sparkData, colo
   );
 }
 
-/* ─── Glass icon row for hydration ──────────────────────────── */
+/* ─── Calorie Balance animated chart ────────────────────────── */
+function CalorieBalanceCard({ calIn, calBurn, netCal, goalCal }: { calIn:number; calBurn:number; netCal:number; goalCal:number }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+  const n = useCountUp(Math.abs(netCal), 1000);
+  const maxVal = Math.max(calIn, calBurn, goalCal, 1);
+  const inPct  = Math.min(100, (calIn  / maxVal) * 100);
+  const burnPct= Math.min(100, (calBurn/ maxVal) * 100);
+  const goalPct= Math.min(100, (goalCal/ maxVal) * 100);
+  const surplus = netCal > 0;
+  return (
+    <div style={{ background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:'18px 18px 14px', display:'flex', flexDirection:'column', gap:8, overflow:'hidden' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+        <div style={{ width:28, height:28, borderRadius:8, background:'#e53e3e20', display:'flex', alignItems:'center', justifyContent:'center' }}><Flame size={14} color="#e53e3e"/></div>
+        <span style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Calorie Balance</span>
+      </div>
+      <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+        <span style={{ fontSize:36, fontWeight:800, color: surplus ? '#e53e3e' : '#3dbf96', letterSpacing:'-0.04em', lineHeight:1 }}>
+          {surplus ? '+' : '-'}{Math.round(n)}
+        </span>
+        <span style={{ fontSize:14, fontWeight:600, color:'var(--text-muted)' }}>kcal</span>
+      </div>
+      <div style={{ fontSize:12, color:'var(--text-muted)' }}>{surplus ? 'Surplus' : 'Deficit'}</div>
+
+      {/* Animated comparison bars */}
+      <div style={{ display:'flex', flexDirection:'column', gap:6, marginTop:4 }}>
+        {[
+          { label:'Consumed', val:calIn,   pct:inPct,   color:'#e53e3e' },
+          { label:'Burned',   val:calBurn, pct:burnPct, color:'#3dbf96' },
+          { label:'Goal',     val:goalCal, pct:goalPct, color:'rgba(255,255,255,0.18)', dashed:true },
+        ].map(row => (
+          <div key={row.label}>
+            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
+              <span style={{ fontSize:10, color:'rgba(255,255,255,0.4)', fontWeight:600 }}>{row.label}</span>
+              <span style={{ fontSize:10, color:'rgba(255,255,255,0.5)', fontWeight:700 }}>{Math.round(row.val)}</span>
+            </div>
+            <div style={{ height:5, background:'rgba(255,255,255,0.06)', borderRadius:99, overflow:'hidden', position:'relative' }}>
+              {row.dashed ? (
+                <div style={{ position:'absolute', inset:0, background:`repeating-linear-gradient(90deg, ${row.color} 0px, ${row.color} 4px, transparent 4px, transparent 8px)` }}/>
+              ) : (
+                <div style={{ height:'100%', width: mounted ? `${row.pct}%` : '0%', background:`linear-gradient(90deg, ${row.color}cc, ${row.color})`, borderRadius:99, transition:'width 900ms cubic-bezier(.4,0,.2,1)' }}/>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Active Time animated arc card ─────────────────────────── */
+function ActiveTimeCard({ activeMin, goalMin, calBurnPct }: { activeMin:number; goalMin:number; calBurnPct:number }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+  const n = useCountUp(activeMin, 1000);
+  const pct = Math.min(100, Math.round(activeMin / (goalMin || 60) * 100));
+  // 7 simulated activity intensity bars (peaks = higher activity)
+  const bars = [0.3, 0.6, 0.5, 0.9, 0.7, 0.4, 1.0, 0.8, 0.6, 0.5, 0.7, 0.3].map(h => ({
+    h, active: h * 100 <= pct + 20,
+  }));
+  const r = 32; const cx = 40; const cy = 40;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (mounted ? Math.min(pct, 100) / 100 : 0) * circ;
+  return (
+    <div style={{ background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:'18px 18px 14px', display:'flex', flexDirection:'column', gap:8, overflow:'hidden' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+        <div style={{ width:28, height:28, borderRadius:8, background:'#3dbf9620', display:'flex', alignItems:'center', justifyContent:'center' }}><Activity size={14} color="#3dbf96"/></div>
+        <span style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Active Time</span>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+        {/* Arc progress */}
+        <div style={{ position:'relative', flexShrink:0 }}>
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <defs>
+              <linearGradient id="actArcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#3dbf96"/>
+                <stop offset="100%" stopColor="#5bc8e0"/>
+              </linearGradient>
+            </defs>
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7"/>
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="url(#actArcGrad)" strokeWidth="7"
+              strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+              transform={`rotate(-90 ${cx} ${cy})`}
+              style={{ transition:'stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1)' }}/>
+            <text x={cx} y={cy-2} textAnchor="middle" fontSize="15" fontWeight="800" fill="white">{pct}%</text>
+            <text x={cx} y={cy+11} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.4)">goal</text>
+          </svg>
+        </div>
+        <div style={{ flex:1 }}>
+          <div style={{ display:'flex', alignItems:'baseline', gap:3 }}>
+            <span style={{ fontSize:28, fontWeight:800, color:'#3dbf96', letterSpacing:'-0.04em', lineHeight:1 }}>{Math.round(n)}</span>
+            <span style={{ fontSize:12, color:'var(--text-muted)' }}>min</span>
+          </div>
+          <div style={{ fontSize:11, color:'var(--text-muted)', marginBottom:8 }}>Goal {goalMin} min</div>
+          {/* Intensity bars */}
+          <div style={{ display:'flex', gap:3, alignItems:'flex-end', height:24 }}>
+            {bars.map((b, i) => (
+              <div key={i} style={{ flex:1, background: b.active ? `rgba(61,191,150,${0.5 + b.h * 0.5})` : 'rgba(255,255,255,0.07)', borderRadius:2, height: mounted ? `${b.h * 100}%` : '10%', transition:`height ${600 + i * 40}ms cubic-bezier(.4,0,.2,1)` }}/>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ fontSize:12, fontWeight:700, color: calBurnPct >= 100 ? '#3dbf96' : '#d97706' }}>
+        {calBurnPct >= 100 ? '✓ Goal met' : `${calBurnPct}% of burn goal`}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Sleep animated card ────────────────────────────────────── */
+function SleepCard({ sleepHrs, goalHrs, sleepPct }: { sleepHrs:number; goalHrs:number; sleepPct:number }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+  const n = useCountUp(sleepHrs, 1000);
+  // Simulated sleep stage depths (7 segments: light, deep, REM, light, deep, REM, wake)
+  const stages = [
+    { label:'Light', h:0.35, color:'#7f77dd99' },
+    { label:'Deep',  h:0.80, color:'#7f77dd' },
+    { label:'REM',   h:0.55, color:'#9f7aea' },
+    { label:'Light', h:0.30, color:'#7f77dd99' },
+    { label:'Deep',  h:0.70, color:'#7f77dd' },
+    { label:'REM',   h:0.50, color:'#9f7aeacc' },
+    { label:'Wake',  h:0.10, color:'rgba(255,255,255,0.15)' },
+  ];
+  // Sleep quality arc
+  const r = 28; const cx = 36; const cy = 36;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (mounted ? Math.min(sleepPct, 100) / 100 : 0) * circ;
+  return (
+    <div style={{ background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:'18px 18px 14px', display:'flex', flexDirection:'column', gap:8, overflow:'hidden' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+        <div style={{ width:28, height:28, borderRadius:8, background:'#7f77dd20', display:'flex', alignItems:'center', justifyContent:'center' }}><Moon size={14} color="#7f77dd"/></div>
+        <span style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Sleep Last Night</span>
+      </div>
+      <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+        {/* Sleep quality arc */}
+        <div style={{ flexShrink:0 }}>
+          <svg width="72" height="72" viewBox="0 0 72 72">
+            <defs>
+              <linearGradient id="sleepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#7f77dd"/>
+                <stop offset="100%" stopColor="#9f7aea"/>
+              </linearGradient>
+            </defs>
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6"/>
+            <circle cx={cx} cy={cy} r={r} fill="none" stroke="url(#sleepGrad)" strokeWidth="6"
+              strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+              transform={`rotate(-90 ${cx} ${cy})`}
+              style={{ transition:'stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1)' }}/>
+            <text x={cx} y={cy-1} textAnchor="middle" fontSize="14" fontWeight="800" fill="white">{Math.round(n)}<tspan fontSize="8" fill="rgba(255,255,255,0.5)">h</tspan></text>
+            <text x={cx} y={cy+11} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.35)">of {goalHrs}h</text>
+          </svg>
+        </div>
+        <div style={{ flex:1 }}>
+          {/* Stage visualization */}
+          <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Sleep stages</div>
+          <div style={{ display:'flex', gap:2, alignItems:'flex-end', height:32 }}>
+            {stages.map((s, i) => (
+              <div key={i} title={s.label} style={{ flex:1, background:s.color, borderRadius:'2px 2px 0 0', height: mounted ? `${s.h * 100}%` : '5%', transition:`height ${500 + i * 80}ms cubic-bezier(.4,0,.2,1)` }}/>
+            ))}
+          </div>
+          <div style={{ display:'flex', gap:8, marginTop:5 }}>
+            {[['#7f77dd','Deep'],['#9f7aea','REM'],['#7f77dd66','Light']].map(([c,l]) => (
+              <span key={l as string} style={{ display:'flex', alignItems:'center', gap:3, fontSize:9, color:'rgba(255,255,255,0.35)' }}>
+                <span style={{ width:6, height:6, borderRadius:1, background:c as string, display:'inline-block' }}/>
+                {l}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ fontSize:12, color:'var(--text-muted)' }}>Goal {goalHrs}–{goalHrs + 1} h</div>
+      <div style={{ fontSize:12, fontWeight:700, color: sleepPct >= 80 ? '#3dbf96' : '#7f77dd' }}>
+        {sleepPct >= 80 ? '✓ Well rested' : `↓ ${100 - sleepPct}% vs goal`}
+      </div>
+    </div>
+  );
+}
 function GlassIcons({ filled, total }: { filled:number; total:number }) {
   return (
     <div style={{ display:'flex', gap:4, marginTop:10 }}>
@@ -360,10 +537,28 @@ export default function TodaySection({ range }: Props) {
 
       {/* ── 4 Metric cards ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,minmax(0,1fr))', gap:12 }}>
-        <MetricCard label="Calorie Balance" value={Math.abs(netCalories)} unit="kcal" sub1={`${Math.round(bars.calIn)} consumed / ${bars.calBurn} burned`} sub2={netCalories > 0 ? 'Surplus' : 'Deficit'} sub2Color={netCalories > 0 ? '#e53e3e' : '#3dbf96'} sparkData={calSpark} color="#e53e3e" icon={Flame}/>
-        <MetricCard label="Active Time" value={activity.activeMin} unit="min" sub1={`Goal ${goals.calBurnGoal > 0 ? 60 : 60} min`} sub2={bars.calBurnPct >= 100 ? '✓ Goal met' : `${bars.calBurnPct}% of goal`} sub2Color={bars.calBurnPct >= 100 ? '#3dbf96' : '#d97706'} sparkData={actSpark} color="#3dbf96" icon={Activity}/>
-        <MetricCard label="Distance" value={activity.distanceKm} unit="km" sub1="Today's total" sub2={activity.distanceKm >= 10 ? '✓ 10km achieved' : `${activity.distanceKm} of 10 km`} sub2Color={activity.distanceKm >= 10 ? '#3dbf96' : '#2d6fd6'} sparkData={distSpark} color="#2d6fd6" icon={Map}/>
-        <MetricCard label="Sleep Last Night" value={bars.sleepHrs} unit="h" sub1={`Goal ${goals.sleepGoalHrs}–${goals.sleepGoalHrs + 1} h`} sub2={`↓ ${100 - bars.sleepPct}% vs goal`} sub2Color={bars.sleepPct >= 80 ? '#3dbf96' : '#7f77dd'} sparkData={sleepSpark} color="#7f77dd" icon={Moon}/>
+        <CalorieBalanceCard
+          calIn={Math.round(bars.calIn)}
+          calBurn={bars.calBurn}
+          netCal={netCalories}
+          goalCal={goals.calConsumeGoal}
+        />
+        <ActiveTimeCard
+          activeMin={activity.activeMin}
+          goalMin={60}
+          calBurnPct={bars.calBurnPct}
+        />
+        <MetricCard label="Distance" value={activity.distanceKm} unit="km"
+          sub1="Today's total"
+          sub2={activity.distanceKm >= 10 ? '✓ 10km achieved' : `${activity.distanceKm} of 10 km`}
+          sub2Color={activity.distanceKm >= 10 ? '#3dbf96' : '#2d6fd6'}
+          sparkData={distSpark} color="#2d6fd6" icon={Map}
+        />
+        <SleepCard
+          sleepHrs={bars.sleepHrs}
+          goalHrs={goals.sleepGoalHrs}
+          sleepPct={bars.sleepPct}
+        />
       </div>
 
       {/* ── Macros + Hydration ── */}
