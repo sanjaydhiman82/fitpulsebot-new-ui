@@ -19,8 +19,10 @@
   padding: 18px 16px 12px;
 }
 .sidebarClose { display: none; color: var(--text-muted); padding: 4px; border-radius: var(--radius-xs); }
-.logo { display: flex; align-items: center; gap: 8px; }
-.logoImg { height: 68px; width: auto; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logoImg { height: 44px; width: 44px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
+.logoName { font-size: 15px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.2; }
+.logoTagline { font-size: 10px; font-weight: 500; color: var(--text-muted); letter-spacing: 0.01em; margin-top: 1px; }
 .logoAccent { color: var(--accent); }
 
 .userInfo {

@@ -87,6 +87,10 @@ export default function Dashboard() {
         <div className={styles.sidebarTop}>
           <div className={styles.logo}>
             <img src={logoSrc} alt="FitPulseBot" className={styles.logoImg} onError={e => (e.currentTarget.style.display='none')} />
+            <div>
+              <div className={styles.logoName}>FitPulseBot</div>
+              <div className={styles.logoTagline}>Stay on Track, Stay in Pulse</div>
+            </div>
           </div>
           <button className={styles.sidebarClose} onClick={() => setSidebarOpen(false)}><X size={18} /></button>
         </div>

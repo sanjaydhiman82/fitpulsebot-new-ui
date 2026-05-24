@@ -38,7 +38,8 @@ export default function AdminDashboard() {
           <div className={styles.logo}>
             <img src={logoSrc} alt="" className={styles.logoImg} onError={e => (e.currentTarget.style.display = 'none')} />
             <div>
-              <div className={styles.adminBadge}>Admin Panel</div>
+              <div className={styles.logoName}>FitPulseBot</div>
+              <div className={styles.adminBadge} style={{ marginTop: 2 }}>Admin Panel</div>
             </div>
           </div>
           <button className={styles.closeBtn} onClick={() => setSidebarOpen(false)}><X size={18} /></button>

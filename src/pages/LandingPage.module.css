@@ -20,7 +20,9 @@
   display: flex; align-items: center; gap: 24px;
 }
 .logoWrap { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.logoImg { height: 80px; width: auto; object-fit: contain; }
+.logoImg { height: 40px; width: 40px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
+.logoName { font-size: 15px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.2; }
+.logoTagline { font-size: 10px; font-weight: 500; color: var(--text-muted); margin-top: 1px; }
 .logoAccent { color: var(--accent); }
 .navLinks {
   display: flex; gap: 28px; margin-left: 16px; flex: 1;
@@ -592,7 +594,8 @@
 .footerInner { max-width: 1200px; margin: 0 auto; }
 .footerTop { display: flex; gap: 60px; margin-bottom: 48px; flex-wrap: wrap; }
 .footerBrand { flex: 0 0 300px; display: flex; flex-direction: column; gap: 10px; }
-.footerLogoImg { height: 64px; width: auto; }
+.footerLogoImg { height: 44px; width: 44px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
+.footerLogoText { display: flex; flex-direction: column; gap: 1px; }
 .tagline { font-size: 14px; color: var(--text-muted); font-style: italic; }
 .footerBrandDesc { font-size: 13px; color: var(--text-muted); line-height: 1.65; max-width: 260px; }
 .footerCols { display: flex; gap: 48px; flex: 1; flex-wrap: wrap; }

@@ -4,8 +4,9 @@
 .sidebar { width: 248px; flex-shrink: 0; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; z-index: 50; transition: transform 300ms; }
 .sidebarTop { display: flex; align-items: center; justify-content: space-between; padding: 18px 16px 12px; }
 .closeBtn { display: none; color: var(--text-muted); padding: 4px; border-radius: 6px; }
-.logo { display: flex; align-items: center; gap: 8px; }
-.logoImg { height: 64px; width: auto; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.logoImg { height: 40px; width: 40px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
+.logoName { font-size: 14px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.2; }
 .accent { color: var(--accent); }
 .adminBadge { font-size: 10px; font-weight: 700; color: #9f7aea; background: rgba(159,122,234,.15); padding: 2px 8px; border-radius: 99px; margin-top: 2px; display: inline-block; }
 

@@ -112,6 +112,10 @@ export default function LandingPage() {
         <div className={styles.navInner}>
           <div className={styles.logoWrap}>
             <img src={logoSrc} alt="FitPulseBot" className={styles.logoImg} onError={e => (e.currentTarget.style.display='none')} />
+            <div>
+              <div className={styles.logoName}>FitPulseBot</div>
+              <div className={styles.logoTagline}>Stay in Pulse</div>
+            </div>
           </div>
           <div className={styles.navLinks}>
             <a href="#features" onClick={() => setMenuOpen(false)}>Features</a>
@@ -479,6 +483,10 @@ export default function LandingPage() {
           <div className={styles.footerTop}>
             <div className={styles.footerBrand}>
               <img src={logoSrc} alt="FitPulseBot" className={styles.footerLogoImg} onError={e => (e.currentTarget.style.display='none')} />
+              <div className={styles.footerLogoText}>
+                <div className={styles.logoName}>FitPulseBot</div>
+                <div className={styles.logoTagline}>Stay on Track, Stay in Pulse</div>
+              </div>
               <p className={styles.tagline}>Stay on Track, Stay in Pulse.</p>
               <p className={styles.footerBrandDesc}>Empowering 50,000+ Indians to live healthier, happier lives through intelligent fitness tracking.</p>
             </div>

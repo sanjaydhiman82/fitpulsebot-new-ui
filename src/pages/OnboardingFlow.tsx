@@ -47,6 +47,10 @@ export default function OnboardingFlow() {
       <div className={styles.topBar}>
         <div className={styles.logo}>
           <img src={logoSrc} alt="FitPulseBot" className={styles.logoImg} onError={e => (e.currentTarget.style.display='none')} />
+          <div>
+            <div className={styles.logoName}>FitPulseBot</div>
+            <div className={styles.logoTagline}>Stay on Track, Stay in Pulse</div>
+          </div>
         </div>
         <button className="theme-btn" onClick={toggleTheme}>
           {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}

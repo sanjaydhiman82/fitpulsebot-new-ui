@@ -6,7 +6,9 @@
   background: var(--bg-surface);
 }
 .logo { display: flex; align-items: center; gap: 10px; }
-.logoImg { height: 72px; width: auto; }
+.logoImg { height: 40px; width: 40px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
+.logoName { font-size: 15px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.2; }
+.logoTagline { font-size: 10px; font-weight: 500; color: var(--text-muted); margin-top: 1px; }
 .logoAccent { color: var(--accent); }
 
 .container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 20px; gap: 28px; }
