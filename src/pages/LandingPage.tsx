@@ -85,7 +85,7 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [plans, setPlans] = useState<any[]>(PLANS);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const logoSrc = theme === 'dark' ? '/logo2.png' : '/logo.png';
+  const logoSrc = '/coach.png';
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 20);

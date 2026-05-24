@@ -69,7 +69,7 @@ export default function Dashboard() {
   const currentLabel = NAV_ITEMS.find(n => n.id === tab)?.label || '';
   const avatarUrl = typeof user?.avatarUrl === 'string' ? normalizeProfileImageUrl(user.avatarUrl) : '';
   const avatarFallback = (user?.firstName || user?.userName || 'U').charAt(0).toUpperCase();
-  const logoSrc = theme === 'dark' ? '/logo2.png' : '/logo.png';
+  const logoSrc = '/coach.png';
 
   useEffect(() => {
     if (user?.userId) {

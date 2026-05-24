@@ -21,7 +21,7 @@ export default function OnboardingFlow() {
   const [form, setForm] = useState({ name: '', age: '', weight: '', height: '', gender: 'Male' });
   const [goals, setGoals] = useState<string[]>([]);
   const [activity, setActivity] = useState('');
-  const logoSrc = theme === 'dark' ? '/logo2.png' : '/logo.png';
+  const logoSrc = '/coach.png';
 
   const toggleGoal = (g: string) => setGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g]);
 

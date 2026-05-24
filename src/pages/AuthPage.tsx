@@ -48,7 +48,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
-  const logoSrc = theme === 'dark' ? '/logo2.png' : '/logo.png';
+  const logoSrc = '/coach.png';
 
   const f = (k: string) => (e: any) =>
     setForm(prev => ({ ...prev, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));

@@ -28,7 +28,7 @@ export default function AdminDashboard() {
   const { user, toggleTheme, theme, requestLogout } = useApp();
   const [tab, setTab] = useState<AdminTab>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const logoSrc = theme === 'dark' ? '/logo2.png' : '/logo.png';
+  const logoSrc = '/coach.png';
 
   return (
     <div className={styles.layout}>
