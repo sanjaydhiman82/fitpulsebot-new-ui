@@ -212,38 +212,60 @@ function ActiveTimeCard({ activeMin, goalMin, calBurnPct }: { activeMin:number; 
 }
 
 /* ─── Sleep animated card ────────────────────────────────────── */
-function SleepCard({ sleepHrs, goalHrs, sleepPct }: { sleepHrs:number; goalHrs:number; sleepPct:number }) {
+function SleepCard({ sleepHrs, goalHrs, sleepPct, sleepPctRaw }: {
+  sleepHrs: number; goalHrs: number; sleepPct: number; sleepPctRaw?: number;
+}) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
   const n = useCountUp(sleepHrs, 1000);
-  // Simulated sleep stage depths (7 segments: light, deep, REM, light, deep, REM, wake)
+
+  const rawPct    = sleepPctRaw ?? sleepPct;       // uncapped (can be > 100)
+  const overGoal  = sleepHrs > goalHrs;
+  const extraHrs  = overGoal ? Math.round((sleepHrs - goalHrs) * 10) / 10 : 0;
+  const deficit   = !overGoal ? Math.round((goalHrs - sleepHrs) * 10) / 10 : 0;
+
+  // Arc fills to 100% if met/exceeded, partial if not
+  const arcPct = Math.min(100, sleepPct);
+
+  // Sleep stage bars — scale heights with actual sleep data
+  const stageScale = Math.min(1.4, sleepHrs / (goalHrs || 8));
   const stages = [
-    { label:'Light', h:0.35, color:'#7f77dd99' },
-    { label:'Deep',  h:0.80, color:'#7f77dd' },
-    { label:'REM',   h:0.55, color:'#9f7aea' },
-    { label:'Light', h:0.30, color:'#7f77dd99' },
-    { label:'Deep',  h:0.70, color:'#7f77dd' },
-    { label:'REM',   h:0.50, color:'#9f7aeacc' },
-    { label:'Wake',  h:0.10, color:'rgba(255,255,255,0.15)' },
+    { label:'Light', h: Math.min(1, 0.35 * stageScale), color:'#7f77dd99' },
+    { label:'Deep',  h: Math.min(1, 0.80 * stageScale), color:'#7f77dd'   },
+    { label:'REM',   h: Math.min(1, 0.55 * stageScale), color:'#9f7aea'   },
+    { label:'Light', h: Math.min(1, 0.30 * stageScale), color:'#7f77dd99' },
+    { label:'Deep',  h: Math.min(1, 0.70 * stageScale), color:'#7f77dd'   },
+    { label:'REM',   h: Math.min(1, 0.50 * stageScale), color:'#9f7aeacc' },
+    { label:'Wake',  h: 0.10,                            color:'rgba(255,255,255,0.15)' },
   ];
-  // Sleep quality arc
+
   const r = 28; const cx = 36; const cy = 36;
   const circ = 2 * Math.PI * r;
-  const offset = circ - (mounted ? Math.min(sleepPct, 100) / 100 : 0) * circ;
+  const offset = circ - (mounted ? arcPct / 100 : 0) * circ;
+
   return (
     <div style={{ background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:16, padding:'18px 18px 14px', display:'flex', flexDirection:'column', gap:8, overflow:'hidden' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:7 }}>
-        <div style={{ width:28, height:28, borderRadius:8, background:'#7f77dd20', display:'flex', alignItems:'center', justifyContent:'center' }}><Moon size={14} color="#7f77dd"/></div>
-        <span style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Sleep Last Night</span>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+          <div style={{ width:28, height:28, borderRadius:8, background:'#7f77dd20', display:'flex', alignItems:'center', justifyContent:'center' }}><Moon size={14} color="#7f77dd"/></div>
+          <span style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em' }}>Sleep Last Night</span>
+        </div>
+        {/* Over-goal badge */}
+        {overGoal && (
+          <span style={{ fontSize:10, fontWeight:700, background:'rgba(61,191,150,0.18)', color:'#3dbf96', padding:'3px 8px', borderRadius:99, border:'1px solid rgba(61,191,150,0.3)', whiteSpace:'nowrap' }}>
+            +{extraHrs}h over goal 🎉
+          </span>
+        )}
       </div>
+
       <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-        {/* Sleep quality arc */}
-        <div style={{ flexShrink:0 }}>
+        {/* Arc ring */}
+        <div style={{ flexShrink:0, position:'relative' }}>
           <svg width="72" height="72" viewBox="0 0 72 72">
             <defs>
               <linearGradient id="sleepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#7f77dd"/>
-                <stop offset="100%" stopColor="#9f7aea"/>
+                <stop offset="0%" stopColor={overGoal ? '#3dbf96' : '#7f77dd'}/>
+                <stop offset="100%" stopColor={overGoal ? '#5bc8e0' : '#9f7aea'}/>
               </linearGradient>
             </defs>
             <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6"/>
@@ -251,31 +273,53 @@ function SleepCard({ sleepHrs, goalHrs, sleepPct }: { sleepHrs:number; goalHrs:n
               strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
               transform={`rotate(-90 ${cx} ${cy})`}
               style={{ transition:'stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1)' }}/>
-            <text x={cx} y={cy-1} textAnchor="middle" fontSize="14" fontWeight="800" fill="white">{Math.round(n)}<tspan fontSize="8" fill="rgba(255,255,255,0.5)">h</tspan></text>
-            <text x={cx} y={cy+11} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.35)">of {goalHrs}h</text>
+            <text x={cx} y={cy - 3} textAnchor="middle" fontSize="14" fontWeight="800" fill="white">
+              {n.toFixed(1)}<tspan fontSize="8" fill="rgba(255,255,255,0.5)">h</tspan>
+            </text>
+            <text x={cx} y={cy + 11} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.35)">
+              goal {goalHrs}h
+            </text>
           </svg>
+          {/* Checkmark overlay when goal met */}
+          {overGoal && (
+            <div style={{ position:'absolute', top:-4, right:-4, width:16, height:16, borderRadius:'50%', background:'#3dbf96', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, color:'#fff', fontWeight:800 }}>✓</div>
+          )}
         </div>
+
         <div style={{ flex:1 }}>
+          {/* Actual vs goal numbers */}
+          <div style={{ display:'flex', alignItems:'baseline', gap:4, marginBottom:4 }}>
+            <span style={{ fontSize:28, fontWeight:800, color: overGoal ? '#3dbf96' : '#7f77dd', letterSpacing:'-0.04em', lineHeight:1 }}>{n.toFixed(1)}</span>
+            <span style={{ fontSize:11, color:'var(--text-muted)' }}>h / {goalHrs}h goal</span>
+          </div>
+
+          {/* Hours bar: show actual vs goal */}
+          <div style={{ marginBottom:8 }}>
+            <div style={{ height:5, background:'rgba(255,255,255,0.06)', borderRadius:99, overflow:'hidden', position:'relative' }}>
+              {/* Goal marker */}
+              <div style={{ position:'absolute', left:`${Math.min(100, (goalHrs / Math.max(sleepHrs, goalHrs)) * 100)}%`, top:0, bottom:0, width:2, background:'rgba(255,255,255,0.3)', zIndex:2 }}/>
+              {/* Actual fill */}
+              <div style={{ height:'100%', width: mounted ? `${Math.min(100, (sleepHrs / Math.max(sleepHrs, goalHrs)) * 100)}%` : '0%', background: overGoal ? 'linear-gradient(90deg,#7f77dd,#3dbf96)' : 'linear-gradient(90deg,#7f77dd99,#7f77dd)', borderRadius:99, transition:'width 900ms cubic-bezier(.4,0,.2,1)' }}/>
+            </div>
+          </div>
+
           {/* Stage visualization */}
-          <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', marginBottom:4, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Sleep stages</div>
-          <div style={{ display:'flex', gap:2, alignItems:'flex-end', height:32 }}>
+          <div style={{ fontSize:9, color:'rgba(255,255,255,0.35)', marginBottom:3, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Stages</div>
+          <div style={{ display:'flex', gap:2, alignItems:'flex-end', height:24 }}>
             {stages.map((s, i) => (
               <div key={i} title={s.label} style={{ flex:1, background:s.color, borderRadius:'2px 2px 0 0', height: mounted ? `${s.h * 100}%` : '5%', transition:`height ${500 + i * 80}ms cubic-bezier(.4,0,.2,1)` }}/>
             ))}
           </div>
-          <div style={{ display:'flex', gap:8, marginTop:5 }}>
-            {[['#7f77dd','Deep'],['#9f7aea','REM'],['#7f77dd66','Light']].map(([c,l]) => (
-              <span key={l as string} style={{ display:'flex', alignItems:'center', gap:3, fontSize:9, color:'rgba(255,255,255,0.35)' }}>
-                <span style={{ width:6, height:6, borderRadius:1, background:c as string, display:'inline-block' }}/>
-                {l}
-              </span>
-            ))}
-          </div>
         </div>
       </div>
-      <div style={{ fontSize:12, color:'var(--text-muted)' }}>Goal {goalHrs}–{goalHrs + 1} h</div>
-      <div style={{ fontSize:12, fontWeight:700, color: sleepPct >= 80 ? '#3dbf96' : '#7f77dd' }}>
-        {sleepPct >= 80 ? '✓ Well rested' : `↓ ${100 - sleepPct}% vs goal`}
+
+      {/* Status line */}
+      <div style={{ fontSize:12, fontWeight:700, color: overGoal ? '#3dbf96' : deficit > 2 ? '#e53e3e' : '#d97706' }}>
+        {overGoal
+          ? `✓ Well rested — ${extraHrs}h over goal`
+          : deficit > 0
+          ? `↓ ${deficit}h short of ${goalHrs}h goal`
+          : '✓ Sleep goal met!'}
       </div>
     </div>
   );
@@ -558,6 +602,7 @@ export default function TodaySection({ range }: Props) {
           sleepHrs={bars.sleepHrs}
           goalHrs={goals.sleepGoalHrs}
           sleepPct={bars.sleepPct}
+          sleepPctRaw={bars.sleepPctRaw}
         />
       </div>
 
