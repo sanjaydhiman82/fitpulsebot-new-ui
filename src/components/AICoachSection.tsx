@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Brain, RefreshCw, Zap, Lightbulb } from 'lucide-react';
+import { RefreshCw, Lightbulb } from 'lucide-react';
 import { api } from '../api';
 import s from './sections.module.css';
 
@@ -42,12 +42,15 @@ export default function AICoachSection() {
 
   if (loading) return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
+      display: 'flex', alignItems: 'center', gap: 12,
       padding: '14px 18px',
       background: 'var(--accent-light)', border: '1px solid var(--border-strong)',
       borderRadius: 'var(--radius-xl)',
     }}>
-      <RefreshCw size={15} className={s.spinning} color="var(--accent)" />
+      <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--border-strong)' }}>
+        <img src="/coach.png" alt="AI Coach" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+      </div>
+      <RefreshCw size={14} className={s.spinning} color="var(--accent)" />
       <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
         AI Coach is thinking…
       </span>
@@ -56,12 +59,14 @@ export default function AICoachSection() {
 
   if (error || !data) return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
+      display: 'flex', alignItems: 'center', gap: 12,
       padding: '12px 16px',
       background: 'var(--metric-bg)', border: '1px solid var(--border)',
       borderRadius: 'var(--radius-xl)',
     }}>
-      <Brain size={16} color="var(--text-muted)" />
+      <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, opacity: 0.5 }}>
+        <img src="/coach.png" alt="AI Coach" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
       <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
         AI Coach unavailable right now.
       </span>
@@ -79,13 +84,18 @@ export default function AICoachSection() {
       borderRadius: 'var(--radius-xl)',
       animation: 'fadeUp 400ms cubic-bezier(.22,.68,0,1.2) both',
     }}>
-      {/* Icon */}
+      {/* Coach avatar */}
       <div style={{
-        width: 40, height: 40, borderRadius: 'var(--radius-md)',
-        background: `${color}22`, border: `1px solid ${color}55`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        width: 48, height: 48, borderRadius: '50%',
+        border: `2px solid ${color}55`,
+        overflow: 'hidden', flexShrink: 0,
+        boxShadow: `0 0 0 3px ${color}22`,
       }}>
-        <span style={{ fontSize: 20 }}>{data.emoji || '🧠'}</span>
+        <img
+          src="/coach.png"
+          alt="AI Coach"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
       </div>
 
       {/* Content */}
