@@ -21,7 +21,7 @@ export default function DashboardHome({ setTab }: { setTab: (t: DashTab) => void
   const today = new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
   const hour  = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const name  = user?.firstName || user?.userName?.split('@')[0] || 'there';
+  const name  = user?.firstName?.trim() || 'there';
 
   const HEALTH_SECTIONS = [
     { id:'today',     label:'Today',     icon: Zap,       color:'var(--accent)', tab:'home'      as DashTab },
@@ -42,38 +42,38 @@ export default function DashboardHome({ setTab }: { setTab: (t: DashTab) => void
           <h2 className={styles.greetTitle}>{greet}, {name}! 👋</h2>
           <p className={styles.greetDate}>{today}</p>
         </div>
+        <div className={styles.rangeRow}>
+          {RANGES.map(r => (
+            <button key={r.id} type="button"
+              className={`${styles.rangeBtn} ${range === r.id ? styles.rangeBtnActive : ''}`}
+              onClick={() => setRange(r.id)}>
+              {r.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── AI Coach insight — always at top ── */}
       <AICoachSection />
 
-      {/* ── Date range filter ── */}
-      <div className={styles.rangeRow}>
-        {RANGES.map(r => (
-          <button key={r.id} type="button"
-            className={`${styles.rangeBtn} ${range === r.id ? styles.rangeBtnActive : ''}`}
-            onClick={() => setRange(r.id)}>
-            {r.label}
-          </button>
-        ))}
-      </div>
-
       {/* ── Health sections stacked ── */}
       {HEALTH_SECTIONS.map(({ id, label, icon: Icon, color, tab }) => (
         <div key={id}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12, marginTop:4 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <div style={{ width:28, height:28, borderRadius:'var(--radius-sm)', background:`${color}22`, border:`1px solid ${color}44`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <Icon size={14} color={color} />
+          {id !== 'today' && (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12, marginTop:4 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <div style={{ width:28, height:28, borderRadius:'var(--radius-sm)', background:`${color}22`, border:`1px solid ${color}44`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Icon size={14} color={color} />
+                </div>
+                <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+                  {label}
+                </span>
               </div>
-              <span style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
-                {label}
-              </span>
+              <button onClick={() => setTab(tab)} style={{ fontSize:12, color:'var(--accent)', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}>
+                See all →
+              </button>
             </div>
-            <button onClick={() => setTab(tab)} style={{ fontSize:12, color:'var(--accent)', fontWeight:600, display:'flex', alignItems:'center', gap:3 }}>
-              See all →
-            </button>
-          </div>
+          )}
 
           {id === 'today'     && <TodaySection     range={range} />}
           {id === 'nutrition' && <NutritionSection range={range} />}

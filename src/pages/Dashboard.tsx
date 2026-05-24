@@ -85,13 +85,6 @@ export default function Dashboard() {
     <div className={styles.layout}>
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarTop}>
-          <div className={styles.logo}>
-            <img src={logoSrc} alt="FitPulseBot" className={styles.logoImg} onError={e => (e.currentTarget.style.display='none')} />
-            <div>
-              <div className={styles.logoName}>FitPulseBot</div>
-              <div className={styles.logoTagline}>Stay on Track, Stay in Pulse</div>
-            </div>
-          </div>
           <button className={styles.sidebarClose} onClick={() => setSidebarOpen(false)}><X size={18} /></button>
         </div>
         <div className={styles.userInfo}>
@@ -135,6 +128,13 @@ export default function Dashboard() {
       <main className={styles.main}>
         <header className={styles.topbar}>
           <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
+          <div className={styles.topbarBrand}>
+            <img src={logoSrc} alt="FitPulseBot" className={styles.topbarLogoImg} onError={e => (e.currentTarget.style.display='none')} />
+            <div>
+              <div className={styles.topbarLogoName}>FitPulseBot</div>
+              <div className={styles.topbarLogoTagline}>Stay on Track,Stay in Pulse</div>
+            </div>
+          </div>
           <h1 className={styles.pageTitle}>{currentLabel}</h1>
           <div className={styles.topbarRight}>
             {credit && (

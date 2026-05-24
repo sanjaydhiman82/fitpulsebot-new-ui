@@ -1,40 +1,205 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Droplets, Flame, Zap, Moon, Activity, Brain, RefreshCw, UtensilsCrossed, Route } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { RefreshCw, Droplets, Flame, Moon, Activity, ChevronRight, Sparkles, Zap, Map, UtensilsCrossed } from 'lucide-react';
 import { api } from '../api';
 import { RangeId } from '../utils/dateRange';
-import s from './sections.module.css';
+import { useCountUp } from '../utils/useCountUp';
 
 interface Props { range: RangeId; }
 
-function Ring({ pct, color, size = 100, stroke = 9 }: { pct: number; color: string; size?: number; stroke?: number }) {
-  const r = (size - stroke) / 2;
-  const circ = 2 * Math.PI * r;
-  const offset = circ - (Math.min(pct, 100) / 100) * circ;
+/* ─── Sparkline ─────────────────────────────────────────────── */
+function Sparkline({ values, color, height = 40 }: { values: number[]; color: string; height?: number }) {
+  if (!values.length) return null;
+  const w = 160; const h = height;
+  const min = Math.min(...values); const max = Math.max(...values);
+  const range = max - min || 1;
+  const pts = values.map((v, i) => [
+    (i / (values.length - 1)) * w,
+    h - ((v - min) / range) * (h * 0.8) - h * 0.1,
+  ]);
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i - 1]; const [x2, y2] = pts[i];
+    const cx = (x1 + x2) / 2;
+    d += ` C ${cx} ${y1} ${cx} ${y2} ${x2} ${y2}`;
+  }
+  const fillPts = [...pts, [w, h], [0, h]].map(p => p.join(',')).join(' ');
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-        strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
-        transform={`rotate(-90 ${size/2} ${size/2})`} style={{ transition: 'stroke-dashoffset 700ms ease' }} />
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ display:'block' }}>
+      <defs>
+        <linearGradient id={`sg-${color.replace('#','')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.35"/>
+          <stop offset="100%" stopColor={color} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points={fillPts} fill={`url(#sg-${color.replace('#','')})`} />
+      <path d={d} stroke={color} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
     </svg>
   );
 }
 
-function BarRow({ label, icon: Icon, color, val, goal, unit, pct }: any) {
+/* ─── Animated number ────────────────────────────────────────── */
+function AN({ val, dec = 0 }: { val: number; dec?: number }) {
+  const n = useCountUp(val, 900);
+  return <>{dec > 0 ? n.toFixed(dec) : Math.round(n)}</>;
+}
+
+/* ─── Ring SVG ───────────────────────────────────────────────── */
+function Ring({ pct, color, size, stroke, children }: { pct:number; color:string|string[]; size:number; stroke:number; children?:React.ReactNode }) {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (Math.min(pct, 100) / 100) * circ;
+  const gradId = `ring-${size}-${stroke}`;
+  const isGrad = Array.isArray(color);
   return (
-    <div className={s.barRow}>
-      <div className={s.barRowHead}>
-        <span className={s.barRowLabel}><Icon size={13} color={color} />{label}</span>
-        <span className={s.barRowVal}>{val} / {goal} {unit}</span>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink:0 }}>
+      {isGrad && (
+        <defs>
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={(color as string[])[0]}/>
+            <stop offset="100%" stopColor={(color as string[])[1]}/>
+          </linearGradient>
+        </defs>
+      )}
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth={stroke}/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none"
+        stroke={isGrad ? `url(#${gradId})` : (color as string)}
+        strokeWidth={stroke} strokeDasharray={circ} strokeDashoffset={offset}
+        strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`}
+        style={{ transition:'stroke-dashoffset 900ms cubic-bezier(.4,0,.2,1)' }}/>
+      {children}
+    </svg>
+  );
+}
+
+/* ─── Metric card ────────────────────────────────────────────── */
+function MetricCard({ label, value, unit, sub1, sub2, sub2Color, sparkData, color, icon: Icon }:
+  { label:string; value:number; unit:string; sub1?:string; sub2?:string; sub2Color?:string; sparkData:number[]; color:string; icon:any }) {
+  const n = useCountUp(value, 1000);
+  return (
+    <div style={{
+      background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)',
+      borderRadius:16, padding:'18px 18px 0', flex:1, minWidth:0,
+      display:'flex', flexDirection:'column', gap:8, overflow:'hidden',
+    }}>
+      <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+        <div style={{ width:28, height:28, borderRadius:8, background:`${color}20`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Icon size={14} color={color}/>
+        </div>
+        <span style={{ fontSize:10, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{label}</span>
       </div>
-      <div className={s.barTrack}><div className={s.barFill} style={{ width: `${pct}%`, background: color }} /></div>
+      <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+        <span style={{ fontSize:36, fontWeight:800, color:color, letterSpacing:'-0.04em', lineHeight:1 }}>
+          {unit === 'kcal' && value > 0 ? '+' : ''}{Math.round(n)}
+        </span>
+        <span style={{ fontSize:14, fontWeight:600, color:'var(--text-muted)' }}>{unit}</span>
+      </div>
+      {sub1 && <div style={{ fontSize:12, color:'var(--text-muted)' }}>{sub1}</div>}
+      {sub2 && <div style={{ fontSize:12, fontWeight:700, color: sub2Color || 'var(--accent)' }}>{sub2}</div>}
+      <div style={{ marginTop:4, marginLeft:-18, marginRight:-18 }}>
+        <Sparkline values={sparkData} color={color}/>
+      </div>
     </div>
   );
 }
 
-const MEAL_ICONS: Record<string, string> = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎' };
+/* ─── Glass icon row for hydration ──────────────────────────── */
+function GlassIcons({ filled, total }: { filled:number; total:number }) {
+  return (
+    <div style={{ display:'flex', gap:4, marginTop:10 }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <svg key={i} width="20" height="26" viewBox="0 0 20 26">
+          <path d="M3 2 L17 2 L15 22 Q15 24 10 24 Q5 24 5 22 Z"
+            fill={i < filled ? '#2d6fd6' : 'rgba(255,255,255,0.08)'}
+            stroke={i < filled ? '#5bc8e0' : 'rgba(255,255,255,0.12)'}
+            strokeWidth="1"/>
+        </svg>
+      ))}
+    </div>
+  );
+}
 
+/* ─── Fake sparkline seed (replace with real 7-day data when API provides) ── */
+function seedSpark(current: number, count = 7): number[] {
+  const pts = [];
+  let v = current * 0.6;
+  for (let i = 0; i < count; i++) {
+    v += (Math.random() - 0.45) * current * 0.25;
+    v = Math.max(current * 0.1, Math.min(current * 1.4, v));
+    pts.push(i === count - 1 ? current : v);
+  }
+  return pts;
+}
+
+/* ─── Status pill ────────────────────────────────────────────── */
+function StatusPill({ label, status, icon }: { label:string; status:'good'|'ok'|'bad'; icon:string }) {
+  const cfg = {
+    good: { bg:'rgba(61,191,150,.18)', color:'#3dbf96', text:'On Track' },
+    ok:   { bg:'rgba(217,119,6,.18)',  color:'#d97706', text:'Needs Work' },
+    bad:  { bg:'rgba(229,62,62,.18)',  color:'#e53e3e', text:'Behind' },
+  }[status];
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:7, padding:'7px 12px',
+      background:cfg.bg, borderRadius:10, border:`1px solid ${cfg.color}40` }}>
+      <span style={{ fontSize:16 }}>{icon}</span>
+      <div>
+        <div style={{ fontSize:12, fontWeight:800, color:cfg.color }}>{cfg.text}</div>
+        <div style={{ fontSize:10, color:'var(--text-muted)', marginTop:1 }}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── AI Rec card ────────────────────────────────────────────── */
+function RecCard({ icon, title, desc, btnLabel, btnColor, onClick }:
+  { icon:string; title:string; desc:string; btnLabel:string; btnColor:string; onClick?:()=>void }) {
+  return (
+    <div style={{ background:'var(--bg-card)', border:`1px solid rgba(255,255,255,0.07)`, borderRadius:16, padding:18, display:'flex', flexDirection:'column', gap:12 }}>
+      <div style={{ width:44, height:44, borderRadius:12, background:`${btnColor}20`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>{icon}</div>
+      <div style={{ fontSize:14, fontWeight:800, color:'var(--text-primary)', letterSpacing:'-0.01em' }}>{title}</div>
+      <div style={{ fontSize:12, color:'var(--text-muted)', lineHeight:1.6, flex:1 }}>{desc}</div>
+      <button onClick={onClick} style={{
+        display:'flex', alignItems:'center', justifyContent:'center', gap:8,
+        padding:'10px 0', borderRadius:10, border:`1px solid ${btnColor}60`,
+        background:`${btnColor}18`, color:btnColor, fontSize:12, fontWeight:700,
+        cursor:'pointer', transition:'all 200ms',
+      }}>
+        {btnLabel} <ChevronRight size={13}/>
+      </button>
+    </div>
+  );
+}
+
+/* ─── Meal row ───────────────────────────────────────────────── */
+const MEAL_ICONS: Record<string, string> = { breakfast:'🌅', lunch:'☀️', dinner:'🌙', snack:'🍎' };
+const MEAL_TIMES: Record<string, string> = { breakfast:'8:00 AM', lunch:'1:00 PM', dinner:'7:30 PM', snack:'4:00 PM' };
+
+function MealRow({ meal, isLast }: { meal:any; isLast:boolean }) {
+  const type = (meal.mealType || 'snack').toLowerCase();
+  return (
+    <div style={{ display:'flex', gap:14, position:'relative' }}>
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:0, width:54 }}>
+        <div style={{ fontSize:11, color:'var(--text-muted)', fontWeight:500, whiteSpace:'nowrap', paddingTop:14 }}>{MEAL_TIMES[type] || '12:00 PM'}</div>
+        <div style={{ width:32, height:32, borderRadius:'50%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, marginTop:6 }}>
+          {MEAL_ICONS[type] || '🍽️'}
+        </div>
+        {!isLast && <div style={{ width:1, flex:1, background:'rgba(255,255,255,0.08)', minHeight:20, marginTop:6 }}/>}
+      </div>
+      <div style={{ flex:1, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', borderRadius:12, padding:'14px 16px', margin:'8px 0', display:'flex', alignItems:'center', gap:12 }}>
+        <div style={{ width:48, height:48, borderRadius:10, background:`rgba(255,255,255,0.06)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+          {type === 'breakfast' ? '🥣' : type === 'lunch' ? '🥗' : type === 'dinner' ? '🍲' : '🍎'}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:'var(--text-primary)', textTransform:'capitalize', marginBottom:2 }}>{meal.mealType}</div>
+          <div style={{ fontSize:12, color:'var(--text-muted)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{meal.foodName}</div>
+        </div>
+        <div style={{ fontSize:16, fontWeight:800, color:'#e53e3e', flexShrink:0 }}>{Math.round(meal.calories)}<span style={{ fontSize:11, fontWeight:500, color:'var(--text-muted)', marginLeft:2 }}>kcal</span></div>
+        <ChevronRight size={14} color="var(--text-muted)"/>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────────── */
 export default function TodaySection({ range }: Props) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -43,141 +208,206 @@ export default function TodaySection({ range }: Props) {
     setLoading(true);
     try {
       const today = new Date();
-      const d = range === 'today' ? `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}` : undefined;
-      const res = await api.dashboard.sectionToday(d);
-      setData(res);
+      const d = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+      setData(await api.dashboard.sectionToday(range === 'today' ? d : undefined));
     } catch { setData(null); } finally { setLoading(false); }
   }, [range]);
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <div className={s.loading}><RefreshCw size={16} className={s.spinning} style={{ marginRight: 8 }} />Loading today's data…</div>;
-  if (!data) return <div className={s.empty}>No data for today.</div>;
+  if (loading) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:200, gap:10, color:'var(--text-muted)', fontSize:13 }}>
+      <RefreshCw size={16} style={{ animation:'spin 0.8s linear infinite' }}/> Loading today's data…
+    </div>
+  );
+  if (!data) return <div style={{ minHeight:100, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:13, border:'1px dashed var(--border)', borderRadius:16 }}>No data for today.</div>;
 
   const { ringPct, streak, bars, goals, netCalories, meals, activity } = data;
-  const isToday = range === 'today';
+  const hr = new Date().getHours();
+  const name = localStorage.getItem('fitpulse_firstName') || '';
 
-  // Hourly calorie breakdown for mini bar chart (mock until backend adds hourly)
-  const mealChartData = ['Breakfast','Lunch','Dinner','Snack'].map(m => ({
-    name: m.slice(0,3),
-    cal: meals?.filter((x: any) => x.mealType?.toLowerCase() === m.toLowerCase())
-              .reduce((a: number, x: any) => a + (x.calories || 0), 0) || 0,
-  }));
+  /* Derived status */
+  const actStatus: 'good'|'ok'|'bad' = bars.calBurnPct >= 80 ? 'good' : bars.calBurnPct >= 40 ? 'ok' : 'bad';
+  const sleepStatus: 'good'|'ok'|'bad' = bars.sleepPct >= 80 ? 'good' : bars.sleepPct >= 50 ? 'ok' : 'bad';
+  const nutStatus: 'good'|'ok'|'bad' = bars.calInPct >= 60 && bars.calInPct <= 105 ? 'good' : bars.calInPct >= 30 ? 'ok' : 'bad';
+
+  /* Macro ring pct */
+  const proteinPct = Math.min(100, Math.round((bars.protein || 0) / 80 * 100));
+  const carbsPct   = Math.min(100, Math.round((bars.carbs   || 0) / (goals.calConsumeGoal * 0.5 / 4) * 100));
+  const fatPct     = Math.min(100, Math.round((bars.fat     || 0) / 70 * 100));
+  const macroOverall = Math.min(100, Math.round((proteinPct + carbsPct + fatPct) / 3));
+
+  /* Hydration glasses */
+  const hydGoalL = goals.waterGoalMl / 1000;
+  const hydActualL = bars.waterMl / 1000;
+  const hydPct = bars.waterPct;
+  const glassCount = 8;
+  const filledGlasses = Math.round((bars.waterMl / goals.waterGoalMl) * glassCount);
+
+  /* AI recs derived from data */
+  const recs = [
+    bars.proteinPct < 70 && { icon:'🥩', title:'Eat More Protein', desc:`Add ~${Math.round((80 - bars.protein) / 1)}g of protein to meet your daily goal.`, btn:'Suggestions', color:'#3dbf96' },
+    bars.waterPct < 80   && { icon:'💧', title:'Hydration Boost', desc:`Drink ~${Math.round((goals.waterGoalMl - bars.waterMl) / 100) * 100}ml more water to hit your goal.`, btn:'Log Water', color:'#2d6fd6' },
+    bars.sleepPct < 80   && { icon:'🌙', title:'Improve Sleep', desc:`Aim for ${goals.sleepGoalHrs} hours tonight for better recovery.`, btn:'Sleep Tips', color:'#7f77dd' },
+    bars.calBurnPct >= 80 && { icon:'🏃', title:'Stay Active', desc:'Great job! Keep your momentum going tomorrow.', btn:'View Plan', color:'#d97706' },
+    bars.calBurnPct < 40 && { icon:'⚡', title:'Move More', desc:`Burn ${goals.calBurnGoal - bars.calBurn} more kcal to hit today's activity goal.`, btn:'Log Activity', color:'#d97706' },
+  ].filter(Boolean).slice(0, 4) as any[];
+
+  /* Sparkline seeds */
+  const calSpark   = seedSpark(Math.abs(netCalories) || 200);
+  const actSpark   = seedSpark(activity.activeMin || 30);
+  const distSpark  = seedSpark(activity.distanceKm || 5);
+  const sleepSpark = seedSpark(bars.sleepHrs || 5);
+
+  const CARD_STYLE = {
+    background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)',
+    borderRadius:16, padding:20,
+  };
 
   return (
-    <div className={s.section}>
-      {streak > 0 && (
-        <div className={s.streakBanner}>
-          <div><Zap size={28} color="var(--warning)" /></div>
-          <div>
-            <div className={s.streakNum}>{streak}-day</div>
-            <div className={s.streakLabel}>Streak 🔥</div>
-            <div className={s.streakSub}>Keep logging every day!</div>
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }} key={range}>
+
+      {/* ── Hero: AI Coach + Daily Score ── */}
+      <div style={{ ...CARD_STYLE, display:'flex', alignItems:'center', gap:20, flexWrap:'wrap' }}>
+        <img src="/coach.png" alt="AI Coach" style={{ width:80, height:80, borderRadius:16, objectFit:'cover', flexShrink:0 }}/>
+        <div style={{ flex:1, minWidth:200 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+            <Sparkles size={12} color="#3dbf96"/>
+            <span style={{ fontSize:10, fontWeight:700, color:'#3dbf96', textTransform:'uppercase', letterSpacing:'0.1em' }}>AI Coach Insight</span>
+            {streak > 0 && <span style={{ fontSize:10, fontWeight:700, background:'rgba(245,158,11,.2)', color:'#f59e0b', padding:'2px 8px', borderRadius:99, border:'1px solid rgba(245,158,11,.3)' }}>🔥 {streak}-day streak</span>}
+          </div>
+          <div style={{ fontSize:17, fontWeight:800, color:'var(--text-primary)', marginBottom:5 }}>
+            {hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Great effort today'}{name ? `, ${name}` : ''}! 💪
+          </div>
+          <div style={{ fontSize:13, color:'var(--text-muted)', lineHeight:1.6 }}>
+            {netCalories > 200 ? `You're ${Math.round(netCalories)} kcal above your goal. Consider a lighter dinner and prioritize sleep to boost recovery.`
+             : netCalories < -200 ? `You're ${Math.round(Math.abs(netCalories))} kcal under goal. Have a nutritious snack to fuel recovery.`
+             : `You're right on track today! Keep up the great balance between activity and nutrition.`}
           </div>
         </div>
-      )}
 
-      <div className={s.card}>
-        <div className={s.cardHeader}>
-          <span className={s.cardTitle}>{isToday ? "Today's Progress" : "Period Overview"}</span>
-          <button onClick={load} style={{ color: 'var(--text-muted)', padding: 4, borderRadius: 8, border: '1px solid var(--border)', display:'flex', alignItems:'center' }}>
-            <RefreshCw size={13} />
-          </button>
+        {/* Daily Score ring */}
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, flexShrink:0 }}>
+          <div style={{ position:'relative' }}>
+            <Ring pct={ringPct} color={['#3dbf96','#5bc8e0']} size={100} stroke={9}>
+              <text x="50" y="46" textAnchor="middle" fontSize="22" fontWeight="800" fill="white">{ringPct}</text>
+              <text x="50" y="60" textAnchor="middle" fontSize="10" fill="#888">Daily Score</text>
+            </Ring>
+          </div>
         </div>
-        <div className={s.ringWrap}>
-          <div className={s.ringCenter}>
-            <Ring pct={ringPct} color="var(--accent)" size={110} stroke={10} />
-            <div className={s.ringLabel}>
-              <span className={s.ringPct}>{ringPct}%</span>
-              <span className={s.ringSubText}>done</span>
+
+        {/* Status pills */}
+        <div style={{ display:'flex', flexDirection:'column', gap:8, flexShrink:0 }}>
+          <StatusPill label="Activity" status={actStatus} icon="🔥"/>
+          <StatusPill label="Sleep" status={sleepStatus} icon="💧"/>
+          <StatusPill label="Nutrition" status={nutStatus} icon="🍽️"/>
+        </div>
+      </div>
+
+      {/* ── 4 Metric cards ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,minmax(0,1fr))', gap:12 }}>
+        <MetricCard label="Calorie Balance" value={Math.abs(netCalories)} unit="kcal" sub1={`${Math.round(bars.calIn)} consumed / ${bars.calBurn} burned`} sub2={netCalories > 0 ? 'Surplus' : 'Deficit'} sub2Color={netCalories > 0 ? '#e53e3e' : '#3dbf96'} sparkData={calSpark} color="#e53e3e" icon={Flame}/>
+        <MetricCard label="Active Time" value={activity.activeMin} unit="min" sub1={`Goal ${goals.calBurnGoal > 0 ? 60 : 60} min`} sub2={bars.calBurnPct >= 100 ? '✓ Goal met' : `${bars.calBurnPct}% of goal`} sub2Color={bars.calBurnPct >= 100 ? '#3dbf96' : '#d97706'} sparkData={actSpark} color="#3dbf96" icon={Activity}/>
+        <MetricCard label="Distance" value={activity.distanceKm} unit="km" sub1="Today's total" sub2={activity.distanceKm >= 10 ? '✓ 10km achieved' : `${activity.distanceKm} of 10 km`} sub2Color={activity.distanceKm >= 10 ? '#3dbf96' : '#2d6fd6'} sparkData={distSpark} color="#2d6fd6" icon={Map}/>
+        <MetricCard label="Sleep Last Night" value={bars.sleepHrs} unit="h" sub1={`Goal ${goals.sleepGoalHrs}–${goals.sleepGoalHrs + 1} h`} sub2={`↓ ${100 - bars.sleepPct}% vs goal`} sub2Color={bars.sleepPct >= 80 ? '#3dbf96' : '#7f77dd'} sparkData={sleepSpark} color="#7f77dd" icon={Moon}/>
+      </div>
+
+      {/* ── Macros + Hydration ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+
+        {/* Macros */}
+        <div style={CARD_STYLE}>
+          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:14 }}>Macro Nutrients</div>
+          <div style={{ display:'flex', gap:20, alignItems:'center' }}>
+            <div style={{ position:'relative', flexShrink:0 }}>
+              <Ring pct={macroOverall} color={['#e53e3e','#9f7aea']} size={90} stroke={10}>
+                <text x="45" y="41" textAnchor="middle" fontSize="18" fontWeight="800" fill="white">{macroOverall}%</text>
+                <text x="45" y="54" textAnchor="middle" fontSize="9" fill="#888">of daily goal</text>
+              </Ring>
+            </div>
+            <div style={{ flex:1, display:'flex', flexDirection:'column', gap:12 }}>
+              {[
+                { name:'Protein', val:Math.round(bars.protein||0), goal:80, pct:proteinPct, color:'#e53e3e' },
+                { name:'Carbs',   val:Math.round(bars.carbs||0),   goal:260, pct:Math.min(100,Math.round((bars.carbs||0)/260*100)), color:'#2d6fd6' },
+                { name:'Fat',     val:Math.round(bars.fat||0),     goal:70,  pct:fatPct,    color:'#9f7aea' },
+              ].map(m => (
+                <div key={m.name}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:5 }}>
+                    <span style={{ fontSize:12, fontWeight:600, color:'var(--text-secondary)', display:'flex', alignItems:'center', gap:6 }}>
+                      <span style={{ width:8, height:8, borderRadius:'50%', background:m.color, display:'inline-block'}}/>
+                      {m.name}
+                    </span>
+                    <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                      <span style={{ fontSize:11, color:'var(--text-muted)' }}>{m.val}g / {m.goal}g</span>
+                      <span style={{ fontSize:11, fontWeight:800, color:m.color }}>{m.pct}%</span>
+                    </div>
+                  </div>
+                  <div style={{ height:5, background:'rgba(255,255,255,0.07)', borderRadius:99, overflow:'hidden' }}>
+                    <div style={{ height:'100%', width:`${m.pct}%`, background:m.color, borderRadius:99, transition:'width 700ms ease' }}/>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <BarRow label="Water"       icon={Droplets} color="#2d6fd6" val={bars.waterMl}  goal={goals.waterGoalMl}      unit="ml"   pct={bars.waterPct}   />
-            <BarRow label="Calories in" icon={Flame}    color="#e53e3e" val={Math.round(bars.calIn)}   goal={goals.calConsumeGoal}   unit="kcal" pct={bars.calInPct}   />
-            <BarRow label="Protein"     icon={UtensilsCrossed} color="#d53f8c" val={Math.round(bars.protein)}  goal={80}                     unit="g"    pct={bars.proteinPct} />
-            <div className={s.divider} />
-            <BarRow label="Sleep"       icon={Moon}     color="#7f77dd" val={bars.sleepHrs}  goal={goals.sleepGoalHrs}    unit="h"    pct={bars.sleepPct}   />
-            <BarRow label="Cal burned"  icon={Activity} color="#d97706" val={bars.calBurn}   goal={goals.calBurnGoal}     unit="kcal" pct={bars.calBurnPct} />
+        </div>
+
+        {/* Hydration */}
+        <div style={CARD_STYLE}>
+          <div style={{ fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:14 }}>
+            <Droplets size={12} style={{ verticalAlign:'middle', marginRight:5 }} color="#2d6fd6"/>Hydration
+          </div>
+          <div style={{ display:'flex', gap:20, alignItems:'center' }}>
+            <div style={{ position:'relative', flexShrink:0 }}>
+              <Ring pct={hydPct} color={['#2d6fd6','#5bc8e0']} size={100} stroke={10}>
+                <text x="50" y="44" textAnchor="middle" fontSize="14" fontWeight="800" fill="white">{hydActualL.toFixed(1)} L</text>
+                <text x="50" y="57" textAnchor="middle" fontSize="9" fill="#888">of {hydGoalL.toFixed(1)} L</text>
+              </Ring>
+            </div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:36, fontWeight:800, color:'#5bc8e0', letterSpacing:'-0.04em', lineHeight:1 }}>{hydPct}%</div>
+              <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:4 }}>Goal {hydGoalL.toFixed(1)} L</div>
+              <GlassIcons filled={Math.min(filledGlasses, glassCount)} total={glassCount}/>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className={s.grid2}>
-        <div className={s.card}>
-          <div className={s.cardHeader}><span className={s.cardTitle}>Calorie Balance</span></div>
-          <div className={s.grid2} style={{ marginBottom: 12 }}>
-            <div className={s.statCard}>
-              <div className={s.statLabel}>Consumed</div>
-              <div className={s.statValue} style={{ color: '#e53e3e' }}>{Math.round(bars.calIn)} <span className={s.statUnit}>kcal</span></div>
-            </div>
-            <div className={s.statCard}>
-              <div className={s.statLabel}>Burned</div>
-              <div className={s.statValue} style={{ color: 'var(--accent)' }}>{bars.calBurn} <span className={s.statUnit}>kcal</span></div>
-            </div>
-          </div>
-          <div style={{ background: netCalories > 0 ? 'rgba(229,62,62,.08)' : 'var(--accent-light)', border: `1px solid ${netCalories > 0 ? 'rgba(229,62,62,.2)' : 'var(--border-strong)'}`, borderRadius: 'var(--radius-lg)', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>Net {netCalories > 0 ? 'surplus' : 'deficit'}</span>
-            <span style={{ fontSize: 16, fontWeight: 800, color: netCalories > 0 ? 'var(--danger)' : 'var(--accent)' }}>{netCalories > 0 ? '+' : ''}{Math.round(netCalories)} kcal</span>
-          </div>
-        </div>
-
-        <div className={s.card}>
-          <div className={s.cardHeader}><span className={s.cardTitle}>Activity Summary</span></div>
-          <div className={s.grid2} style={{ marginBottom: 8 }}>
-            <div className={s.statCard}>
-              <div className={s.statLabel}>Active</div>
-              <div className={s.statValue}>{activity.activeMin} <span className={s.statUnit}>min</span></div>
-            </div>
-            <div className={s.statCard}>
-              <div className={s.statLabel}>Distance</div>
-              <div className={s.statValue}>{activity.distanceKm} <span className={s.statUnit}>km</span></div>
-            </div>
-          </div>
-          <div className={s.statCard} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div className={s.statLabel}>Sleep last night</div>
-              <div className={s.statValue} style={{ color: '#7f77dd' }}>{bars.sleepHrs} <span className={s.statUnit}>h</span></div>
-            </div>
-            <span className={`${s.badge} ${bars.sleepPct >= 80 ? s.badgeGreen : bars.sleepPct >= 50 ? s.badgeAmber : s.badgeDanger}`}>
-              {bars.sleepPct >= 80 ? '✓ Good' : bars.sleepPct >= 50 ? 'Low' : 'Poor'}
-            </span>
-          </div>
-        </div>
-      </div>
-
+      {/* ── Meals logged ── */}
       {meals && meals.length > 0 && (
-        <div className={s.card}>
-          <div className={s.cardHeader}>
-            <span className={s.cardTitle}>Meals Logged</span>
-            <span className={s.cardSub}>{meals.length} item{meals.length > 1 ? 's' : ''}</span>
-          </div>
-          <div className={s.grid2} style={{ marginBottom: 14 }}>
-            {mealChartData.map((m, i) => (
-              <div key={m.name} className={s.statCard}>
-                <div className={s.statLabel}>{['Breakfast','Lunch','Dinner','Snack'][i]}</div>
-                <div className={s.statValue} style={{ fontSize: 20, color: m.cal > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                  {m.cal > 0 ? `${Math.round(m.cal)}` : '—'} {m.cal > 0 && <span className={s.statUnit}>kcal</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-          {meals.slice(0,5).map((meal: any, i: number) => (
-            <div className={s.listItem} key={i}>
-              <div className={s.listLeft}>
-                <div className={s.listIcon} style={{ background: 'var(--metric-bg)', fontSize: 16 }}>{MEAL_ICONS[meal.mealType?.toLowerCase()] || '🍽️'}</div>
-                <div>
-                  <div className={s.listTitle}>{meal.foodName}</div>
-                  <div className={s.listSub}>{meal.mealType}</div>
-                </div>
-              </div>
-              <div className={s.listRight}>
-                <div className={s.listVal}>{Math.round(meal.calories)} kcal</div>
-              </div>
+        <div style={CARD_STYLE}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <UtensilsCrossed size={14} color="var(--text-muted)"/>
+              <span style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em' }}>Meals Logged</span>
             </div>
+            <span style={{ fontSize:12, color:'var(--text-muted)' }}>{meals.length} item{meals.length>1?'s':''}</span>
+          </div>
+          {meals.map((meal: any, i: number) => (
+            <MealRow key={i} meal={meal} isLast={i === meals.length - 1}/>
           ))}
         </div>
       )}
+
+      {/* ── AI Recommendations ── */}
+      {recs.length > 0 && (
+        <div style={CARD_STYLE}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+            <Sparkles size={14} color="#3dbf96"/>
+            <span style={{ fontSize:12, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em' }}>AI Recommendations</span>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:`repeat(${recs.length},minmax(0,1fr))`, gap:12 }}>
+            {recs.map((rec: any, i: number) => (
+              <RecCard key={i} icon={rec.icon} title={rec.title} desc={rec.desc} btnLabel={`${rec.btn} →`} btnColor={rec.color}/>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Footer tagline ── */}
+      <div style={{ textAlign:'center', padding:'8px 0', fontSize:13, color:'var(--text-muted)' }}>
+        ❤️ <span style={{ color:'var(--accent)', fontWeight:700 }}>Consistency today</span>, Results tomorrow.
+      </div>
+
     </div>
   );
 }

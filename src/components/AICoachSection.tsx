@@ -47,8 +47,8 @@ export default function AICoachSection() {
       background: 'var(--accent-light)', border: '1px solid var(--border-strong)',
       borderRadius: 'var(--radius-xl)',
     }}>
-      <div style={{ width: 40, height: 40, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid var(--border-strong)' }}>
-        <img src="/coach.png" alt="AI Coach" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+      <div style={{ width: 64, height: 64, borderRadius: 18, overflow: 'hidden', flexShrink: 0, border: '2px solid var(--border-strong)' }}>
+        <img src="/ai-coch.png" alt="AI Coach" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.75 }} />
       </div>
       <RefreshCw size={14} className={s.spinning} color="var(--accent)" />
       <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>
@@ -64,8 +64,8 @@ export default function AICoachSection() {
       background: 'var(--metric-bg)', border: '1px solid var(--border)',
       borderRadius: 'var(--radius-xl)',
     }}>
-      <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, opacity: 0.5 }}>
-        <img src="/coach.png" alt="AI Coach" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <div style={{ width: 64, height: 64, borderRadius: 18, overflow: 'hidden', flexShrink: 0, opacity: 0.65 }}>
+        <img src="/ai-coch.png" alt="AI Coach" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </div>
       <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
         AI Coach unavailable right now.
@@ -79,20 +79,20 @@ export default function AICoachSection() {
 
   return (
     <div style={{
-      display: 'flex', gap: 14, padding: '16px 20px',
+      display: 'flex', gap: 18, padding: '18px 22px',
       background: bg, border: `1px solid ${color}44`,
       borderRadius: 'var(--radius-xl)',
       animation: 'fadeUp 400ms cubic-bezier(.22,.68,0,1.2) both',
     }}>
       {/* Coach avatar */}
       <div style={{
-        width: 48, height: 48, borderRadius: '50%',
+        width: 92, height: 92, borderRadius: 22,
         border: `2px solid ${color}55`,
         overflow: 'hidden', flexShrink: 0,
         boxShadow: `0 0 0 3px ${color}22`,
       }}>
         <img
-          src="/coach.png"
+          src="/ai-coch.png"
           alt="AI Coach"
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />

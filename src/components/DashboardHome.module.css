@@ -86,7 +86,7 @@
 .emptyBtn { margin-top: 14px; padding: 10px 20px; background: var(--accent); color: #fff; border-radius: var(--radius-md); font-size: 14px; font-weight: 700; transition: all var(--transition); }
 .emptyBtn:hover { background: var(--accent-2); }
 
-.rangeRow { display: flex; gap: 6px; flex-wrap: wrap; }
+.rangeRow { display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; margin-left: auto; }
 .rangeBtn { padding: 6px 14px; border: 1px solid var(--border); border-radius: var(--radius-full); font-size: 12px; font-weight: 600; color: var(--text-secondary); transition: all var(--transition); background: var(--bg-input); }
 .rangeBtn:hover { border-color: var(--accent); color: var(--accent); }
 .rangeBtnActive { background: var(--accent); color: #fff; border-color: var(--accent); }

@@ -37,15 +37,28 @@ interface AppCtx {
 export const AppContext = createContext<AppCtx>({} as AppCtx);
 export const useApp = () => useContext(AppContext);
 
-const STORAGE_KEYS = ['fitpulse_token', 'fitpulse_userId', 'fitpulse_userName', 'fitpulse_role'];
+const STORAGE_KEYS = [
+  'fitpulse_token',
+  'fitpulse_userId',
+  'fitpulse_userName',
+  'fitpulse_role',
+  'fitpulse_firstName',
+  'fitpulse_lastName',
+  'fitpulse_plan',
+  'fitpulse_avatarUrl',
+];
 
 function loadStoredUser(): AuthUser | null {
   const token    = localStorage.getItem('fitpulse_token');
   const userId   = localStorage.getItem('fitpulse_userId');
   const userName = localStorage.getItem('fitpulse_userName');
   const role     = localStorage.getItem('fitpulse_role') as 'user' | 'admin' | null;
+  const firstName = localStorage.getItem('fitpulse_firstName') || undefined;
+  const lastName  = localStorage.getItem('fitpulse_lastName') || undefined;
+  const plan      = localStorage.getItem('fitpulse_plan') || undefined;
+  const avatarUrl = normalizeProfileImageUrl(localStorage.getItem('fitpulse_avatarUrl')) || undefined;
   if (token && userId && userName) {
-    return { token, userId, userName, role: role || 'user' };
+    return { token, userId, userName, role: role || 'user', firstName, lastName, plan, avatarUrl };
   }
   return null;
 }
@@ -55,6 +68,10 @@ function persistUser(u: AuthUser) {
   localStorage.setItem('fitpulse_userId',   u.userId);
   localStorage.setItem('fitpulse_userName', u.userName);
   localStorage.setItem('fitpulse_role',     u.role);
+  if (u.firstName) localStorage.setItem('fitpulse_firstName', u.firstName);
+  if (u.lastName) localStorage.setItem('fitpulse_lastName', u.lastName);
+  if (u.plan) localStorage.setItem('fitpulse_plan', u.plan);
+  if (u.avatarUrl) localStorage.setItem('fitpulse_avatarUrl', u.avatarUrl);
 }
 
 function clearUser() {

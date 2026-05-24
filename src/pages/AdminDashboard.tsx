@@ -79,6 +79,13 @@ export default function AdminDashboard() {
       <main className={styles.main}>
         <header className={styles.topbar}>
           <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
+          <div className={styles.topbarBrand}>
+            <img src={logoSrc} alt="FitPulseBot" className={styles.topbarLogoImg} onError={e => (e.currentTarget.style.display = 'none')} />
+            <div>
+              <div className={styles.topbarLogoName}>FitPulseBot</div>
+              <div className={styles.topbarLogoTagline}>Stay on Track,Stay in Pulse</div>
+            </div>
+          </div>
           <h1 className={styles.pageTitle}>{NAV.find(n => n.id === tab)?.label}</h1>
           <div className={styles.topbarRight}>
             <div className={styles.adminChip}><Shield size={12} /> Admin</div>

@@ -2,11 +2,12 @@
 
 /* SIDEBAR */
 .sidebar { width: 248px; flex-shrink: 0; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; z-index: 50; transition: transform 300ms; }
-.sidebarTop { display: flex; align-items: center; justify-content: space-between; padding: 18px 16px 12px; }
+.sidebarTop { display: flex; align-items: center; justify-content: space-between; padding: 24px 14px 18px; }
 .closeBtn { display: none; color: var(--text-muted); padding: 4px; border-radius: 6px; }
-.logo { display: flex; align-items: center; gap: 10px; }
-.logoImg { height: 40px; width: 40px; object-fit: cover; border-radius: 10px; flex-shrink: 0; }
-.logoName { font-size: 14px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; line-height: 1.2; }
+.logo { display: flex; align-items: center; gap: 8px; }
+.logoImg { height: 72px; width: 72px; object-fit: cover; border-radius: 15px; flex-shrink: 0; }
+.logoName { font-size: 24px; font-weight: 800; color: var(--brand-green); letter-spacing: -0.02em; line-height: 1.08; }
+[data-theme="dark"] .logoName { color: var(--accent-2); }
 .accent { color: var(--accent); }
 .adminBadge { font-size: 10px; font-weight: 700; color: #9f7aea; background: rgba(159,122,234,.15); padding: 2px 8px; border-radius: 99px; margin-top: 2px; display: inline-block; }
 
@@ -25,9 +26,15 @@
 
 /* MAIN */
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.topbar { height: 60px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; padding: 0 24px; background: var(--bg-surface); position: sticky; top: 0; z-index: 30; }
+.topbar { height: 76px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; padding: 0 24px; background: var(--bg-surface); position: sticky; top: 0; z-index: 30; }
 .menuBtn { display: none; color: var(--text-secondary); padding: 6px; border-radius: 8px; }
-.pageTitle { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); }
+.topbarBrand { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.topbarLogoImg { height: 56px; width: 56px; object-fit: cover; border-radius: 12px; flex-shrink: 0; }
+.topbarLogoName { font-size: 20px; font-weight: 800; color: var(--brand-green); letter-spacing: -0.02em; line-height: 1.08; }
+.topbarLogoTagline { font-size: 11px; font-weight: 600; color: var(--brand-teal); line-height: 1.15; margin-top: 2px; white-space: nowrap; }
+[data-theme="dark"] .topbarLogoName { color: var(--accent-2); }
+[data-theme="dark"] .topbarLogoTagline { color: var(--accent-3); }
+.pageTitle { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-muted); padding-left: 12px; border-left: 1px solid var(--border); }
 .topbarRight { display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .adminChip { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: #9f7aea; background: rgba(159,122,234,.15); padding: 4px 10px; border-radius: 99px; border: 1px solid rgba(159,122,234,.25); }
 .avatarSm { width: 32px; height: 32px; border-radius: 50%; background: #9f7aea; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
@@ -70,6 +77,11 @@
   .closeBtn { display: flex; }
   .overlay { display: block; }
   .menuBtn { display: flex; }
+  .topbar { height: 76px; padding: 0 16px; }
+  .topbarLogoImg { height: 52px; width: 52px; }
+  .topbarLogoName { font-size: 18px; }
+  .topbarLogoTagline { font-size: 10px; }
+  .pageTitle { display: none; }
   .content { padding: 16px; }
 }
 .chartsRow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
