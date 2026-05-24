@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { useApp } from '../App';
+import { normalizeProfileImageUrl } from '../profileImageUrl';
 import {
   Camera, Save, RefreshCw, Sparkles, PenLine,
   Flame, Droplets, BedDouble, Footprints, Scale,
@@ -25,8 +26,8 @@ type AiStep = 'form' | 'loading' | 'done';
 
 function getAvatarUrl(value: any): string {
   if (!value) return '';
-  if (typeof value === 'string') return value;
-  return value.fileUrl || value.url || value.avatarUrl || '';
+  if (typeof value === 'string') return normalizeProfileImageUrl(value);
+  return normalizeProfileImageUrl(value.fileUrl || value.url || value.avatarUrl || '');
 }
 
 export default function UserProfilePage() {
@@ -94,7 +95,7 @@ export default function UserProfilePage() {
     setSaving(true); setError(''); setSuccess('');
     try {
       await api.profile.update({
-        avatarUrl: avatarUrl||null,
+        avatarUrl: normalizeProfileImageUrl(avatarUrl)||null,
         firstName: form.firstName||null, lastName: form.lastName||null,
         email: form.email||'', phone: form.phone||null,
         bio: form.bio||'', dob: form.dob||null,

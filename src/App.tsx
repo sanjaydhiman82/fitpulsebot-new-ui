@@ -9,6 +9,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import SessionGuard from './components/SessionGuard';
 import { LogOut, X } from 'lucide-react';
+import { normalizeProfileImageUrl } from './profileImageUrl';
 
 export type Theme = 'light' | 'dark';
 export type Page = 'landing' | 'onboarding' | 'dashboard' | 'admin' | 'auth' | 'privacy' | 'terms';
@@ -86,8 +87,9 @@ export default function App() {
   const setUser = (u: AuthUser | null) => {
     // Always clear stale data first so no cross-user bleed
     clearUser();
-    setUserState(u);
-    if (u) persistUser(u);
+    const normalizedUser = u ? { ...u, avatarUrl: normalizeProfileImageUrl(u.avatarUrl) || undefined } : null;
+    setUserState(normalizedUser);
+    if (normalizedUser) persistUser(normalizedUser);
   };
 
   const logout = () => {

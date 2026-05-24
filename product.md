@@ -1,276 +1,265 @@
-# FitPulseBot - Product Showcase
+# FitPulseBot — Product Document
+> Last updated: May 2026 · Version reflects current codebase state
+
+---
 
 ## Overview
 
-FitPulseBot is a comprehensive health and fitness tracking application designed to help individuals achieve their wellness goals through intelligent monitoring, personalized insights, and proactive reminders. Built with a user-centric approach, FitPulseBot combines advanced AI technology with intuitive design to deliver a seamless health management experience.
+FitPulseBot is a full-stack AI-powered health and fitness tracking SaaS. It helps individuals achieve their wellness goals through intelligent monitoring, personalized insights, and proactive reminders. Built with React + TypeScript (frontend) and FastAPI + PostgreSQL on AWS (backend), it combines GPT-4o vision AI with an intuitive dashboard experience.
+
+**Live URL:** https://fitpulsebot.fit  
+**Contact:** info@fitpulsebot.fit
 
 ---
 
-## The Problem
+## Tech Stack
 
-In today's fast-paced world, maintaining a healthy lifestyle has become increasingly challenging. Individuals struggle with:
+### Frontend
+| Layer | Technology |
+|---|---|
+| Framework | React 18 + TypeScript (Create React App) |
+| Routing | Single-page app via `AppContext` page state (`landing`, `auth`, `onboarding`, `dashboard`, `admin`) |
+| Charts | Recharts (AreaChart, BarChart, ReferenceLine) |
+| Icons | Lucide React |
+| Auth | Google OAuth (`@react-oauth/google`) + email/password |
+| State | React Context (`AppContext`) + localStorage persistence |
+| API | Centralized `apiFetch` with auto Bearer token injection, 401 refresh flow, 90s timeout |
+| Payments | Razorpay (Indian market) via `subscriptionCheckout.ts` |
+| Theme | CSS variables, dark/light toggle, persisted to localStorage |
 
-- **Inconsistent Tracking**: Difficulty maintaining regular logs of daily activities, meals, water intake, and sleep patterns
-- **Lack of Personalization**: Generic fitness advice that doesn't account for individual health conditions, goals, or lifestyle
-- **Information Overload**: Access to too much health information without clear, actionable guidance
-- **Motivation Gaps**: Losing track of progress and missing accountability without proper reminders and feedback
-- **Fragmented Solutions**: Using multiple apps for different health metrics, leading to disjointed data and poor user experience
-- **Accessibility Barriers**: Complex health tracking tools that require technical expertise to use effectively
+### Backend (AWS ap-south-1)
+| Layer | Technology |
+|---|---|
+| API | FastAPI (Python 3.13) + Uvicorn/Gunicorn |
+| Database | PostgreSQL on AWS RDS (psycopg2 raw SQL, no ORM) |
+| Compute | EC2 t4g.micro (`fitpulsebot`) |
+| Payments | Razorpay SDK + HMAC-SHA256 verify; Lambda (`razorpay-api`) |
+| File Storage | AWS S3 (boto3) — profile images |
+| AI | OpenAI GPT-4o vision (5 endpoints, externalized `prompt/*.txt` files) |
+| Auth | JWT (python-jose, HS256) — 7-day expiry, refresh via `SessionGuard` |
+| Email | SMTP Gmail SSL port 465, branded HTML templates |
+| Push | Firebase Admin SDK (FCM tokens stored in `users.push_id`) |
+| MCP Server | `mcp>=1.0.0` — HTTP (`POST /api/v1/mcp`) + stdio mode |
+
+**Backend repo:** `/Users/sanjay82/Documents/All-development/fitpulsebot-website/FitPulseBot-backend`  
+**Backend product doc:** `backend-product.md` in that repo
 
 ---
 
-## The Solution
+## Application Pages & Routing
 
-FitPulseBot addresses these challenges by providing an all-in-one health tracking platform that:
+```
+/ (landing)  →  /auth  →  /onboarding  →  /dashboard  (user)
+                                        →  /admin       (admin role)
+```
 
-- **Centralizes Health Data**: Tracks activity, nutrition, hydration, weight, and sleep in one unified application
-- **Delivers Personalized Insights**: Uses AI to generate tailored recommendations based on individual goals and health data
-- **Simplifies Tracking**: Offers intuitive logging interfaces with voice commands and AI-assisted food recognition
-- **Ensures Consistency**: Sends smart notifications and reminders to maintain healthy habits
-- **Provides Clear Feedback**: Visualizes progress through dashboards, reports, and comparative analytics
-- **Adapts to All Levels**: Caters to beginners and fitness enthusiasts with tiered subscription plans
+### Pages
+- **LandingPage** — Marketing, FAQ, pricing, CTA buttons
+- **AuthPage** — Login / Register / Google OAuth / Forgot+Reset password
+- **OnboardingFlow** — Multi-step: name/age/weight/height/gender → goal selection → activity level → AI plan generation
+- **Dashboard** — Main app shell with sidebar nav + topbar
+- **AdminDashboard** — Full admin control panel
+- **PrivacyPolicy / TermsOfService** — Static legal pages
 
 ---
 
-## Key Features
+## Dashboard — Navigation Tabs
 
-### 1. Activity Tracking
-- Log daily physical activities including walking, running, cycling, and custom exercises
-- Track duration, distance, calories burned, and active minutes
-- Monitor activity intensity and trends over time with interactive charts
-- Set and achieve daily activity goals
-- Activity calorie tracking with period-over-period analysis
-- Visual activity charts for day, week, month, 3-month, and year views
+| Tab | Component | Description |
+|---|---|---|
+| home | `DashboardHome` | Overview: greeting, streak, AI insight, metric cards, goal completion, activity chart, weight chart |
+| activity | `ActivityLog` | Log physical activities; duration, distance, cal burned, active minutes |
+| nutrition | `NutritionLog` | Log meals; macros (cal, protein, carbs, fats, fiber, sugar, sodium); AI vision mode |
+| hydration | `HydrationLog` | Water intake by drink type and container volume |
+| sleep | `SleepLog` | Sleep duration and quality logs |
+| weight | `WeightLog` | Weight entries with trend/moving average chart |
+| reports | `ReportsPage` | Health metrics + period-over-period comparison with date range filter |
+| profile | `UserProfilePage` | Edit name/age/weight/height/gender, avatar upload, AI goal wizard |
+| notifications | `NotificationsPage` | Manage reminder types by plan |
+| support | `SupportPage` | Create/view support tickets with message thread |
+| messages | `MessagesPage` | Admin broadcast messages + unread badge count in topbar |
+| settings | `SettingsPageFull` | Subscription plan, preferences, account settings merged view |
 
-### 2. Nutrition Management
-- Comprehensive food intake logging with meal categorization (breakfast, lunch, dinner, snacks)
-- **AI-powered food recognition from images** - snap a photo and automatically log meals
-- Track macronutrients (calories, protein, carbs, fats, fiber, sugar, sodium)
-- Personalized calorie targets based on individual goals and activity level
-- AI-generated nutrition tips and meal suggestions
-- Visual progress tracking for nutrition goals
-- Calorie consumption vs. burned comparison
+---
 
-### 3. Hydration Monitoring
-- Water intake tracking with customizable daily goals
-- Multiple drink type support (water, tea, coffee, juice, etc.)
-- Container-based logging for accurate volume measurement
-- Hydration reminders and progress visualization
-- Real-time hydration status tracking
-- Daily goal completion percentage
+## DashboardHome — Detail
 
-### 4. Weight Management
-- Regular weight logging with trend analysis
-- Target weight setting with timeline tracking
-- BMI calculation and health indicators
-- Progress charts with moving average lines
-- Weight trend visualization across multiple time ranges
-- Target weight reference lines on charts
-- Weight change tracking (kg gained/lost)
+**Time ranges:** Day / Week / Month / 3 Months / Year (driven by `dropdowns.json`)
 
-### 5. Sleep Tracking
-- Daily sleep duration monitoring
-- Sleep quality assessment
-- Target sleep hours based on health recommendations
-- Sleep pattern analysis and improvement suggestions
-- Sleep goal completion tracking
+**Data loaded in parallel on mount + range change:**
+1. `api.dashboard.counters()` → metric counter cards + streak + AI insight
+2. `api.dashboard.activityChart(days)` → BarChart (Calories Burned)
+3. `api.dashboard.weightChart(days)` → AreaChart (Weight + Moving Avg + Target reference line)
+4. `api.dashboard.goalsRange(from, to)` → Goal completion grid (Water, Cal Burned, Meals, Sleep, Cal Consumed)
 
-### 6. Goal Setting & Tracking
-- Personalized health goals for calories, water, weight, and sleep
-- AI-driven goal recommendations based on user profile
-- Progress tracking with visual dashboards
-- Goal completion percentage across different time ranges
-- Adaptive goal adjustments based on performance
-- Streak tracking for consistent goal achievement
+**Metric cards** (from API `counters` array): icon/color/tab auto-resolved by metric title keywords.
 
-### 7. Smart Dashboard
-- Real-time health metrics overview with personalized greeting
-- Daily goal completion status
-- Progress visualization with charts and graphs
-- Quick access to all tracking features
-- Time range selector (Today, Week, Month, 3 Months, Year)
-- Dynamic metric cards with progress indicators
-- AI-powered insights banner with personalized recommendations
+**Goal completion grid**: shows `completed / total days` with color-coded MetricCard for each goal type.
 
-### 8. Advanced Reporting
-- Daily health metrics reports with customizable time ranges
-- Comparative health analysis (period-over-period)
-- Custom date range filtering
-- Interactive charts using Recharts library
-- Activity charts showing calories burned and active minutes
-- Weight trend charts with moving averages
-- Goal completion tracking across multiple dimensions
+**AI Insight banner**: shown when `counters.insight` is returned from backend.
 
-### 9. Intelligent Notifications
-- Customizable reminder types (water, activity, meals, sleep)
-- Smart timing based on user behavior patterns
-- User-controlled notification preferences
-- Real-time notification center in dashboard
+**Streak badge**: shown when `counters.streak > 0`.
 
-### 10. AI-Powered Insights
-- Personalized nutrition and fitness recommendations
-- Goal achievement strategies
-- Health trend analysis
-- Proactive health alerts
-- AI vision for instant food recognition from images
-- Contextual insights based on user data and patterns
+---
 
-### 11. User Onboarding
-- Multi-step guided onboarding flow
-- Personal information collection (name, age, weight, height, gender)
-- Goal selection with multiple options (Lose Weight, Build Muscle, Improve Fitness, Better Sleep, Stay Hydrated, Eat Healthier)
-- Activity level assessment (Sedentary, Light, Moderate, Active, Very Active)
-- Personalized plan generation based on user profile
+## Today's Progress Card (Home Screen — Planned/In Design)
 
-### 12. User Profile Management
-- Profile information editing (name, age, weight, height, gender)
-- Avatar upload and management
-- Goal settings and preferences
-- Personal health statistics
-- Account information management
+A consolidated card showing overall daily progress with:
+- **Left:** Large circular ring (full 360°, single color) with overall `%` done in center
+- **Right:** 5 labeled progress bars with current/goal values:
+  1. 💧 Water — `800 / 2000 ml`
+  2. 🔥 Calories in — `122 / 1800 kcal`
+  3. 💪 Protein — `11 / 80 g`
+  4. 🌙 Sleep — `5.7 / 8 h`
+  5. ⚡ Cal burned — `100 / 500 kcal`
+- Subtle divider separating nutrition metrics from sleep/activity metrics
+- `...` overflow menu top-right
+- Ring % = average completion across all 5 metrics
 
-### 13. Subscription Management
-- Tiered subscription plans (Start - Free, Pro - ₹199/mo, Elite - ₹299/mo)
-- Plan comparison with feature breakdown
-- Easy upgrade/downgrade functionality
-- Order history and billing information
-- Razorpay payment integration for Indian users
-- Subscription status tracking
+> Design reference: see chat session May 2026 for mockups and widget prototypes.
 
-### 14. Admin Dashboard
-- **System Overview**: Real-time metrics for total users, active users, paid members, new signups
-- **User Management**: View, filter, and manage all users with role, plan, and status controls
-- **AI Cost Tracking**: Monitor AI usage, token consumption, and costs
-- **Plan Management**: Configure and manage subscription plans
-- **Broadcast Messaging**: Send announcements to users
-- **Advanced Analytics**: Pie charts for plan distribution, user status, signup sources, role breakdown
-- **User Actions**: Activate/deactivate users, ban users, change user roles
-- **Weekly Signups Tracking**: Bar charts showing new user acquisition trends
+---
 
-### 15. Authentication & Security
-- Google OAuth integration for seamless sign-up/sign-in
-- Email/password authentication support
-- Secure session management with localStorage
-- Role-based access control (user/admin roles)
-- Session timeout management with SessionGuard
-- JWT token handling
+## API Surface (`src/api.ts`)
 
-### 16. Theme & UI/UX
-- Dark/Light theme toggle with persistent preference
-- Responsive design optimized for desktop, tablet, and mobile
-- Modern, intuitive interface with smooth animations
-- Consistent design language across all pages
-- Loading states and error handling
-- Real-time data refresh capabilities
+All calls go through `apiFetch(path, options)` which:
+- Reads Bearer token fresh from localStorage on every call
+- Handles 401 → triggers `SessionGuard` dialog → retries once if user stays
+- AbortController with 90s timeout
 
-### 17. Support & Communication
-- In-app support page for user assistance
-- Messages/notifications center
-- Contact information and help resources
-- FAQ section on landing page
+### Namespaces
+
+| Namespace | Key Endpoints |
+|---|---|
+| `api.auth` | login, register, googleLogin, forgotPassword, resetPassword, getUser |
+| `api.profile` | get, update, uploadPic, getGoals, generateGoalsAI, updatePreferences |
+| `api.activity` | list (by date), create, delete |
+| `api.food` | list (by logDate), create, createAI (GPT-4o vision), delete, getAverage |
+| `api.water` | list, create, delete, getAverage |
+| `api.weight` | list, create, delete, getAverage |
+| `api.sleep` | list, create, delete, getAverage |
+| `api.dashboard` | counters, weightChart, activityChart, goals, goalsRange |
+| `api.reports` | healthMetrics, healthCompare |
+| `api.notifications` | getTypes (by plan), getUserNotifications, saveNotifications, deleteNotification |
+| `api.subscription` | getPlans, getUserSubscription, createOrder, verifyPayment, getUserOrders, getUserCredit |
+| `api.support` | createTicket, getTickets, getTicket, addMessage, closeTicket |
+| `api.messages` | getUserMessages, markRead, send |
+| `api.admin` | listUsers (paged + filtered), getAppCostLogs, logAppCost, listAICredits, getUserCredits, getUserCreditBalance, updateUserStatus |
+| `api.plans` | list, create, update, delete, schema |
+| `api.planLimits` | list, create, update, delete, schema |
+
+---
+
+## AI Features (GPT-4o)
+
+| Feature | Endpoint / Location | Description |
+|---|---|---|
+| Food image recognition | `api.food.createAI` → `POST /food-intake-ai` | Upload meal photo → GPT-4o returns macros → auto-logged |
+| AI goal wizard | `api.profile.generateGoalsAI` → `POST /user/goal/ai` | Generates personalized calorie/macro/water/sleep goals from user profile |
+| AI insight | `api.dashboard.counters` → insight field | Daily contextual health tip shown on DashboardHome |
+| AI nutrition tips | Per-plan feature | Tailored meal suggestions |
+| AI cost tracking | `api.admin.getAppCostLogs` / `logAppCost` | Every AI call logged with tokens, cost ($ and ₹), credit deducted |
+
+**AI Credit system:** Each user has an allocated credit balance. Every GPT-4o call deducts from it. Balance shown in topbar (`Sparkles` icon + amount). Admins can view per-user credit usage.
+
+---
+
+## Authentication & Session
+
+- **Google OAuth** via `@react-oauth/google` credential flow → `POST /login/google`
+- **Email/password** login + registration with terms acceptance
+- **Forgot/reset password** flow with token
+- **JWT** stored in localStorage (`fitpulse_token`, `fitpulse_userId`, `fitpulse_userName`, `fitpulse_role`)
+- **SessionGuard component:** monitors token expiry, shows modal dialog, attempts refresh, retries last failed request — or logs user out
+- **Role-based routing:** `role === 'admin'` → AdminDashboard, else Dashboard
+- **Logout confirm dialog:** triggered by `requestLogout()`, requires explicit confirmation before clearing session
+
+---
+
+## Admin Dashboard
+
+| Section | Functionality |
+|---|---|
+| System Overview | Total users, active users, paid members, new signups; weekly signup bar chart |
+| User Management | Paginated user list with role/plan/status filters; activate/deactivate/ban users (`PATCH /users/{id}/status`) |
+| AI Cost Analytics | App cost logs with date filter; input/output tokens, cost in $ and ₹ per request |
+| Plans Tab | Schema-dynamic CRUD for subscription plans via runtime DB introspection |
+| Plan Limits | Per-plan feature limits CRUD |
+| Broadcast Messaging | Send messages to users (`api.messages.send`) |
+| Analytics Charts | Pie: plan distribution, user status, signup sources, role breakdown |
 
 ---
 
 ## Subscription Plans
 
-### Start Plan
-Perfect for beginners taking their first step toward a healthier lifestyle.
+| Plan | Price | Key Features |
+|---|---|---|
+| **Start** | Free | Basic tracking (activity, water, meals, sleep), standard notifications, essential reports |
+| **Pro** | ₹199/mo | All Start + weight tracking, AI nutrition tips, advanced reports, comparative analytics, priority notifications |
+| **Elite** | ₹299/mo | All Pro + personal coach notifications, premium support, AI advanced insights, custom health strategies, early access |
 
-- Basic activity tracking
-- Water intake monitoring
-- Meal logging
-- Sleep tracking
-- Standard notifications
-- Access to essential health reports
-
-### Pro Plan
-Ideal for fitness enthusiasts who want deeper insights and advanced features.
-
-- All Start features
-- Weight tracking
-- AI nutrition tips
-- Advanced health reports
-- Comparative analytics
-- Priority notifications
-- Enhanced goal customization
-
-### Elite Plan
-The ultimate package for serious health optimization.
-
-- All Pro features
-- Personal coach notifications
-- Premium support
-- AI-powered advanced insights
-- Custom health strategies
-- Early access to new features
-- Exclusive wellness content
+**Payment:** Razorpay (India). Order → verify flow. Order history and subscription status tracked per user.
 
 ---
 
-## Target Audience
+## Key Components
 
-### Primary Users
-- Health-conscious individuals aged 18-45
-- Fitness beginners seeking structure and guidance
-- Working professionals managing busy lifestyles
-- Anyone looking to improve overall wellness
-
-### Secondary Users
-- Fitness enthusiasts tracking performance
-- Individuals with specific health goals (weight loss, muscle gain, etc.)
-- People managing chronic conditions through lifestyle changes
-- Health coaches and nutritionists (for client monitoring)
+| Component | File | Purpose |
+|---|---|---|
+| `SessionGuard` | `components/SessionGuard.tsx` | JWT expiry detection + refresh + retry |
+| `ImageUploadLogger` | `components/ImageUploadLogger.tsx` | AI vision food logging UI (Manual/AI Vision toggle) |
+| `DashboardHome` | `components/DashboardHome.tsx` | Main home tab — counters, charts, goals, AI insight |
+| `MetricCard` | (inside DashboardHome) | Reusable card: icon, label, value, unit, progress bar, % |
+| `DateFilter` | `components/DateFilter.tsx` | Shared date range picker for logs and reports |
+| `SubscriptionPage` | `components/SubscriptionPage.tsx` | Plan comparison + Razorpay checkout |
+| `SettingsPageFull` | `components/SettingsPageFull.tsx` | Settings + subscription merged view |
 
 ---
 
-## Competitive Advantages
+## Config
 
-1. **All-in-One Solution**: Eliminates the need for multiple health apps
-2. **AI-Powered Personalization**: Delivers tailored recommendations, not generic advice
-3. **User-Friendly Interface**: Simple and intuitive for users of all technical levels
-4. **Comprehensive Tracking**: Covers all major health metrics in one platform
-5. **Flexible Pricing**: Tiered plans to suit different needs and budgets
-6. **Smart Notifications**: Intelligent reminder system that adapts to user behavior
-7. **Data Privacy**: Secure handling of sensitive health information
-8. **Cross-Platform Accessibility**: Web and mobile-ready architecture
+- `src/config/dropdowns.json` — Time range definitions (id, label, days, aliases) used across all charts and goal queries
+- `src/config/site-version.json` — Site version tracking
+- `.env` — `REACT_APP_API_BASE_URL` (defaults to `http://localhost:8000`)
+- API base paths: `{origin}/api/v1` (REST) and `{origin}/api/ai/v1` (AI endpoints)
 
 ---
 
-## Business Value
+## UI/UX Conventions
 
-### For Users
-- Improved health outcomes through consistent tracking
-- Time savings with AI-assisted logging
-- Motivation through progress visualization
-- Better decision-making with personalized insights
-- Cost-effective alternative to personal trainers and nutritionists
+- **Theme:** Dark default, light mode toggle. CSS variables (`--bg-card`, `--text-primary`, `--accent`, `--border`, `--danger`, etc.)
+- **Charts:** Recharts library — AreaChart for weight, BarChart for activity, Cell-based coloring (last bar highlighted)
+- **Loading states:** `spinning` CSS class on refresh icon, empty state messages in charts
+- **Responsive:** Sidebar collapses to overlay on mobile; hamburger menu button
+- **Error handling:** All API calls wrapped in `.catch(() => null)` — graceful degradation with empty states
+- **No form tags in React:** All interactions via `onClick`/`onChange` handlers
 
-### For Partners
-- White-label opportunities for health and wellness companies
-- API access for integration with other health platforms
-- Corporate wellness program integration
-- Data-driven insights for health research
+---
+
+## Known Issues / Open Items
+
+- [ ] **Today's Progress Card** — consolidated ring+bars UI designed (see chat May 2026); pending React component implementation in `DashboardHome.tsx`
+- [ ] Timezone mismatch in food intake date filtering (identified in earlier session)
+- [ ] 7-day avg water value missing in hydration stats card (API returns empty)
 
 ---
 
 ## Future Roadmap
 
-- Wearable device integration (smartwatches, fitness trackers)
-- Social features for community motivation
-- Gamification elements with challenges and rewards
-- Telehealth integration with healthcare providers
-- Advanced analytics with predictive health insights
-- Multi-language support for global accessibility
-- Mobile applications (iOS, Android)
+- Mobile apps (iOS / Android) — React Native
+- Wearable device integration (Apple Watch, Fitbit, Garmin)
+- Social features — challenges, leaderboards, friend tracking
+- Gamification — badges, streaks (streak already tracked), achievement rewards
+- Telehealth integration — share reports with doctors/nutritionists
+- Multi-language support (Hindi, regional Indian languages)
+- Advanced predictive insights — ML-based health forecasting
+- White-label / corporate wellness version
 
 ---
 
-## Conclusion
+## Deployment
 
-FitPulseBot is more than just a fitness app—it's a comprehensive health companion designed to empower individuals to take control of their wellness journey. By combining cutting-edge technology with user-centric design, FitPulseBot makes healthy living accessible, engaging, and sustainable for everyone.
-
-Whether you're just starting your fitness journey or looking to optimize your health routine, FitPulseBot provides the tools, insights, and motivation you need to achieve your goals and live a healthier, happier life.
-
----
-
-*For more information, contact us at info@fitpulsebot.fit or visit https://fitpulsebot.fit*
+- **Frontend:** Built React app in `/build`, deployed to static hosting
+- **Backend:** EC2 `fitpulsebot` (t4g.micro, `ap-south-1`), RDS PostgreSQL, Lambda for Razorpay
+- **CI/CD:** `.github/workflows/` (GitHub Actions)
+- **S3:** Asset storage (profile images, labels)

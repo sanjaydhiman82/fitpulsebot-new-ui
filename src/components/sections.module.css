@@ -1,0 +1,69 @@
+.section { display: flex; flex-direction: column; gap: 14px; }
+.sectionHeader { display: flex; align-items: center; justify-content: space-between; }
+.sectionTitle { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+.sectionIcon { width: 30px; height: 30px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sectionSub { font-size: 12px; color: var(--text-muted); }
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 20px; }
+.cardHeader { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.cardTitle { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.cardSub { font-size: 12px; color: var(--text-muted); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; }
+.statCard { background: var(--metric-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+.statLabel { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.statValue { font-size: 26px; font-weight: 800; color: var(--text-primary); line-height: 1; letter-spacing: -0.04em; }
+.statUnit { font-size: 13px; font-weight: 500; color: var(--text-muted); }
+.statSub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+.statBar { height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.statBarFill { height: 4px; border-radius: 99px; transition: width 700ms ease; }
+.ringWrap { display: flex; align-items: center; gap: 20px; }
+.ringCenter { position: relative; flex-shrink: 0; }
+.ringLabel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+.ringPct { font-size: 18px; font-weight: 800; color: var(--text-primary); display: block; line-height: 1; }
+.ringSubText { font-size: 10px; color: var(--text-muted); display: block; margin-top: 1px; }
+.barRow { margin-bottom: 10px; }
+.barRow:last-child { margin-bottom: 0; }
+.barRowHead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.barRowLabel { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; font-weight: 600; }
+.barRowVal { font-size: 11px; color: var(--text-muted); }
+.barTrack { height: 7px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.barFill { height: 7px; border-radius: 99px; transition: width 700ms cubic-bezier(.4,0,.2,1); }
+.chartBox { position: relative; width: 100%; }
+.legendRow { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.legendItem { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-secondary); }
+.legendDot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.listItem { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.listItem:last-child { border-bottom: none; padding-bottom: 0; }
+.listLeft { display: flex; align-items: center; gap: 10px; }
+.listIcon { width: 32px; height: 32px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.listTitle { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.listSub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.listRight { text-align: right; }
+.listVal { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.listMeta { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-full); font-size: 11px; font-weight: 700; }
+.badgeGreen  { background: var(--accent-light); color: var(--accent-2); }
+.badgeAmber  { background: rgba(217,119,6,.15); color: var(--warning); }
+.badgeDanger { background: rgba(229,62,62,.12); color: var(--danger); }
+.badgeBlue   { background: rgba(45,111,214,.12); color: var(--info); }
+.aiBanner { display: flex; gap: 14px; padding: 16px 20px; background: var(--accent-light); border: 1px solid var(--border-strong); border-radius: var(--radius-xl); }
+.aiBannerIcon { width: 38px; height: 38px; border-radius: var(--radius-md); background: rgba(61,191,150,.25); border: 1px solid var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.aiBannerTitle { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+.aiBannerText { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+.streakBanner { display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: linear-gradient(135deg, rgba(251,191,36,.18), rgba(217,119,6,.08)); border: 1px solid rgba(217,119,6,.3); border-radius: var(--radius-xl); }
+.streakNum { font-size: 28px; font-weight: 800; color: var(--warning); line-height: 1; letter-spacing: -0.04em; }
+.streakLabel { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+.streakSub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.goalGrid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.goalCell { background: var(--metric-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px; text-align: center; }
+.goalCellLabel { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+.goalCellVal { font-size: 18px; font-weight: 800; letter-spacing: -0.03em; }
+.goalCellSub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.loading { display: flex; align-items: center; justify-content: center; min-height: 120px; color: var(--text-muted); font-size: 13px; }
+.empty { min-height: 100px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px; border: 1px dashed var(--border); border-radius: var(--radius-lg); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinning { animation: spin 0.8s linear infinite; }
+.divider { height: 1px; background: var(--border); margin: 4px 0; }
+@media (max-width: 700px) { .grid4 { grid-template-columns: repeat(2,minmax(0,1fr)); } .grid3 { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 480px) { .grid2,.grid3,.grid4 { grid-template-columns: 1fr; } .goalGrid { grid-template-columns: repeat(2,minmax(0,1fr)); } }

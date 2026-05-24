@@ -192,6 +192,42 @@ export const api = {
       q.set('toDate', toDate);
       return apiFetch(`/dashboard/goal?${q.toString()}`);
     },
+    // ── Section APIs ──────────────────────────────────────────────
+    sectionToday: (date?: string) => {
+      const q = new URLSearchParams({ userId: getUserId()! });
+      if (date) q.set('date', date);
+      return apiFetch(`/dashboard/section/today?${q}`);
+    },
+    sectionNutrition: (from?: string, to?: string) => {
+      const q = new URLSearchParams({ userId: getUserId()! });
+      if (from) q.set('from', from); if (to) q.set('to', to);
+      return apiFetch(`/dashboard/section/nutrition?${q}`);
+    },
+    sectionHydration: (from?: string, to?: string) => {
+      const q = new URLSearchParams({ userId: getUserId()! });
+      if (from) q.set('from', from); if (to) q.set('to', to);
+      return apiFetch(`/dashboard/section/hydration?${q}`);
+    },
+    sectionActivity: (from?: string, to?: string) => {
+      const q = new URLSearchParams({ userId: getUserId()! });
+      if (from) q.set('from', from); if (to) q.set('to', to);
+      return apiFetch(`/dashboard/section/activity?${q}`);
+    },
+    sectionSleep: (from?: string, to?: string) => {
+      const q = new URLSearchParams({ userId: getUserId()! });
+      if (from) q.set('from', from); if (to) q.set('to', to);
+      return apiFetch(`/dashboard/section/sleep?${q}`);
+    },
+    sectionWeight: (from?: string, to?: string) => {
+      const q = new URLSearchParams({ userId: getUserId()! });
+      if (from) q.set('from', from); if (to) q.set('to', to);
+      return apiFetch(`/dashboard/section/weight?${q}`);
+    },
+    sectionGoals: (from?: string, to?: string) => {
+      const q = new URLSearchParams({ userId: getUserId()! });
+      if (from) q.set('from', from); if (to) q.set('to', to);
+      return apiFetch(`/dashboard/section/goals?${q}`);
+    },
   },
 
   reports: {

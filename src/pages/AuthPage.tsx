@@ -3,6 +3,7 @@ import { useApp } from '../App';
 import { Sun, Moon, ArrowLeft, Eye, EyeOff, ArrowRight, Check, Mail } from 'lucide-react';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import { api } from '../api';
+import { normalizeProfileImageUrl } from '../profileImageUrl';
 import styles from './AuthPage.module.css';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
@@ -58,7 +59,7 @@ export default function AuthPage() {
     setUser({
       userId: res.userId, userName: res.userName, token: res.accessToken,
       role, firstName: res.firstName, lastName: res.lastName,
-      plan: res.plan, avatarUrl: res.avatarUrl,
+      plan: res.plan, avatarUrl: normalizeProfileImageUrl(res.avatarUrl),
     });
     setPage(role === 'admin' ? 'admin' : 'dashboard');
   };
@@ -98,7 +99,7 @@ export default function AuthPage() {
     try {
       const res = await api.auth.googleLogin(tokenResponse.access_token);
       const role: 'user' | 'admin' = res.role === 'admin' ? 'admin' : 'user';
-      setUser({ userId: res.userId, userName: res.userName, token: res.accessToken, role, firstName: res.firstName, lastName: res.lastName, plan: res.plan, avatarUrl: res.avatarUrl });
+      setUser({ userId: res.userId, userName: res.userName, token: res.accessToken, role, firstName: res.firstName, lastName: res.lastName, plan: res.plan, avatarUrl: normalizeProfileImageUrl(res.avatarUrl) });
       setPage(role === 'admin' ? 'admin' : 'dashboard');
     } catch (err: any) { setError(err.message || 'Google login failed'); }
     setLoading(false);
