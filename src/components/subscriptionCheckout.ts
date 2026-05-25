@@ -70,8 +70,14 @@ export async function ensureRazorpayCheckoutAvailable() {
   }
 }
 
-export async function createSubscriptionOrder(planName: string, plan: any, user: AuthUser, profile?: any) {
-  const amount = getPlanAmountPaise(plan);
+interface SubscriptionOrderOptions {
+  amountPaise?: number;
+  durationMonths?: number;
+  discountPercent?: number;
+}
+
+export async function createSubscriptionOrder(planName: string, plan: any, user: AuthUser, profile?: any, options: SubscriptionOrderOptions = {}) {
+  const amount = options.amountPaise ?? getPlanAmountPaise(plan);
   if (!amount || amount <= 0) {
     throw new Error(`Unable to determine price for ${planName}.`);
   }
@@ -82,9 +88,13 @@ export async function createSubscriptionOrder(planName: string, plan: any, user:
     currency: 'INR',
     receipt: `FPB-${Date.now()}`,
     partial_payment: false,
-    notes: { planName },
+    notes: {
+      planName,
+      durationMonths: options.durationMonths ?? 1,
+      discountPercent: options.discountPercent ?? 0,
+    },
     billing: getBilling(user, profile),
-    items: [{ code: planName, qty: 1 }],
+    items: [{ code: planName, qty: options.durationMonths ?? 1 }],
   });
 }
 

@@ -1,27 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../App';
 import { api } from '../api';
-import { CreditCard, Download, History, RefreshCw, X, Zap } from 'lucide-react';
-import { createSubscriptionOrder, ensureRazorpayCheckoutAvailable, openRazorpayCheckout } from './subscriptionCheckout';
+import { Check, CreditCard, Download, History, RefreshCw, X, Zap } from 'lucide-react';
+import { createSubscriptionOrder, ensureRazorpayCheckoutAvailable, getPlanAmountPaise, openRazorpayCheckout } from './subscriptionCheckout';
 import styles from './LogPage.module.css';
+import sStyles from './SubscriptionPage.module.css';
 import siteVersion from '../config/site-version.json';
 
 const PLAN_ORDER = ['Start', 'Pro', 'Elite'];
 const PLAN_COLORS: Record<string, string> = { Start: '#3dbf96', Pro: '#5bc8e0', Elite: '#9f7aea' };
+const DURATION_OPTIONS = [
+  { months: 1, discount: 0 },
+  { months: 3, discount: 2 },
+  { months: 6, discount: 5 },
+  { months: 12, discount: 8 },
+  { months: 24, discount: 10 },
+];
+
+const toTitle = (value: string) => value
+  .replace(/[_-]/g, ' ')
+  .replace(/\b\w/g, char => char.toUpperCase());
+
+const getPlanCredit = (plan: any) => Number(plan?.credit ?? plan?.credits ?? plan?.ai_credit ?? plan?.aiCredits ?? 0);
+
+const getLimitPlanName = (limit: any) => String(limit?.plan_name ?? limit?.plan ?? '').toLowerCase();
+
+const getLimitLabel = (limit: any) => {
+  const raw = limit?.feature_key ?? limit?.limit_key ?? limit?.key ?? limit?.feature ?? limit?.name ?? 'Limit';
+  return toTitle(String(raw));
+};
+
+const getLimitValue = (limit: any) => {
+  const value = limit?.limit_value ?? limit?.max_value ?? limit?.value ?? limit?.amount;
+  if (value === true) return 'Included';
+  if (value === false) return 'Not included';
+  if (value === null || value === undefined || value === '') return 'Unlimited';
+  return String(value);
+};
 
 export default function SettingsPageFull() {
   const { user, toggleTheme, theme, requestLogout } = useApp();
 
   // Subscription state
   const [plans, setPlans] = useState<any[]>([]);
+  const [planLimits, setPlanLimits] = useState<any[]>([]);
   const [subscription, setSubscription] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [credit, setCredit] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [subLoading, setSubLoading] = useState(false);
   const [subError, setSubError] = useState('');
   const [upgrading, setUpgrading] = useState('');
   const [toast, setToast] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState('');
+  const [planPopupOpen, setPlanPopupOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('');
+  const [selectedMonths, setSelectedMonths] = useState(1);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOrders, setHistoryOrders] = useState<any[]>([]);
@@ -33,14 +67,18 @@ export default function SettingsPageFull() {
     if (!user) return;
     setSubLoading(true); setSubError('');
     try {
-      const [plansRes, subRes, ordersRes] = await Promise.all([
+      const [plansRes, limitsRes, subRes, ordersRes, creditRes] = await Promise.all([
         api.subscription.getPlans().catch(() => null),
+        api.planLimits.list().catch(() => null),
         api.subscription.getUserSubscription(user.userId).catch(() => null),
         api.subscription.getUserOrders(user.userId).catch(() => []),
+        api.subscription.getUserCredit(user.userId).catch(() => null),
       ]);
       setPlans(plansRes?.plans || (Array.isArray(plansRes) ? plansRes : []));
+      setPlanLimits(limitsRes?.plan_limits || (Array.isArray(limitsRes) ? limitsRes : []));
       setSubscription(subRes?.subscription || subRes || null);
       setOrders(Array.isArray(ordersRes) ? ordersRes : []);
+      setCredit(creditRes);
       api.profile.get().then(setProfile).catch(() => null);
     } catch (e: any) { setSubError(e.message); }
     setSubLoading(false);
@@ -51,16 +89,41 @@ export default function SettingsPageFull() {
   const currentPlan = subscription?.plan || user?.plan || 'Start';
   const currentIdx = PLAN_ORDER.findIndex(p => p.toLowerCase() === currentPlan.toLowerCase());
   const upgradePlans = PLAN_ORDER.filter((_, i) => i > currentIdx);
+  const payablePlans = PLAN_ORDER.filter(planName => plans.some(p => p.name?.toLowerCase() === planName.toLowerCase()));
+  const selectedPlanData = plans.find(p => p.name?.toLowerCase() === selectedPlan.toLowerCase());
+  const selectedDuration = DURATION_OPTIONS.find(option => option.months === selectedMonths) || DURATION_OPTIONS[0];
+  const monthlyAmount = selectedPlanData ? getPlanAmountPaise(selectedPlanData) : 0;
+  const subtotalAmount = monthlyAmount * selectedDuration.months;
+  const totalAmount = Math.round(subtotalAmount * (1 - selectedDuration.discount / 100));
+  const savingsAmount = subtotalAmount - totalAmount;
+  const currentAvailableCredit = credit?.availableCredit ?? 0;
+  const selectedMonthlyCredit = getPlanCredit(selectedPlanData);
+  const selectedDurationCredit = selectedMonthlyCredit * selectedDuration.months;
 
-  const handleUpgrade = async (planName: string) => {
+  const openPlanPopup = () => {
+    const firstUpgrade = upgradePlans.find(planName => plans.some(p => p.name?.toLowerCase() === planName.toLowerCase()));
+    const fallback = payablePlans.find(planName => planName.toLowerCase() !== 'start') || payablePlans[0] || currentPlan;
+    setSelectedPlan(firstUpgrade || fallback);
+    setSelectedMonths(1);
+    setPlanPopupOpen(true);
+  };
+
+  const handleUpgrade = async (planName: string, months = 1) => {
     if (!user) return;
     setSubError('');
     const plan = plans.find(p => p.name?.toLowerCase() === planName.toLowerCase());
     if (!plan) { setSubError(`Plan "${planName}" not found. Refresh and try again.`); return; }
+    const duration = DURATION_OPTIONS.find(option => option.months === months) || DURATION_OPTIONS[0];
+    const baseAmount = getPlanAmountPaise(plan);
+    const amountPaise = Math.round(baseAmount * duration.months * (1 - duration.discount / 100));
     setUpgrading(planName);
     try {
       await ensureRazorpayCheckoutAvailable();
-      const order = await createSubscriptionOrder(planName, plan, user, profile);
+      const order = await createSubscriptionOrder(planName, plan, user, profile, {
+        amountPaise,
+        durationMonths: duration.months,
+        discountPercent: duration.discount,
+      });
       const checkout = await openRazorpayCheckout(order, user, planName, {
         onSuccess: async (verification) => {
           if (verification?.success === false) {
@@ -73,6 +136,7 @@ export default function SettingsPageFull() {
               : `${planName} payment successful. Your subscription is active.`
           );
           showToast(`${planName} payment successful.`);
+          setPlanPopupOpen(false);
           await loadSub();
         },
         onDismiss: () => {
@@ -80,7 +144,7 @@ export default function SettingsPageFull() {
         },
       });
       if (checkout.opened) {
-        showToast(`Upgrade to ${planName} initiated. Complete payment to activate.`);
+        showToast(`${planName} ${duration.months}-month payment initiated. Complete payment to activate.`);
       }
     } catch (e: any) { setSubError(e.message); }
     setUpgrading('');
@@ -200,31 +264,9 @@ export default function SettingsPageFull() {
           </div>
         </div>
 
-        {/* Upgrade options — compact inline rows */}
-        {upgradePlans.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {upgradePlans.map(planName => {
-              const planData = plans.find(p => p.name?.toLowerCase() === planName.toLowerCase());
-              const price = planData?.priceLabel || planData?.price || '';
-              const color = PLAN_COLORS[planName];
-              return (
-                <div key={planName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', border: `1px solid ${color}40`, borderRadius: 12, background: color + '08', gap: 12 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 13, color }}>{planName}</div>
-                    {price && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{price}/mo</div>}
-                  </div>
-                  <button
-                    onClick={() => handleUpgrade(planName)}
-                    disabled={upgrading === planName}
-                    style={{ padding: '7px 16px', background: color, color: '#fff', borderRadius: 8, fontSize: 12, fontWeight: 700, flexShrink: 0, opacity: upgrading === planName ? 0.7 : 1 }}
-                  >
-                    {upgrading === planName ? 'Processing…' : `Upgrade →`}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <button className={styles.addBtn} style={{ justifyContent: 'center', width: '100%' }} onClick={openPlanPopup}>
+          View Plans &amp; Pay
+        </button>
 
         {/* Order history — compact */}
         {orders.length > 0 && (
@@ -309,6 +351,122 @@ export default function SettingsPageFull() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {planPopupOpen && (
+        <div className={sStyles.planModalOverlay}>
+          <div className={sStyles.planModalPanel}>
+            <div className={sStyles.planModalHeader}>
+              <div>
+                <div className={sStyles.currentLabel}>Subscription Plans</div>
+                <div className={sStyles.planModalTitle}>Choose a plan and duration</div>
+              </div>
+              <div className={sStyles.planModalHeaderActions}>
+                <div className={sStyles.creditSummary}>
+                  <Zap size={15} />
+                  <div>
+                    <span>{selectedDurationCredit.toLocaleString('en-IN')}</span>
+                    <small>
+                      {selectedMonthlyCredit.toLocaleString('en-IN')} credits x {selectedDuration.months} mo
+                      {currentAvailableCredit > 0 ? `, ${currentAvailableCredit.toLocaleString('en-IN')} available now` : ''}
+                    </small>
+                  </div>
+                </div>
+                <button className={styles.refreshBtn} onClick={() => setPlanPopupOpen(false)} title="Close">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className={sStyles.planModalBody}>
+              <div className={sStyles.planGrid}>
+                {payablePlans.map(planName => {
+                  const planData = plans.find(p => p.name?.toLowerCase() === planName.toLowerCase());
+                  const color = PLAN_COLORS[planName] || 'var(--accent)';
+                  const features: string[] = Array.isArray(planData?.features) ? planData.features : [];
+                  const limits = planLimits.filter(limit => getLimitPlanName(limit) === planName.toLowerCase());
+                  const isCurrent = planName.toLowerCase() === currentPlan.toLowerCase();
+                  const planIdx = PLAN_ORDER.findIndex(p => p.toLowerCase() === planName.toLowerCase());
+                  const isUnavailable = planIdx <= currentIdx;
+                  const isSelected = planName === selectedPlan;
+                  const amount = planData ? getPlanAmountPaise(planData) : 0;
+                  return (
+                    <button
+                      key={planName}
+                      className={`${sStyles.planCard} ${isSelected ? sStyles.planCardSelected : ''} ${isUnavailable ? sStyles.planCardUnavailable : ''}`}
+                      style={{ borderColor: isSelected || isCurrent ? color : undefined }}
+                      disabled={isUnavailable}
+                      onClick={() => setSelectedPlan(planName)}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+                        <div className={sStyles.planName} style={{ color }}>{planName}</div>
+                        {isCurrent && <span className={sStyles.currentBadge}>Current</span>}
+                      </div>
+                      <div className={sStyles.planPrice}>
+                        {amount > 0 ? `₹${(amount / 100).toFixed(0)}` : 'Free'}
+                        {amount > 0 && <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 400 }}>/mo</span>}
+                      </div>
+                      <div className={sStyles.planCreditLine}>
+                        {getPlanCredit(planData).toLocaleString('en-IN')} credits/month
+                      </div>
+                      {limits.length > 0 && (
+                        <div className={sStyles.planLimits}>
+                          {limits.slice(0, 4).map((limit, i) => (
+                            <div key={limit.id || `${planName}-limit-${i}`}>
+                              <span>{getLimitLabel(limit)}</span>
+                              <strong>{getLimitValue(limit)}</strong>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {features.length > 0 && (
+                        <ul className={sStyles.planFeatures}>
+                          {features.slice(0, 4).map((feature, i) => (
+                            <li key={i}><Check size={12} style={{ color, flexShrink: 0 }} />{feature}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className={sStyles.durationPanel}>
+                <div className={sStyles.durationTitle}>Billing duration</div>
+                <div className={sStyles.durationGrid}>
+                  {DURATION_OPTIONS.map(option => (
+                    <button
+                      key={option.months}
+                      className={`${sStyles.durationOption} ${selectedMonths === option.months ? sStyles.durationOptionSelected : ''}`}
+                      onClick={() => setSelectedMonths(option.months)}
+                    >
+                      <span>{option.months} month{option.months > 1 ? 's' : ''}</span>
+                      <strong>{option.discount ? `${option.discount}% off` : 'No discount'}</strong>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className={sStyles.planModalFooter}>
+              <div>
+                <div className={sStyles.checkoutTotal}>₹{(totalAmount / 100).toLocaleString('en-IN')}</div>
+                <div className={sStyles.checkoutMeta}>
+                  {selectedPlan || 'Plan'} for {selectedMonths} month{selectedMonths > 1 ? 's' : ''}
+                  {savingsAmount > 0 ? `, saving ₹${(savingsAmount / 100).toLocaleString('en-IN')}` : ''}
+                </div>
+              </div>
+              <button
+                className={styles.addBtn}
+                style={{ justifyContent: 'center', minWidth: 170, opacity: upgrading === selectedPlan || !totalAmount ? 0.65 : 1 }}
+                disabled={upgrading === selectedPlan || !totalAmount}
+                onClick={() => handleUpgrade(selectedPlan, selectedMonths)}
+              >
+                {upgrading === selectedPlan ? 'Processing...' : 'Payment'}
+              </button>
             </div>
           </div>
         </div>

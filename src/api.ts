@@ -318,6 +318,7 @@ export const api = {
     createAICredit: (userId: string, action: string, credit: number) =>
       apiFetch('/ai-credit-score', { method: 'POST', body: JSON.stringify({ userId, action, credit }) }),
     getUserCreditBalance: (userId: string) => apiFetch(`/user/credit/${userId}`),
+    getUserCreditBreakdown: (userId: string) => apiFetch(`/user/credit/${userId}/breakdown`),
     updateUserStatus: (userId: string, status: 'active' | 'inactive' | 'banned') =>
       apiFetch(`/users/${userId}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   },

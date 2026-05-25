@@ -5,7 +5,7 @@ import {
   Sun, Moon, Menu, X, RefreshCw, TrendingUp,
   Shield, Activity, MessageSquare, Zap, DollarSign,
   UserCheck, UserPlus, Crown, AlertCircle, Clock,
-  TrendingDown, Percent, Star, Database, Wifi
+  TrendingDown, Percent, Star, Database, Wifi, CreditCard
 } from 'lucide-react';
 import { api } from '../api';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
@@ -408,6 +408,7 @@ function AdminUsers() {
   const [error, setError] = useState('');
   const [actionMsg, setActionMsg] = useState('');
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [creditUser, setCreditUser] = useState<{ id: string; name: string } | null>(null);
 
   // Load ALL users once for charts, paginated users for table
   const loadAll = async () => {
@@ -687,10 +688,20 @@ function AdminUsers() {
                       {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                     </td>
                     <td>
-                      {isSelf ? (
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>You</span>
-                      ) : (
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => setCreditUser({ id: u.id, name: u.userName || u.email || 'User' })}
+                          className={styles.creditActionBtn}
+                          title={`View credits for ${u.userName || 'user'}`}
+                        >
+                          <CreditCard size={13} />
+                          Credits
+                        </button>
+                        {isSelf ? (
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>You</span>
+                        ) : (
+                          <>
                           {/* Activate */}
                           {!isActive && (
                             <button
@@ -763,8 +774,9 @@ function AdminUsers() {
                               {busy ? '…' : '↩ Unban'}
                             </button>
                           )}
-                        </div>
-                      )}
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -804,7 +816,249 @@ function AdminUsers() {
           </button>
         </div>
       )}
+      {/* Credit Usage Drawer */}
+      {creditUser && (
+        <UserCreditDrawer userId={creditUser.id} userName={creditUser.name} onClose={() => setCreditUser(null)} />
+      )}
     </div>
+  );
+}
+
+
+/* ── UserCreditDrawer ── */
+function UserCreditDrawer({ userId, userName, onClose }: { userId: string; userName: string; onClose: () => void }) {
+  const [logs, setLogs]       = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
+  const [breakdown, setBreakdown] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [sortDesc, setSortDesc]     = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const [creditLogsRes, allCostLogsRes, creditRes, breakdownRes] = await Promise.all([
+          api.admin.getUserCredits(userId).catch(() => []),
+          api.admin.getAppCostLogs().catch(() => []),
+          api.admin.getUserCreditBalance(userId).catch(() => null),
+          api.admin.getUserCreditBreakdown(userId).catch(() => null),
+        ]);
+
+        const aiCreditLogs = (Array.isArray(creditLogsRes) ? creditLogsRes : []).map((l: any) => ({
+          ...l,
+          analysisType: l.action || 'AI-CREDIT',
+          analysisOutcome: l.action || 'Credit used',
+          createdAt: l.usedAt || l.createdAt,
+          inputToken: 0,
+          outputToken: 0,
+          chargesInRs: 0,
+          source: 'credit',
+        }));
+
+        const costLogs = (Array.isArray(allCostLogsRes) ? allCostLogsRes : [])
+          .filter((l: any) => String(l.userId) === String(userId))
+          .map((l: any) => ({ ...l, source: 'cost' }));
+
+        const seen = new Set<string>();
+        const userLogs = [...aiCreditLogs, ...costLogs].filter((l: any) => {
+          const key = `${l.source}-${l.id ?? ''}-${l.createdAt ?? l.usedAt ?? ''}-${l.credit ?? ''}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+
+        setLogs(userLogs);
+        setSummary(creditRes?.data ?? creditRes);
+        setBreakdown(breakdownRes?.data ?? breakdownRes);
+      } catch {}
+      setLoading(false);
+    };
+    load();
+  }, [userId]);
+
+  const TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
+    'IMAGE-ANALYSIS':   { label: 'Image Analysis', color: '#5bc8e0', bg: 'rgba(91,200,224,.12)' },
+    'AI-COACH-INSIGHT': { label: 'Coach Insight',  color: '#9f7aea', bg: 'rgba(159,122,234,.12)' },
+    'AI-CREDIT':        { label: 'AI Credit',      color: '#3dbf96', bg: 'rgba(61,191,150,.12)' },
+  };
+  const getMeta = (t: string) => TYPE_META[t] ?? { label: t, color: 'var(--text-muted)', bg: 'var(--metric-bg)' };
+
+  const allTypes = Array.from(new Set(logs.map((l: any) => l.analysisType).filter(Boolean)));
+
+  const filtered = logs
+    .filter((l: any) => typeFilter === 'ALL' || l.analysisType === typeFilter)
+    .sort((a: any, b: any) => sortDesc
+      ? new Date(b.createdAt || b.usedAt).getTime() - new Date(a.createdAt || a.usedAt).getTime()
+      : new Date(a.createdAt || a.usedAt).getTime() - new Date(b.createdAt || b.usedAt).getTime()
+    );
+
+  const totalCredit = filtered.reduce((s: number, l: any) => s + (l.credit || 0), 0);
+  const totalRs     = filtered.reduce((s: number, l: any) => s + (l.chargesInRs || 0), 0);
+  const totalIn     = filtered.reduce((s: number, l: any) => s + (l.inputToken || 0), 0);
+  const totalOut    = filtered.reduce((s: number, l: any) => s + (l.outputToken || 0), 0);
+  const breakdownItems = Array.isArray(breakdown?.items) ? breakdown.items : [];
+  const breakdownCredit = breakdownItems.reduce((s: number, item: any) => s + (Number(item.creditUsed) || 0), 0);
+  const summaryAllocated = Number(summary?.allocatedCredit);
+  const summaryAvailable = Number(summary?.availableCredit);
+  const breakdownAllocated = Number(breakdown?.allocatedCredit);
+  const breakdownAvailable = Number(breakdown?.availableCredit);
+  const allocatedCredit = Number.isFinite(summaryAllocated) && summaryAllocated > 0 ? summaryAllocated : Number.isFinite(breakdownAllocated) ? breakdownAllocated : 0;
+  const availableCredit = Number.isFinite(summaryAvailable) ? summaryAvailable : Number.isFinite(breakdownAvailable) ? breakdownAvailable : 0;
+  const summaryUsedCredit = Math.max(0, allocatedCredit - availableCredit);
+  const consolidatedUsedCredit = Number(breakdown?.usedCredit) > 0 ? Number(breakdown.usedCredit) : breakdownCredit || summaryUsedCredit;
+  const consolidatedCalls = Number(breakdown?.totalCalls) || breakdownItems.reduce((s: number, item: any) => s + (Number(item.calls) || 0), 0);
+  const consolidatedRs = Number(breakdown?.totalChargesInRs) || breakdownItems.reduce((s: number, item: any) => s + (Number(item.chargesInRs) || 0), 0);
+
+  const usedCredit  = +consolidatedUsedCredit.toFixed(4);
+  const usedPct     = allocatedCredit > 0
+    ? Math.min(100, Math.round((usedCredit / allocatedCredit) * 100))
+    : 0;
+
+  const barColor = usedPct >= 90 ? '#e53e3e' : usedPct >= 60 ? '#ed8936' : '#3dbf96';
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 1000 }}
+      />
+      {/* Drawer */}
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(680px, 100vw)',
+        background: 'var(--bg-card)', borderLeft: '1px solid var(--border)',
+        zIndex: 1001, display: 'flex', flexDirection: 'column', overflowY: 'auto',
+        boxShadow: '-8px 0 32px rgba(0,0,0,.25)',
+      }}>
+        {/* Header */}
+        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>💳 Credit Usage</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{userName}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 20, lineHeight: 1 }}>✕</button>
+        </div>
+
+        <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {loading && <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Loading…</div>}
+
+          {!loading && (
+            <>
+              {/* Summary cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                {[
+                  { label: 'Allocated',  value: allocatedCredit.toFixed(2), color: '#5bc8e0' },
+                  { label: 'Used',       value: usedCredit.toFixed(2), color: '#ed8936' },
+                  { label: 'Remaining',  value: availableCredit.toFixed(2), color: '#3dbf96' },
+                  { label: 'AI Calls',   value: String(consolidatedCalls || logs.length || 0), color: '#9f7aea' },
+                ].map(c => (
+                  <div key={c.label} style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 12px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: c.color }}>{c.value}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginTop: 2 }}>{c.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Usage bar */}
+              {allocatedCredit > 0 && (
+                <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>
+                    <span>{usedCredit?.toFixed(2)} used ({usedPct}%)</span>
+                    <span>{availableCredit.toFixed(2)} remaining</span>
+                  </div>
+                  <div style={{ height: 8, background: 'var(--metric-bg)', borderRadius: 99, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${usedPct}%`, background: barColor, borderRadius: 99, transition: 'width .6s' }} />
+                  </div>
+                </div>
+              )}
+
+              {breakdownItems.length > 0 && (
+                <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Consolidated Credit Spent</div>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#ed8936' }}>
+                      {consolidatedUsedCredit.toFixed(2)} credits · ₹{consolidatedRs.toFixed(4)}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {breakdownItems.map((item: any) => (
+                      <div key={item.analysisType} style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, alignItems: 'center', fontSize: 12 }}>
+                        <span style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>{item.label || getMeta(item.analysisType).label}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>{item.calls || 0} calls</span>
+                        <span style={{ color: '#ed8936', fontWeight: 800 }}>{Number(item.creditUsed || 0).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Filters */}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
+                  style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: 12 }}>
+                  <option value="ALL">All Types</option>
+                  {allTypes.map((t: any) => <option key={t} value={t}>{getMeta(t).label}</option>)}
+                </select>
+                <button onClick={() => setSortDesc(s => !s)}
+                  style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-input)', color: 'var(--text-primary)', fontSize: 12, cursor: 'pointer' }}>
+                  {sortDesc ? '↓ Newest' : '↑ Oldest'}
+                </button>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                  {filtered.length} records · ₹{totalRs.toFixed(4)} · {totalCredit.toFixed(2)} credits
+                </span>
+              </div>
+
+              {/* Table */}
+              {filtered.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px 0', fontSize: 13 }}>No AI credit transactions found</div>
+              ) : (
+                <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ background: 'var(--bg-surface)' }}>
+                        {['Date & Time', 'AI Feature', 'Action', 'Tokens', 'Credit', 'Cost (₹)'].map(h => (
+                          <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, color: 'var(--text-muted)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.map((l: any, i: number) => {
+                        const meta = getMeta(l.analysisType);
+                        return (
+                          <tr key={l.id ?? i} style={{ borderBottom: '1px solid var(--border)' }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                              {l.createdAt || l.usedAt ? new Date(l.createdAt || l.usedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
+                            </td>
+                            <td style={{ padding: '8px 12px' }}>
+                              <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 10, fontWeight: 700, color: meta.color, background: meta.bg }}>{meta.label}</span>
+                            </td>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-secondary)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={l.analysisOutcome}>{l.analysisOutcome || '—'}</td>
+                            <td style={{ padding: '8px 12px', color: 'var(--text-muted)', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>
+                              {(l.inputToken || 0).toLocaleString()} / {(l.outputToken || 0).toLocaleString()}
+                            </td>
+                            <td style={{ padding: '8px 12px', fontWeight: 700, color: '#ed8936', textAlign: 'right' }}>{(l.credit || 0).toFixed(2)}</td>
+                            <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--text-primary)', textAlign: 'right' }}>₹{(l.chargesInRs || 0).toFixed(4)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: 'var(--bg-surface)', fontWeight: 800 }}>
+                        <td colSpan={3} style={{ padding: '8px 12px', color: 'var(--text-muted)', fontSize: 11 }}>Total ({filtered.length} rows)</td>
+                        <td style={{ padding: '8px 12px', color: 'var(--text-muted)', fontFamily: 'monospace', fontSize: 11, whiteSpace: 'nowrap' }}>{totalIn.toLocaleString()} / {totalOut.toLocaleString()}</td>
+                        <td style={{ padding: '8px 12px', color: '#ed8936', textAlign: 'right' }}>{totalCredit.toFixed(2)}</td>
+                        <td style={{ padding: '8px 12px', color: '#3dbf96', textAlign: 'right' }}>₹{totalRs.toFixed(4)}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
