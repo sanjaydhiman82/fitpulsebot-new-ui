@@ -1,14 +1,62 @@
-/* THEME: Ember - charcoal dark, orange-red fire accent */
-[data-org-theme="ember"], [data-theme][data-org-theme="ember"] {
-  --bg-base:#0f0a08; --bg-surface:#1a100c; --bg-card:#221410;
-  --bg-input:#1a100c; --bg-subtle:#2d1a14;
-  --border:rgba(249,115,22,.12); --border-strong:rgba(249,115,22,.25);
-  --text-primary:#faf5f2; --text-secondary:#d4b8ae; --text-muted:#9e7b6e;
-  --accent:#f97316; --accent-2:#ea580c; --accent-3:#fb923c;
-  --accent-glow:rgba(249,115,22,.2); --accent-light:rgba(249,115,22,.15);
-  --nav-bg:rgba(26,16,12,.92); --sidebar-bg:#1a100c;
-  --metric-bg:rgba(249,115,22,.09); --badge-bg:rgba(249,115,22,.2); --badge-text:#fdba74;
-  --danger:#f87171; --warning:#fbbf24; --info:#60a5fa;
-  --shadow-sm:0 2px 8px rgba(0,0,0,.4); --shadow:0 4px 20px rgba(0,0,0,.45);
-  --shadow-lg:0 8px 40px rgba(0,0,0,.55); --shadow-accent:0 6px 24px rgba(249,115,22,.3);
+/* THEME: ember - dark + light variants */
+[data-theme="dark"][data-org-theme="ember"] {
+  --bg-base:#0f0a08;
+  --bg-surface:#1a100c;
+  --bg-card:#221410;
+  --bg-input:#1a100c;
+  --bg-subtle:#2d1a14;
+  --border:rgba(249,115,22,.12);
+  --border-strong:rgba(249,115,22,.25);
+  --text-primary:#faf5f2;
+  --text-secondary:#d4b8ae;
+  --text-muted:#9e7b6e;
+  --accent:#f97316;
+  --accent-2:#ea580c;
+  --accent-3:#fb923c;
+  --accent-glow:rgba(249,115,22,.2);
+  --accent-light:rgba(249,115,22,.15);
+  --nav-bg:rgba(26,16,12,.92);
+  --sidebar-bg:#1a100c;
+  --metric-bg:rgba(249,115,22,.09);
+  --badge-bg:rgba(249,115,22,.2);
+  --badge-text:#fdba74;
+  --danger:#fc8181;
+  --warning:#fbbf24;
+  --info:#63b3ed;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.4);
+  --shadow:0 4px 20px rgba(0,0,0,.45);
+  --shadow-lg:0 8px 40px rgba(0,0,0,.55);
+  --shadow-accent:0 6px 24px rgba(249,115,22,.3);
+  --bg-base-mode:dark;
+}
+
+[data-theme="light"][data-org-theme="ember"] {
+  --bg-base:#fff8f5;
+  --bg-surface:#ffffff;
+  --bg-card:#ffffff;
+  --bg-input:#fff1ea;
+  --bg-subtle:#ffe4d6;
+  --border:rgba(249,115,22,.18);
+  --border-strong:rgba(249,115,22,.35);
+  --text-primary:#3d1205;
+  --text-secondary:#7c2d12;
+  --text-muted:#c2673a;
+  --accent:#ea580c;
+  --accent-2:#c2410c;
+  --accent-3:#f97316;
+  --accent-glow:rgba(234,88,12,.18);
+  --accent-light:#ffedd5;
+  --nav-bg:rgba(255,255,255,.92);
+  --sidebar-bg:#ffffff;
+  --metric-bg:#fff7ed;
+  --badge-bg:#ffedd5;
+  --badge-text:#9a3412;
+  --danger:#dc2626;
+  --warning:#d97706;
+  --info:#0891b2;
+  --shadow-sm:0 2px 8px rgba(61,18,5,.06);
+  --shadow:0 4px 20px rgba(61,18,5,.09);
+  --shadow-lg:0 8px 40px rgba(61,18,5,.13);
+  --shadow-accent:0 6px 24px rgba(234,88,12,.25);
+  --bg-base-mode:light;
 }

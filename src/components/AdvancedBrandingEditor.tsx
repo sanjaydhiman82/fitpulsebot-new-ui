@@ -9,14 +9,46 @@ import {
 
 // ── Theme catalogue ──────────────────────────────────────────────────────
 export const PRESET_THEMES = [
-  { id: 'default',       label: 'FitPulse Default', dark: true,  preview: { bg:'#0d1f30', accent:'#3dbf96', card:'#122336' } },
-  { id: 'ocean-dark',    label: 'Ocean Dark',        dark: true,  preview: { bg:'#050f1a', accent:'#3dbf96', card:'#122336' } },
-  { id: 'ember',         label: 'Ember',             dark: true,  preview: { bg:'#0f0a08', accent:'#f97316', card:'#221410' } },
-  { id: 'royal-purple',  label: 'Royal Purple',      dark: true,  preview: { bg:'#08050f', accent:'#8b5cf6', card:'#1c1230' } },
-  { id: 'midnight-gold', label: 'Midnight Gold',     dark: true,  preview: { bg:'#080604', accent:'#d97706', card:'#1c170e' } },
-  { id: 'forest',        label: 'Forest',            dark: true,  preview: { bg:'#040d06', accent:'#22c55e', card:'#101f13' } },
-  { id: 'arctic',        label: 'Arctic Light',      dark: false, preview: { bg:'#f0f6ff', accent:'#3b82f6', card:'#ffffff' } },
-  { id: 'rose',          label: 'Rose',              dark: false, preview: { bg:'#fff5f7', accent:'#f43f5e', card:'#ffffff' } },
+  {
+    id: 'default', label: 'FitPulse Default',
+    dark:  { bg:'#0d1f30', accent:'#3dbf96', card:'#122336', text:'#e8f4fa' },
+    light: { bg:'#f5fdfb', accent:'#3dbf96', card:'#ffffff', text:'#0d2137' },
+  },
+  {
+    id: 'ocean-dark', label: 'Ocean',
+    dark:  { bg:'#050f1a', accent:'#3dbf96', card:'#122336', text:'#e8f4fa' },
+    light: { bg:'#f0fdf9', accent:'#0ea5a0', card:'#ffffff', text:'#062420' },
+  },
+  {
+    id: 'ember', label: 'Ember',
+    dark:  { bg:'#0f0a08', accent:'#f97316', card:'#221410', text:'#faf5f2' },
+    light: { bg:'#fff8f5', accent:'#ea580c', card:'#ffffff', text:'#3d1205' },
+  },
+  {
+    id: 'royal-purple', label: 'Royal Purple',
+    dark:  { bg:'#08050f', accent:'#8b5cf6', card:'#1c1230', text:'#f3f0fa' },
+    light: { bg:'#faf5ff', accent:'#7c3aed', card:'#ffffff', text:'#2d1b69' },
+  },
+  {
+    id: 'midnight-gold', label: 'Midnight Gold',
+    dark:  { bg:'#080604', accent:'#d97706', card:'#1c170e', text:'#fdf8ec' },
+    light: { bg:'#fffbf0', accent:'#b45309', card:'#ffffff', text:'#3d2000' },
+  },
+  {
+    id: 'forest', label: 'Forest',
+    dark:  { bg:'#040d06', accent:'#22c55e', card:'#101f13', text:'#ecfaf0' },
+    light: { bg:'#f0fdf4', accent:'#16a34a', card:'#ffffff', text:'#052e16' },
+  },
+  {
+    id: 'arctic', label: 'Arctic',
+    dark:  { bg:'#030d1f', accent:'#3b82f6', card:'#0d1e35', text:'#e8f2ff' },
+    light: { bg:'#f0f6ff', accent:'#2563eb', card:'#ffffff', text:'#0d1f3c' },
+  },
+  {
+    id: 'rose', label: 'Rose',
+    dark:  { bg:'#0f0508', accent:'#f43f5e', card:'#220b14', text:'#fdf2f5' },
+    light: { bg:'#fff5f7', accent:'#e11d48', card:'#ffffff', text:'#1f0a10' },
+  },
 ];
 
 const FONT_OPTIONS = [
@@ -71,13 +103,14 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 }
 
 // ── Live preview mini ────────────────────────────────────────────────────
-function MiniPreview({ data }: { data: any }) {
+function MiniPreview({ data, mode = 'dark' }: { data: any; mode?: 'dark' | 'light' }) {
   const theme = PRESET_THEMES.find(t => t.id === data.theme) || PRESET_THEMES[0];
-  const bg = data.backgroundColor || theme.preview.bg;
-  const accent = data.primaryColor || theme.preview.accent;
-  const card = theme.preview.card;
-  const text = theme.dark ? '#e8f4fa' : '#0d1f3c';
-  const muted = theme.dark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.4)';
+  const palette = mode === 'light' ? theme.light : theme.dark;
+  const bg = data.backgroundColor || palette.bg;
+  const accent = data.primaryColor || palette.accent;
+  const card = palette.card;
+  const text = palette.text;
+  const muted = mode === 'dark' ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
   const radius = data.borderRadius === 'sharp' ? 4 : data.borderRadius === 'rounded' ? 16 : 10;
 
   return (
@@ -284,33 +317,49 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
                           transition: 'all 0.15s',
                         }}
                       >
-                        {/* Mini preview swatch */}
-                        <div style={{ background: t.preview.bg, padding: '10px 10px 6px' }}>
-                          <div style={{ display: 'flex', gap: 4, marginBottom: 5 }}>
-                            <div style={{ height: 6, flex: 2, borderRadius: 3, background: t.preview.accent }} />
-                            <div style={{ height: 6, flex: 1, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }} />
+                        {/* Dark + Light swatches side by side */}
+                        <div style={{ display: 'flex' }}>
+                          {/* Dark swatch */}
+                          <div style={{ flex: 1, background: t.dark.bg, padding: '8px 7px 5px' }}>
+                            <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
+                              <div style={{ height: 4, flex: 2, borderRadius: 2, background: t.dark.accent }} />
+                              <div style={{ height: 4, flex: 1, borderRadius: 2, background: 'rgba(255,255,255,0.12)' }} />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                              {[0,1,2,3].map(i => (
+                                <div key={i} style={{ height: 10, borderRadius: 3, background: t.dark.card, border: '1px solid rgba(255,255,255,0.07)', opacity: i===0?1:0.55 }} />
+                              ))}
+                            </div>
+                            <div style={{ fontSize: 8, color: t.dark.text, marginTop: 4, opacity: 0.6, display:'flex', alignItems:'center', gap:2 }}>
+                              <Moon size={7} /> Dark
+                            </div>
                           </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 3 }}>
-                            {[0,1,2,3].map(i => (
-                              <div key={i} style={{ height: 14, borderRadius: 4, background: t.preview.card, border: `1px solid rgba(255,255,255,0.08)`, opacity: i === 0 ? 1 : 0.6 }} />
-                            ))}
+                          {/* Divider */}
+                          <div style={{ width: 1, background: 'var(--border)' }} />
+                          {/* Light swatch */}
+                          <div style={{ flex: 1, background: t.light.bg, padding: '8px 7px 5px' }}>
+                            <div style={{ display: 'flex', gap: 2, marginBottom: 4 }}>
+                              <div style={{ height: 4, flex: 2, borderRadius: 2, background: t.light.accent }} />
+                              <div style={{ height: 4, flex: 1, borderRadius: 2, background: 'rgba(0,0,0,0.1)' }} />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                              {[0,1,2,3].map(i => (
+                                <div key={i} style={{ height: 10, borderRadius: 3, background: t.light.card, border: '1px solid rgba(0,0,0,0.07)', opacity: i===0?1:0.55 }} />
+                              ))}
+                            </div>
+                            <div style={{ fontSize: 8, color: t.light.text, marginTop: 4, opacity: 0.6, display:'flex', alignItems:'center', gap:2 }}>
+                              <Sun size={7} /> Light
+                            </div>
                           </div>
                         </div>
                         {/* Label */}
-                        <div style={{
-                          padding: '7px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          background: 'var(--bg-card)',
-                        }}>
+                        <div style={{ padding: '6px 10px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>{t.label}</span>
-                          <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 20,
-                            background: t.dark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)',
-                            color: t.dark ? '#aaa' : '#555', fontWeight: 600 }}>
-                            {t.dark ? <Moon size={8} /> : <Sun size={8} />}
-                          </span>
+                          {selected && <CheckCircle2 size={12} color="var(--accent)" />}
                         </div>
                         {selected && (
-                          <div style={{ position: 'absolute', top: 6, right: 6, width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CheckCircle2 size={11} color="#fff" />
+                          <div style={{ position: 'absolute', top: 5, right: 5, width: 16, height: 16, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <CheckCircle2 size={10} color="#fff" />
                           </div>
                         )}
                       </button>
@@ -488,7 +537,12 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 5 }}>
               <Eye size={12} /> Live Preview
             </div>
-            <MiniPreview data={data} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}><Moon size={10} /> Dark</div>
+              <MiniPreview data={data} mode="dark" />
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}><Sun size={10} /> Light</div>
+              <MiniPreview data={data} mode="light" />
+            </div>
           </div>
 
           <div style={{ background: 'var(--bg-card)', borderRadius: 14, padding: 16, border: '1px solid var(--border)' }}>
