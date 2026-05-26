@@ -1,5 +1,5 @@
 /* THEME: Arctic Light - crisp white, ice-blue accent */
-[data-org-theme="arctic"] {
+[data-org-theme="arctic"], [data-theme][data-org-theme="arctic"] {
   --bg-base:#f0f6ff; --bg-surface:#ffffff; --bg-card:#ffffff;
   --bg-input:#f0f6ff; --bg-subtle:#dceeff;
   --border:rgba(59,130,246,.14); --border-strong:rgba(59,130,246,.28);

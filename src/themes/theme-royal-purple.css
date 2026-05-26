@@ -1,5 +1,5 @@
 /* THEME: Royal Purple - dark, violet accent */
-[data-org-theme="royal-purple"] {
+[data-org-theme="royal-purple"], [data-theme][data-org-theme="royal-purple"] {
   --bg-base:#08050f; --bg-surface:#130c1f; --bg-card:#1c1230;
   --bg-input:#130c1f; --bg-subtle:#261840;
   --border:rgba(139,92,246,.12); --border-strong:rgba(139,92,246,.25);

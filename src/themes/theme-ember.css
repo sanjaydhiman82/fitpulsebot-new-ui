@@ -1,5 +1,5 @@
 /* THEME: Ember - charcoal dark, orange-red fire accent */
-[data-org-theme="ember"] {
+[data-org-theme="ember"], [data-theme][data-org-theme="ember"] {
   --bg-base:#0f0a08; --bg-surface:#1a100c; --bg-card:#221410;
   --bg-input:#1a100c; --bg-subtle:#2d1a14;
   --border:rgba(249,115,22,.12); --border-strong:rgba(249,115,22,.25);

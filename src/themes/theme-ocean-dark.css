@@ -1,5 +1,5 @@
 /* THEME: Ocean Dark - deep navy, teal accent */
-[data-org-theme="ocean-dark"] {
+[data-org-theme="ocean-dark"], [data-theme][data-org-theme="ocean-dark"] {
   --bg-base:#050f1a; --bg-surface:#0d1f30; --bg-card:#122336;
   --bg-input:#0d1f30; --bg-subtle:#1a3247;
   --border:rgba(91,200,224,.12); --border-strong:rgba(91,200,224,.24);

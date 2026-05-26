@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { api } from '../api';
 
 import '../themes/theme-ocean-dark.css';
@@ -112,8 +112,6 @@ export function BrandingProvider({ orgId, branchId, children }: {
 }) {
   const [branding, setBranding] = useState<BrandingData>({});
   const [loading, setLoading] = useState(false);
-  const prevTheme = useRef<string|undefined>(undefined);
-
   useEffect(() => {
     if (!orgId && !branchId) return;
     setLoading(true);
@@ -148,18 +146,19 @@ export function BrandingProvider({ orgId, branchId, children }: {
     }
   }, [orgId, branchId]);
 
-  // Apply / remove theme attr on <html>
+  // Apply data-org-theme on the [data-theme] div (same element as dark/light theme)
+  // Must target the same element so CSS specificity works correctly
   useEffect(() => {
-    const root = document.documentElement;
-    if (prevTheme.current) root.removeAttribute('data-org-theme');
+    // Find the app root div that has data-theme attribute
+    const appDiv = document.querySelector('[data-theme]') as HTMLElement | null;
+    const target = appDiv || document.documentElement;
     const themeId = branding.theme;
     if (themeId && themeId !== 'default') {
-      root.setAttribute('data-org-theme', themeId);
-      prevTheme.current = themeId;
+      target.setAttribute('data-org-theme', themeId);
     } else {
-      prevTheme.current = undefined;
+      target.removeAttribute('data-org-theme');
     }
-    return () => { root.removeAttribute('data-org-theme'); };
+    // No cleanup - don't remove on unmount; parent provider stays mounted
   }, [branding.theme]);
 
   // Apply dynamic CSS variable overrides

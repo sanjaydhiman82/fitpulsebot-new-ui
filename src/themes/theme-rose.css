@@ -1,5 +1,5 @@
 /* THEME: Rose - clean light, rose/pink accent */
-[data-org-theme="rose"] {
+[data-org-theme="rose"], [data-theme][data-org-theme="rose"] {
   --bg-base:#fff5f7; --bg-surface:#ffffff; --bg-card:#ffffff;
   --bg-input:#fff0f3; --bg-subtle:#ffe4ea;
   --border:rgba(244,63,94,.14); --border-strong:rgba(244,63,94,.28);

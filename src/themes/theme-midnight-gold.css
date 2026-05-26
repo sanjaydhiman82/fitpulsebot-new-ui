@@ -1,5 +1,5 @@
 /* THEME: Midnight Gold - very dark, amber/gold accent */
-[data-org-theme="midnight-gold"] {
+[data-org-theme="midnight-gold"], [data-theme][data-org-theme="midnight-gold"] {
   --bg-base:#080604; --bg-surface:#120e08; --bg-card:#1c170e;
   --bg-input:#120e08; --bg-subtle:#261f12;
   --border:rgba(217,119,6,.12); --border-strong:rgba(217,119,6,.26);

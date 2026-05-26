@@ -1,5 +1,5 @@
 /* THEME: Forest - earthy dark green, natural accent */
-[data-org-theme="forest"] {
+[data-org-theme="forest"], [data-theme][data-org-theme="forest"] {
   --bg-base:#040d06; --bg-surface:#0a160c; --bg-card:#101f13;
   --bg-input:#0a160c; --bg-subtle:#162819;
   --border:rgba(34,197,94,.11); --border-strong:rgba(34,197,94,.22);
