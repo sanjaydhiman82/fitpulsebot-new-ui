@@ -64,6 +64,26 @@ export async function apiFetch(
   }
 }
 
+// ── AI JSON fetch ─────────────────────────────────────
+export async function apiFetchAI(path: string, options: RequestInit & { skipAuth?: boolean } = {}): Promise<any> {
+  const { skipAuth = false, headers, ...rest } = options;
+  const token = getToken();
+  const res = await fetch(`${AI_BASE}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(headers as any || {}),
+    },
+    ...rest,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.detail || err?.message || `HTTP ${res.status}`);
+  }
+  if (res.status === 204) return {};
+  return res.json();
+}
+
 // ── AI multipart fetch (image upload) ───────────────────
 export async function apiAiUpload(endpoint: string, formData: FormData): Promise<any> {
   const token = getToken();
@@ -337,5 +357,124 @@ export const api = {
     update: (id: number, data: any) => apiFetch(`/admin/plan-limits/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
     delete: (id: number) => apiFetch(`/admin/plan-limits/${id}`, { method: 'DELETE' }),
     schema: () => apiFetch('/admin/schema/plan_limits'),
+  },
+
+  // ── Super Admin ───────────────────────────────────────
+  superAdmin: {
+    listOrgs: (params: { search?: string; page?: number; pageSize?: number; status?: string } = {}) => {
+      const q = new URLSearchParams();
+      if (params.search)   q.set('search',   params.search);
+      if (params.page)     q.set('page',     String(params.page));
+      if (params.pageSize) q.set('pageSize', String(params.pageSize));
+      if (params.status)   q.set('status',   params.status);
+      return apiFetch(`/admin/organizations?${q}`);
+    },
+    createOrg: (data: any) => apiFetch('/admin/organizations', { method: 'POST', body: JSON.stringify(data) }),
+    getOrg: (orgId: string) => apiFetch(`/admin/organizations/${orgId}`),
+    updateOrg: (orgId: string, data: any) => apiFetch(`/admin/organizations/${orgId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteOrg: (orgId: string) => apiFetch(`/admin/organizations/${orgId}`, { method: 'DELETE' }),
+  },
+
+  // ── Organization ──────────────────────────────────────
+  org: {
+    getDashboard: (orgId: string) => apiFetch(`/organizations/${orgId}/dashboard`),
+    getBranding: (orgId: string) => apiFetch(`/organizations/${orgId}/branding`),
+    putBranding: (orgId: string, data: any) => apiFetch(`/organizations/${orgId}/branding`, { method: 'PUT', body: JSON.stringify(data) }),
+    listBranches: (orgId: string, params: { search?: string; page?: number; pageSize?: number; status?: string } = {}) => {
+      const q = new URLSearchParams();
+      if (params.search)   q.set('search',   params.search);
+      if (params.page)     q.set('page',     String(params.page));
+      if (params.pageSize) q.set('pageSize', String(params.pageSize));
+      if (params.status)   q.set('status',   params.status);
+      return apiFetch(`/organizations/${orgId}/branches?${q}`);
+    },
+    createBranch: (orgId: string, data: any) => apiFetch(`/organizations/${orgId}/branches`, { method: 'POST', body: JSON.stringify(data) }),
+    publicOrgs: () => apiFetch('/organizations/public', { skipAuth: true }),
+    publicBranches: (orgId: string) => apiFetch(`/organizations/${orgId}/branches/public`, { skipAuth: true }),
+  },
+
+  // ── Branch ────────────────────────────────────────────
+  branch: {
+    get: (branchId: string) => apiFetch(`/branches/${branchId}`),
+    update: (branchId: string, data: any) => apiFetch(`/branches/${branchId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    delete: (branchId: string) => apiFetch(`/branches/${branchId}`, { method: 'DELETE' }),
+    getBranding: (branchId: string) => apiFetch(`/branches/${branchId}/branding`),
+    putBranding: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/branding`, { method: 'PUT', body: JSON.stringify(data) }),
+    listUsers: (branchId: string, params: { type?: string; search?: string; page?: number; pageSize?: number; status?: string } = {}) => {
+      const q = new URLSearchParams();
+      if (params.type)     q.set('type',     params.type);
+      if (params.search)   q.set('search',   params.search);
+      if (params.page)     q.set('page',     String(params.page));
+      if (params.pageSize) q.set('pageSize', String(params.pageSize));
+      if (params.status)   q.set('status',   params.status);
+      return apiFetch(`/branches/${branchId}/users?${q}`);
+    },
+    createUser: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/users`, { method: 'POST', body: JSON.stringify(data) }),
+    updateUser: (branchId: string, userId: string, data: any) => apiFetch(`/branches/${branchId}/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteUser: (branchId: string, userId: string) => apiFetch(`/branches/${branchId}/users/${userId}`, { method: 'DELETE' }),
+    listAssignments: (branchId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/branches/${branchId}/trainer-assignments?${q}`);
+    },
+    createAssignment: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/trainer-assignments`, { method: 'POST', body: JSON.stringify(data) }),
+    deleteAssignment: (branchId: string, assignmentId: string) => apiFetch(`/branches/${branchId}/trainer-assignments/${assignmentId}`, { method: 'DELETE' }),
+    getAttendance: (branchId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/branches/${branchId}/attendance?${q}`);
+    },
+    markAttendance: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/attendance`, { method: 'POST', body: JSON.stringify(data) }),
+    updateAttendance: (branchId: string, attendanceId: string, data: any) => apiFetch(`/branches/${branchId}/attendance/${attendanceId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    getSupportTickets: (branchId: string) => apiFetch(`/branches/${branchId}/support/tickets`),
+  },
+
+  // ── Trainer ───────────────────────────────────────────
+  trainer: {
+    getDashboard: () => apiFetch('/trainer/dashboard'),
+    listMembers: () => apiFetch('/trainer/members'),
+    getMemberProgress: (memberId: string) => apiFetch(`/trainer/members/${memberId}/progress`),
+    createWorkout: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/workouts`, { method: 'POST', body: JSON.stringify(data) }),
+    listWorkouts: (memberId: string) => apiFetch(`/trainer/members/${memberId}/workouts`),
+    getWorkout: (workoutId: string) => apiFetch(`/workouts/${workoutId}`),
+    updateWorkout: (workoutId: string, data: any) => apiFetch(`/workouts/${workoutId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteWorkout: (workoutId: string) => apiFetch(`/workouts/${workoutId}`, { method: 'DELETE' }),
+    scheduleWorkout: (workoutId: string, data: any) => apiFetch(`/workouts/${workoutId}/schedule`, { method: 'POST', body: JSON.stringify(data) }),
+    createDietPlan: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/diet-plans`, { method: 'POST', body: JSON.stringify(data) }),
+    listDietPlans: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/diet-plans?${q}`);
+    },
+    getDietPlan: (dietPlanId: string) => apiFetch(`/diet-plans/${dietPlanId}`),
+    updateDietPlan: (dietPlanId: string, data: any) => apiFetch(`/diet-plans/${dietPlanId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteDietPlan: (dietPlanId: string) => apiFetch(`/diet-plans/${dietPlanId}`, { method: 'DELETE' }),
+    getMeasurements: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/members/${memberId}/measurements?${q}`);
+    },
+    addMeasurement: (memberId: string, data: any) => apiFetch(`/members/${memberId}/measurements`, { method: 'POST', body: JSON.stringify(data) }),
+    getNutritionSummary: (memberId: string, days = 7) => apiFetch(`/members/${memberId}/nutrition-summary?days=${days}`),
+  },
+
+  // ── AI ────────────────────────────────────────────────
+  ai: {
+    generateWorkout: (data: any) => apiFetchAI('/workouts/generate', { method: 'POST', body: JSON.stringify(data) }),
+    getWorkoutTemplates: (params: { goal?: string; level?: string; daysPerWeek?: number } = {}) => {
+      const q = new URLSearchParams();
+      if (params.goal) q.set('goal', params.goal);
+      if (params.level) q.set('level', params.level);
+      if (params.daysPerWeek) q.set('daysPerWeek', String(params.daysPerWeek));
+      return apiFetchAI(`/workouts/templates?${q}`);
+    },
+    optimizeWorkout: (workoutId: string, data: any) => apiFetchAI(`/workouts/${workoutId}/optimize`, { method: 'POST', body: JSON.stringify(data) }),
+    generateDietPlan: (data: any) => apiFetchAI('/diet-plans/generate', { method: 'POST', body: JSON.stringify(data) }),
+    calculateMacros: (data: any) => apiFetchAI('/diet-plans/macro-calculator', { method: 'POST', body: JSON.stringify(data) }),
+    getMealAlternatives: (data: any) => apiFetchAI('/diet-plans/meal-alternatives', { method: 'POST', body: JSON.stringify(data) }),
+    getPlateauDashboard: (memberId: string, params: { organizationId?: string; branchId?: string; days?: number } = {}) => {
+      const q = new URLSearchParams();
+      if (params.organizationId) q.set('organizationId', params.organizationId);
+      if (params.branchId) q.set('branchId', params.branchId);
+      if (params.days) q.set('days', String(params.days));
+      return apiFetchAI(`/members/${memberId}/plateau-dashboard?${q}`);
+    },
+    optimizePlateau: (memberId: string, data: any) => apiFetchAI(`/members/${memberId}/plateau-optimize`, { method: 'POST', body: JSON.stringify(data) }),
   },
 };
