@@ -71,7 +71,9 @@ function buildVars(b: BrandingData): string {
 }
 
 // Normalize raw API response to BrandingData
+// Advanced fields (theme, font, radius, css) are stored inside metadata JSON
 function normalizeRaw(raw: any): BrandingData {
+  const meta = raw?.metadata || {};
   return {
     appName:         raw?.appName        ?? raw?.app_name,
     logoUrl:         raw?.logoUrl        ?? raw?.logo_url,
@@ -79,13 +81,14 @@ function normalizeRaw(raw: any): BrandingData {
     primaryColor:    raw?.primaryColor   ?? raw?.primary_color,
     secondaryColor:  raw?.secondaryColor ?? raw?.secondary_color,
     accentColor:     raw?.accentColor    ?? raw?.accent_color,
-    backgroundColor: raw?.backgroundColor ?? raw?.background_color,
-    foregroundColor: raw?.foregroundColor ?? raw?.foreground_color,
-    fontFamily:      raw?.fontFamily     ?? raw?.font_family,
-    borderRadius:    raw?.borderRadius   ?? raw?.border_radius,
-    sidebarStyle:    raw?.sidebarStyle   ?? raw?.sidebar_style,
-    theme:           raw?.theme,
-    customCss:       raw?.customCss      ?? raw?.custom_css,
+    // Advanced fields live in metadata
+    backgroundColor: meta?.backgroundColor,
+    foregroundColor: meta?.foregroundColor,
+    fontFamily:      meta?.fontFamily,
+    borderRadius:    meta?.borderRadius,
+    sidebarStyle:    meta?.sidebarStyle,
+    theme:           meta?.theme,
+    customCss:       meta?.customCss,
     source:          raw?.source,
   };
 }
@@ -123,8 +126,12 @@ export function BrandingProvider({ orgId, branchId, children }: {
       ]).then(([orgRaw, branchRaw]) => {
         const orgB    = normalizeRaw(orgRaw);
         const branchB = normalizeRaw(branchRaw);
-        // Merge: org is the base, branch overrides non-empty values
-        setBranding(mergeBranding(orgB, branchB));
+        const merged  = mergeBranding(orgB, branchB);
+
+
+
+
+        setBranding(merged);
       }).finally(() => setLoading(false));
     } else if (branchId) {
       // Only branchId, no orgId — just fetch branch

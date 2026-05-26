@@ -136,22 +136,23 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
     setLoading(true);
     const p = branchId ? api.branch.getBranding(branchId) : api.org.getBranding(orgId!);
     p.then((raw: any) => {
-      const norm: any = {
-        appName: raw?.appName ?? raw?.app_name ?? '',
-        logoUrl: raw?.logoUrl ?? raw?.logo_url ?? '',
-        loginBannerUrl: raw?.loginBannerUrl ?? raw?.login_banner_url ?? '',
-        primaryColor: raw?.primaryColor ?? raw?.primary_color ?? '',
-        secondaryColor: raw?.secondaryColor ?? raw?.secondary_color ?? '',
-        accentColor: raw?.accentColor ?? raw?.accent_color ?? '',
-        backgroundColor: raw?.backgroundColor ?? raw?.background_color ?? '',
-        foregroundColor: raw?.foregroundColor ?? raw?.foreground_color ?? '',
-        fontFamily: raw?.fontFamily ?? raw?.font_family ?? 'jakarta',
-        borderRadius: raw?.borderRadius ?? raw?.border_radius ?? 'soft',
-        sidebarStyle: raw?.sidebarStyle ?? raw?.sidebar_style ?? 'solid',
-        theme: raw?.theme ?? 'default',
-        customCss: raw?.customCss ?? raw?.custom_css ?? '',
-        customDomain: raw?.customDomain ?? raw?.custom_domain ?? '',
-      };
+      const meta = raw?.metadata || {};
+        const norm: any = {
+          appName:        raw?.appName        ?? raw?.app_name        ?? '',
+          logoUrl:        raw?.logoUrl        ?? raw?.logo_url        ?? '',
+          loginBannerUrl: raw?.loginBannerUrl ?? raw?.login_banner_url ?? '',
+          primaryColor:   raw?.primaryColor   ?? raw?.primary_color   ?? '',
+          secondaryColor: raw?.secondaryColor ?? raw?.secondary_color ?? '',
+          accentColor:    raw?.accentColor    ?? raw?.accent_color    ?? '',
+          customDomain:   raw?.customDomain   ?? raw?.custom_domain   ?? '',
+          backgroundColor: meta?.backgroundColor ?? '',
+          foregroundColor: meta?.foregroundColor  ?? '',
+          fontFamily:      meta?.fontFamily   ?? 'jakarta',
+          borderRadius:    meta?.borderRadius ?? 'soft',
+          sidebarStyle:    meta?.sidebarStyle ?? 'solid',
+          theme:           meta?.theme        ?? 'default',
+          customCss:       meta?.customCss    ?? '',
+        };
       setData(norm);
       setOriginal(norm);
     }).catch(() => {}).finally(() => setLoading(false));
@@ -162,7 +163,26 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
   const save = async () => {
     setSaving(true); setSaved(false); setErr('');
     try {
-      const p = branchId ? api.branch.putBranding(branchId, data) : api.org.putBranding(orgId!, data);
+      // Pack advanced fields into metadata; keep only DB-supported fields at top level
+      const payload = {
+        appName:        data.appName,
+        logoUrl:        data.logoUrl,
+        loginBannerUrl: data.loginBannerUrl,
+        primaryColor:   data.primaryColor,
+        secondaryColor: data.secondaryColor,
+        accentColor:    data.accentColor,
+        customDomain:   data.customDomain,
+        metadata: {
+          theme:           data.theme,
+          fontFamily:      data.fontFamily,
+          borderRadius:    data.borderRadius,
+          sidebarStyle:    data.sidebarStyle,
+          customCss:       data.customCss,
+          backgroundColor: data.backgroundColor,
+          foregroundColor: data.foregroundColor,
+        },
+      };
+      const p = branchId ? api.branch.putBranding(branchId, payload) : api.org.putBranding(orgId!, payload);
       await p;
       setOriginal(data);
       setSaved(true);
