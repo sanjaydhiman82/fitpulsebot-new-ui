@@ -128,6 +128,7 @@ export default function LandingPage() {
             <button className="theme-btn" onClick={toggleTheme} aria-label="Toggle theme">
               {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
+            <button className="btn-outline" onClick={() => setPage('org-auth')}>Staff Portal</button>
             <button className="btn-outline" onClick={() => setPage('auth')}>Sign In</button>
             <button className="btn-primary" onClick={() => setPage('auth')}>Get Started <ArrowRight size={13} /></button>
           </div>
@@ -144,6 +145,7 @@ export default function LandingPage() {
             <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
             <div className={styles.mobileMenuActions}>
               <button className="btn-outline" style={{width:'100%',justifyContent:'center'}} onClick={() => { setPage('auth'); setMenuOpen(false); }}>Sign In</button>
+              <button className="btn-outline" style={{width:'100%',justifyContent:'center'}} onClick={() => { setPage('org-auth'); setMenuOpen(false); }}>Staff Portal</button>
               <button className="btn-primary" style={{width:'100%',justifyContent:'center'}} onClick={() => { setPage('auth'); setMenuOpen(false); }}>Get Started <ArrowRight size={13} /></button>
               <button className="theme-btn" style={{alignSelf:'center'}} onClick={toggleTheme}>
                 {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
@@ -190,6 +192,9 @@ export default function LandingPage() {
             </button>
             <button className={styles.heroSecondaryBtn} onClick={() => setPage('auth')}>
               Sign In <ArrowRight size={14} />
+            </button>
+            <button className={styles.heroSecondaryBtn} onClick={() => setPage('org-auth')}>
+              Staff Portal <Shield size={14} />
             </button>
           </div>
 

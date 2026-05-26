@@ -10,19 +10,30 @@ import TermsOfService from './pages/TermsOfService';
 import SessionGuard from './components/SessionGuard';
 import { LogOut, X } from 'lucide-react';
 import { normalizeProfileImageUrl } from './profileImageUrl';
+import OrgAuthPage from './pages/OrgAuthPage';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
+import OrgDashboard from './pages/OrgDashboard';
+import BranchDashboard from './pages/BranchDashboard';
+import TrainerDashboard from './pages/TrainerDashboard';
 
 export type Theme = 'light' | 'dark';
-export type Page = 'landing' | 'onboarding' | 'dashboard' | 'admin' | 'auth' | 'privacy' | 'terms';
+export type Page =
+  | 'landing' | 'onboarding' | 'dashboard' | 'admin' | 'auth' | 'privacy' | 'terms'
+  | 'org-auth' | 'super-admin' | 'org-dashboard' | 'branch-dashboard' | 'trainer-dashboard';
+
+export type UserRole = 'user' | 'admin' | 'SUPER_ADMIN' | 'ORGANIZATION_ADMIN' | 'BRANCH_MANAGER' | 'TRAINER' | 'MEMBER';
 
 export interface AuthUser {
   userId: string;
   userName: string;
   token: string;
-  role: 'user' | 'admin';
+  role: UserRole;
   firstName?: string;
   lastName?: string;
   plan?: string;
   avatarUrl?: string;
+  organizationId?: string;
+  branchId?: string;
 }
 
 interface AppCtx {
@@ -46,19 +57,23 @@ const STORAGE_KEYS = [
   'fitpulse_lastName',
   'fitpulse_plan',
   'fitpulse_avatarUrl',
+  'fitpulse_organizationId',
+  'fitpulse_branchId',
 ];
 
 function loadStoredUser(): AuthUser | null {
   const token    = localStorage.getItem('fitpulse_token');
   const userId   = localStorage.getItem('fitpulse_userId');
   const userName = localStorage.getItem('fitpulse_userName');
-  const role     = localStorage.getItem('fitpulse_role') as 'user' | 'admin' | null;
+  const role     = localStorage.getItem('fitpulse_role') as UserRole | null;
   const firstName = localStorage.getItem('fitpulse_firstName') || undefined;
   const lastName  = localStorage.getItem('fitpulse_lastName') || undefined;
   const plan      = localStorage.getItem('fitpulse_plan') || undefined;
   const avatarUrl = normalizeProfileImageUrl(localStorage.getItem('fitpulse_avatarUrl')) || undefined;
+  const organizationId = localStorage.getItem('fitpulse_organizationId') || undefined;
+  const branchId = localStorage.getItem('fitpulse_branchId') || undefined;
   if (token && userId && userName) {
-    return { token, userId, userName, role: role || 'user', firstName, lastName, plan, avatarUrl };
+    return { token, userId, userName, role: role || 'user', firstName, lastName, plan, avatarUrl, organizationId, branchId };
   }
   return null;
 }
@@ -72,6 +87,8 @@ function persistUser(u: AuthUser) {
   if (u.lastName) localStorage.setItem('fitpulse_lastName', u.lastName);
   if (u.plan) localStorage.setItem('fitpulse_plan', u.plan);
   if (u.avatarUrl) localStorage.setItem('fitpulse_avatarUrl', u.avatarUrl);
+  if (u.organizationId) localStorage.setItem('fitpulse_organizationId', u.organizationId);
+  if (u.branchId) localStorage.setItem('fitpulse_branchId', u.branchId);
 }
 
 function clearUser() {
@@ -91,7 +108,13 @@ export default function App() {
     const stored = loadStoredUser();
     if (stored) {
       setUserState(stored);
-      setPage(stored.role === 'admin' ? 'admin' : 'dashboard');
+      const role = stored.role;
+      if (role === 'admin') setPage('admin');
+      else if (role === 'SUPER_ADMIN') setPage('super-admin');
+      else if (role === 'ORGANIZATION_ADMIN') setPage('org-dashboard');
+      else if (role === 'BRANCH_MANAGER') setPage('branch-dashboard');
+      else if (role === 'TRAINER') setPage('trainer-dashboard');
+      else setPage('dashboard');
     }
   }, []);
 
@@ -123,13 +146,18 @@ export default function App() {
   return (
     <AppContext.Provider value={{ theme, toggleTheme, page, setPage, user, setUser, logout, requestLogout }}>
       <div data-theme={theme} style={{ minHeight: '100vh' }}>
-        {page === 'landing'    && <LandingPage />}
-        {page === 'auth'       && <AuthPage />}
-        {page === 'onboarding' && <OnboardingFlow />}
-        {page === 'dashboard'  && <Dashboard />}
-        {page === 'admin'      && <AdminDashboard />}
-        {page === 'privacy'    && <PrivacyPolicy />}
-        {page === 'terms'      && <TermsOfService />}
+        {page === 'landing'           && <LandingPage />}
+        {page === 'auth'              && <AuthPage />}
+        {page === 'org-auth'          && <OrgAuthPage />}
+        {page === 'onboarding'        && <OnboardingFlow />}
+        {page === 'dashboard'         && <Dashboard />}
+        {page === 'admin'             && <AdminDashboard />}
+        {page === 'super-admin'       && <SuperAdminDashboard />}
+        {page === 'org-dashboard'     && <OrgDashboard />}
+        {page === 'branch-dashboard'  && <BranchDashboard />}
+        {page === 'trainer-dashboard' && <TrainerDashboard />}
+        {page === 'privacy'           && <PrivacyPolicy />}
+        {page === 'terms'             && <TermsOfService />}
         <SessionGuard />
         {logoutConfirmOpen && (
           <div

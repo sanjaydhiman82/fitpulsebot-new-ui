@@ -55,13 +55,13 @@ export default function AuthPage() {
 
   const doLogin = async (userName: string, password: string) => {
     const res = await api.auth.login(userName, password);
-    const role: 'user' | 'admin' = res.role === 'admin' ? 'admin' : 'user';
+    const role = res.role === 'admin' ? 'admin' : res.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'user';
     setUser({
       userId: res.userId, userName: res.userName, token: res.accessToken,
       role, firstName: res.firstName, lastName: res.lastName,
       plan: res.plan, avatarUrl: normalizeProfileImageUrl(res.avatarUrl),
     });
-    setPage(role === 'admin' ? 'admin' : 'dashboard');
+    setPage(role === 'SUPER_ADMIN' ? 'super-admin' : role === 'admin' ? 'admin' : 'dashboard');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,9 +98,9 @@ export default function AuthPage() {
     setError(''); setLoading(true);
     try {
       const res = await api.auth.googleLogin(tokenResponse.access_token);
-      const role: 'user' | 'admin' = res.role === 'admin' ? 'admin' : 'user';
+      const role = res.role === 'admin' ? 'admin' : res.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : 'user';
       setUser({ userId: res.userId, userName: res.userName, token: res.accessToken, role, firstName: res.firstName, lastName: res.lastName, plan: res.plan, avatarUrl: normalizeProfileImageUrl(res.avatarUrl) });
-      setPage(role === 'admin' ? 'admin' : 'dashboard');
+      setPage(role === 'SUPER_ADMIN' ? 'super-admin' : role === 'admin' ? 'admin' : 'dashboard');
     } catch (err: any) { setError(err.message || 'Google login failed'); }
     setLoading(false);
   };

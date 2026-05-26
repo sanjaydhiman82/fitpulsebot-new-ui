@@ -4,18 +4,20 @@ import {
   LayoutDashboard, Users, BarChart2, Settings, LogOut,
   Sun, Moon, Menu, X, RefreshCw, TrendingUp,
   Shield, Activity, MessageSquare, Zap, DollarSign,
-  UserCheck, UserPlus, Crown, AlertCircle, Clock,
+  UserCheck, UserPlus, Crown, AlertCircle, Clock, Building2,
   TrendingDown, Percent, Star, Database, Wifi, CreditCard
 } from 'lucide-react';
 import { api } from '../api';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import styles from './AdminDashboard.module.css';
 import dropdowns from '../config/dropdowns.json';
+import SuperAdminDashboard from './SuperAdminDashboard';
 
-type AdminTab = 'overview' | 'users' | 'ai-costs' | 'reports' | 'plans' | 'broadcast' | 'settings';
+type AdminTab = 'overview' | 'organizations' | 'users' | 'ai-costs' | 'reports' | 'plans' | 'broadcast' | 'settings';
 
 const NAV: { id: AdminTab; icon: any; label: string }[] = [
   { id: 'overview',  icon: LayoutDashboard, label: 'Overview'  },
+  { id: 'organizations', icon: Building2, label: 'Organizations' },
   { id: 'users',     icon: Users,           label: 'Users'     },
   { id: 'ai-costs',  icon: DollarSign,      label: 'AI Costs'  },
   { id: 'reports',   icon: BarChart2,       label: 'Reports'   },
@@ -95,6 +97,17 @@ export default function AdminDashboard() {
 
         <div className={styles.content}>
           {tab === 'overview'  && <AdminOverview />}
+          {tab === 'organizations' && (
+            <div className="admin-org-embed">
+              <SuperAdminDashboard />
+              <style>{`
+                .admin-org-embed .portal-sidebar { display: none !important; }
+                .admin-org-embed .portal-main { margin-left: 0 !important; }
+                .admin-org-embed .portal-main > header { display: none !important; }
+                .admin-org-embed .portal-main > main { padding: 0 !important; }
+              `}</style>
+            </div>
+          )}
           {tab === 'users'     && <AdminUsers />}
           {tab === 'ai-costs'  && <AdminAICosts />}
           {tab === 'reports'   && <AdminReports />}

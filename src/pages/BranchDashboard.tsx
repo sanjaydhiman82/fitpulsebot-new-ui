@@ -5,9 +5,10 @@ import PortalLayout, {
   Modal, FormField, inputStyle, DataTable, GRID4, GRID2,
 } from '../components/PortalLayout';
 import { api } from '../api';
+import { normalizeProfileImageUrl } from '../profileImageUrl';
 import {
   LayoutDashboard, Users, UserCheck, CalendarCheck, TicketCheck,
-  Palette, Plus, Edit2, Trash2, RefreshCw, Loader, Search,
+  Palette, Trash2, RefreshCw, Loader, Search,
   UserPlus, Link, Unlink, CheckCircle2, XCircle, Clock, AlertCircle,
 } from 'lucide-react';
 
@@ -24,6 +25,17 @@ const NAV = [
 
 // ─── Helpers ──────────────────────────────────────────────
 function today() { return new Date().toISOString().split('T')[0]; }
+const brandingField = (row: any, camel: string, snake: string) => row?.[camel] ?? row?.[snake];
+const rowField = (row: any, camel: string, snake: string) => row?.[camel] ?? row?.[snake];
+const normalizeBranding = (row: any = {}) => ({
+  ...row,
+  appName: brandingField(row, 'appName', 'app_name'),
+  logoUrl: brandingField(row, 'logoUrl', 'logo_url'),
+  primaryColor: brandingField(row, 'primaryColor', 'primary_color'),
+  secondaryColor: brandingField(row, 'secondaryColor', 'secondary_color'),
+  accentColor: brandingField(row, 'accentColor', 'accent_color'),
+  loginBannerUrl: brandingField(row, 'loginBannerUrl', 'login_banner_url'),
+});
 
 // ─── Onboard User Modal ───────────────────────────────────
 function OnboardUserModal({ open, onClose, branchId, type, onSaved }: {
@@ -96,6 +108,14 @@ function AssignTrainerModal({ open, onClose, branchId, members, trainers, onSave
 
   useEffect(() => { if (open) { setMemberId(''); setTrainerId(''); setError(''); } }, [open]);
 
+  const optionLabel = (u: any) => {
+    const firstName = rowField(u, 'firstName', 'first_name') || '';
+    const lastName = rowField(u, 'lastName', 'last_name') || '';
+    const userName = rowField(u, 'userName', 'user_name') || '';
+    const name = `${firstName} ${lastName}`.trim();
+    return name ? `${name} (${userName})` : userName || 'Unnamed user';
+  };
+
   const submit = async () => {
     if (!memberId || !trainerId) { setError('Please select both member and trainer.'); return; }
     setError(''); setLoading(true);
@@ -112,7 +132,7 @@ function AssignTrainerModal({ open, onClose, branchId, members, trainers, onSave
         <select style={inputStyle} value={memberId} onChange={e => setMemberId(e.target.value)}>
           <option value="">Select member...</option>
           {members.map(m => (
-            <option key={m.userId} value={m.userId}>{m.firstName} {m.lastName} ({m.userName})</option>
+            <option key={rowField(m, 'userId', 'user_id')} value={rowField(m, 'userId', 'user_id')}>{optionLabel(m)}</option>
           ))}
         </select>
       </FormField>
@@ -120,10 +140,12 @@ function AssignTrainerModal({ open, onClose, branchId, members, trainers, onSave
         <select style={inputStyle} value={trainerId} onChange={e => setTrainerId(e.target.value)}>
           <option value="">Select trainer...</option>
           {trainers.map(t => (
-            <option key={t.userId} value={t.userId}>{t.firstName} {t.lastName} ({t.userName})</option>
+            <option key={rowField(t, 'userId', 'user_id')} value={rowField(t, 'userId', 'user_id')}>{optionLabel(t)}</option>
           ))}
         </select>
       </FormField>
+      {members.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0 }}>No active members found for this branch.</p>}
+      {trainers.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0 }}>No active trainers found for this branch. Onboard a trainer first.</p>}
       {error && <p style={{ color: 'var(--danger)', fontSize: 12, margin: 0 }}>{error}</p>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
         <OutlineBtn onClick={onClose}>Cancel</OutlineBtn>
@@ -214,7 +236,7 @@ function BranchBrandingEditor({ branchId }: { branchId: string }) {
 
   useEffect(() => {
     setLoading(true);
-    api.branch.getBranding(branchId).then(setData).catch(() => {}).finally(() => setLoading(false));
+    api.branch.getBranding(branchId).then(d => setData(normalizeBranding(d))).catch(() => {}).finally(() => setLoading(false));
   }, [branchId]);
 
   const save = async () => {
@@ -297,6 +319,18 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
 
   useEffect(() => { load(); }, [load]);
 
+  const displayName = (u: any) => {
+    const firstName = rowField(u, 'firstName', 'first_name') || '';
+    const lastName = rowField(u, 'lastName', 'last_name') || '';
+    return `${firstName} ${lastName}`.trim() || rowField(u, 'userName', 'user_name') || 'Unnamed user';
+  };
+
+  const formatDate = (value: any) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString();
+  };
+
   const deactivate = async (userId: string) => {
     if (!window.confirm('Deactivate this user from branch?')) return;
     await api.branch.updateUser(branchId, userId, { status: 'inactive' });
@@ -326,35 +360,69 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
       {loading ? (
         <div style={{ textAlign: 'center', padding: 48 }}><Loader size={22} style={{ animation: 'spin 1s linear infinite', color: 'var(--text-muted)' }} /></div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px,1fr))', gap: 16 }}>
-          {users.map(u => (
-            <div key={u.userId} style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 18, border: '1px solid var(--border)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                background: type === 'MEMBER' ? 'linear-gradient(135deg,#0ea5e933,#0ea5e966)' : 'linear-gradient(135deg,#f59e0b33,#f59e0b66)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 17, fontWeight: 900,
-                color: type === 'MEMBER' ? '#0ea5e9' : '#f59e0b',
-              }}>{(u.firstName || u.userName || '?')[0].toUpperCase()}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px,1fr))', gap: 16 }}>
+          {users.map(u => {
+            const userId = rowField(u, 'userId', 'user_id');
+            const userName = rowField(u, 'userName', 'user_name');
+            const phone = rowField(u, 'phone', 'phone');
+            const avatarUrl = normalizeProfileImageUrl(rowField(u, 'avatarUrl', 'avatar_url'));
+            const joinedAt = rowField(u, 'joinedAt', 'joined_at');
+            const userType = rowField(u, 'type', 'type') || type;
+            const name = displayName(u);
+            return (
+            <div key={userId} style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 18, border: '1px solid var(--border)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={name} style={{
+                  width: 56, height: 56, borderRadius: 14, flexShrink: 0, objectFit: 'cover',
+                  background: 'var(--metric-bg)', border: '1px solid var(--border)',
+                }} onError={e => (e.currentTarget.style.display = 'none')} />
+              ) : (
+                <div style={{
+                  width: 56, height: 56, borderRadius: 14, flexShrink: 0,
+                  background: type === 'MEMBER' ? 'linear-gradient(135deg,#0ea5e933,#0ea5e966)' : 'linear-gradient(135deg,#f59e0b33,#f59e0b66)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 20, fontWeight: 900,
+                  color: type === 'MEMBER' ? '#0ea5e9' : '#f59e0b',
+                }}>{name[0].toUpperCase()}</div>
+              )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 800, fontSize: 14 }}>{u.firstName} {u.lastName}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{u.userName}</div>
-                {u.phone && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{u.phone}</div>}
-                <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName || '-'}</div>
+                  </div>
                   <StatusBadge status={u.status} />
+                </div>
+                <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                  {[
+                    { label: 'Email', value: userName || '-' },
+                    { label: 'Phone', value: phone || '-' },
+                    { label: 'Type', value: userType },
+                    { label: 'Joined', value: formatDate(joinedAt) },
+                  ].map(item => (
+                    <div key={item.label} style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{item.label}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 10, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                   {u.assignedTrainer && (
                     <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--metric-bg)', padding: '2px 8px', borderRadius: 20 }}>
-                      Trainer: {u.assignedTrainer.firstName}
+                      Trainer: {rowField(u.assignedTrainer, 'firstName', 'first_name') || u.assignedTrainer.firstName || 'Assigned'}
                     </span>
                   )}
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--metric-bg)', padding: '2px 8px', borderRadius: 20 }}>
+                    ID: {String(userId).slice(0, 8)}
+                  </span>
                 </div>
               </div>
-              <button onClick={() => deactivate(u.userId)} style={{
+              <button onClick={() => deactivate(userId)} style={{
                 width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: 'var(--danger)', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.2)',
               }}><Trash2 size={13} /></button>
             </div>
-          ))}
+          )})}
           {users.length === 0 && (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
               <Users size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
@@ -377,13 +445,14 @@ function AssignmentsTab({ branchId }: { branchId: string }) {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [trainers, setTrainers] = useState<any[]>([]);
+  const [trainerFilter, setTrainerFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
     Promise.all([
-      api.branch.listAssignments(branchId, { pageSize: 100 }),
+      api.branch.listAssignments(branchId, { pageSize: 100, ...(trainerFilter ? { trainerUserId: trainerFilter } : {}) }),
       api.branch.listUsers(branchId, { type: 'MEMBER', pageSize: 100 }),
       api.branch.listUsers(branchId, { type: 'TRAINER', pageSize: 100 }),
     ]).then(([a, m, t]) => {
@@ -391,7 +460,7 @@ function AssignmentsTab({ branchId }: { branchId: string }) {
       setMembers(m.users || []);
       setTrainers(t.users || []);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [branchId]);
+  }, [branchId, trainerFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -408,7 +477,23 @@ function AssignmentsTab({ branchId }: { branchId: string }) {
           <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Trainer Assignments</h2>
           <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{assignments.length} active assignments</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <select
+            value={trainerFilter}
+            onChange={e => setTrainerFilter(e.target.value)}
+            style={{ ...inputStyle, width: 220 }}
+            aria-label="Filter assignments by trainer"
+          >
+            <option value="">All trainers</option>
+            {trainers.map(t => {
+              const trainerId = rowField(t, 'userId', 'user_id');
+              const firstName = rowField(t, 'firstName', 'first_name') || '';
+              const lastName = rowField(t, 'lastName', 'last_name') || '';
+              const userName = rowField(t, 'userName', 'user_name') || '';
+              const name = `${firstName} ${lastName}`.trim();
+              return <option key={trainerId} value={trainerId}>{name || userName}</option>;
+            })}
+          </select>
           <OutlineBtn onClick={load}><RefreshCw size={13} /></OutlineBtn>
           <PrimaryBtn onClick={() => setModalOpen(true)}>
             <Link size={14} /> Assign Trainer
@@ -586,6 +671,7 @@ export default function BranchDashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashData, setDashData] = useState<any>(null);
   const [branchInfo, setBranchInfo] = useState<any>(null);
+  const [branding, setBranding] = useState<any>({});
   const [loadingDash, setLoadingDash] = useState(false);
 
   const loadDashboard = useCallback(() => {
@@ -601,17 +687,22 @@ export default function BranchDashboard() {
   }, [orgId, branchId]);
 
   useEffect(() => { if (activeTab === 'dashboard') loadDashboard(); }, [activeTab, loadDashboard]);
+  useEffect(() => {
+    if (!branchId) return;
+    api.branch.getBranding(branchId).then(d => setBranding(normalizeBranding(d))).catch(() => {});
+  }, [branchId]);
 
   const counts = dashData?.counts || {};
   const todayAtt = dashData?.attendanceToday || {};
 
   return (
     <PortalLayout
-      title={branchInfo?.name || 'Branch'}
+      title={branding.appName || branchInfo?.name || 'Branch'}
       subtitle="Branch Manager"
-      accentColor="#0ea5e9"
+      accentColor={branding.primaryColor || '#0ea5e9'}
+      logoUrl={branding.logoUrl}
       navItems={NAV} activeTab={activeTab} onTabChange={setActiveTab}
-      roleBadge="BRANCH MANAGER" roleBadgeColor="#0ea5e9"
+      roleBadge="BRANCH MANAGER" roleBadgeColor={branding.accentColor || branding.primaryColor || '#0ea5e9'}
     >
       {activeTab === 'dashboard' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
