@@ -74,7 +74,6 @@ const SIDEBAR_STYLES = [
 const TABS = [
   { id: 'theme',   label: 'Theme',      icon: Palette },
   { id: 'brand',   label: 'Brand',      icon: Image },
-  { id: 'colors',  label: 'Colors',     icon: Sparkles },
   { id: 'style',   label: 'Page Style', icon: Layers },
   { id: 'custom',  label: 'Custom CSS', icon: Code2 },
 ];
@@ -99,6 +98,69 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
         />
       </div>
     </FormField>
+  );
+}
+
+// ── Color Overrides (collapsible, inside Theme tab) ─────────────────────
+function ColorOverrides({ data, set }: { data: any; set: (k: string, v: any) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const hasOverrides = data.primaryColor || data.secondaryColor || data.accentColor;
+
+  return (
+    <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+          padding: '4px 0', color: 'var(--text-secondary)',
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Sparkles size={14} color="var(--accent)" />
+          Custom Color Overrides
+          {hasOverrides && (
+            <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 20, background: 'var(--accent-light)', color: 'var(--accent)', fontWeight: 700 }}>
+              Active
+            </span>
+          )}
+        </span>
+        <ChevronRight size={14} style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 14 }}>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 14px' }}>
+            Override specific colors on top of the selected theme. Leave blank to use theme defaults.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+            <ColorField label="Primary / Accent" value={data.primaryColor || ''} onChange={v => set('primaryColor', v)} />
+            <ColorField label="Secondary" value={data.secondaryColor || ''} onChange={v => set('secondaryColor', v)} />
+            <ColorField label="Highlight" value={data.accentColor || ''} onChange={v => set('accentColor', v)} />
+          </div>
+          {hasOverrides && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
+              {[
+                { label: 'Primary', color: data.primaryColor },
+                { label: 'Secondary', color: data.secondaryColor },
+                { label: 'Highlight', color: data.accentColor },
+              ].filter(c => c.color).map(c => (
+                <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-base)', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 10px' }}>
+                  <div style={{ width: 14, height: 14, borderRadius: 4, background: c.color, border: '1px solid var(--border)', flexShrink: 0 }} />
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{c.color}</span>
+                </div>
+              ))}
+              <button
+                onClick={() => { set('primaryColor',''); set('secondaryColor',''); set('accentColor',''); }}
+                style={{ fontSize: 11, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto', padding: '4px 8px' }}
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -366,7 +428,10 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
                     );
                   })}
                 </div>
-              </div>
+
+              {/* ── Color Overrides (optional, layered on top of theme) ── */}
+              <ColorOverrides data={data} set={set} />
+            </div>
             )}
 
             {/* ── BRAND TAB ── */}
@@ -397,40 +462,6 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
                 {data.loginBannerUrl && (
                   <div style={{ gridColumn: '1/-1', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
                     <img src={data.loginBannerUrl} alt="" style={{ width: '100%', maxHeight: 140, objectFit: 'cover', display: 'block' }} onError={e => (e.currentTarget.style.opacity = '0.2')} />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── COLORS TAB ── */}
-            {tab === 'colors' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <div style={{ background: 'var(--accent-light)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: 'var(--text-secondary)' }}>
-                  💡 Color overrides layer on top of your selected theme. Leave blank to use the theme defaults.
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <ColorField label="Primary / Accent Color" value={data.primaryColor || ''} onChange={v => set('primaryColor', v)} />
-                  <ColorField label="Secondary Color" value={data.secondaryColor || ''} onChange={v => set('secondaryColor', v)} />
-                  <ColorField label="Highlight / Accent-3 Color" value={data.accentColor || ''} onChange={v => set('accentColor', v)} />
-                  <div />
-                  <ColorField label="Background Color Override" value={data.backgroundColor || ''} onChange={v => set('backgroundColor', v)} />
-                  <ColorField label="Foreground / Text Color Override" value={data.foregroundColor || ''} onChange={v => set('foregroundColor', v)} />
-                </div>
-                {(data.primaryColor || data.secondaryColor || data.accentColor) && (
-                  <div style={{ display: 'flex', gap: 10, padding: 16, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-base)' }}>
-                    {[
-                      { label: 'Primary', color: data.primaryColor },
-                      { label: 'Secondary', color: data.secondaryColor },
-                      { label: 'Highlight', color: data.accentColor },
-                    ].filter(c => c.color).map(c => (
-                      <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 24, height: 24, borderRadius: 6, background: c.color, border: '1px solid var(--border)' }} />
-                        <div>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{c.label}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{c.color}</div>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 )}
               </div>
