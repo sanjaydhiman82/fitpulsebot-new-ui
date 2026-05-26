@@ -70,6 +70,40 @@ function buildVars(b: BrandingData): string {
   return L.length ? `:root,[data-theme],[data-org-theme]{${L.join('')}}` : '';
 }
 
+// Normalize raw API response to BrandingData
+function normalizeRaw(raw: any): BrandingData {
+  return {
+    appName:         raw?.appName        ?? raw?.app_name,
+    logoUrl:         raw?.logoUrl        ?? raw?.logo_url,
+    loginBannerUrl:  raw?.loginBannerUrl ?? raw?.login_banner_url,
+    primaryColor:    raw?.primaryColor   ?? raw?.primary_color,
+    secondaryColor:  raw?.secondaryColor ?? raw?.secondary_color,
+    accentColor:     raw?.accentColor    ?? raw?.accent_color,
+    backgroundColor: raw?.backgroundColor ?? raw?.background_color,
+    foregroundColor: raw?.foregroundColor ?? raw?.foreground_color,
+    fontFamily:      raw?.fontFamily     ?? raw?.font_family,
+    borderRadius:    raw?.borderRadius   ?? raw?.border_radius,
+    sidebarStyle:    raw?.sidebarStyle   ?? raw?.sidebar_style,
+    theme:           raw?.theme,
+    customCss:       raw?.customCss      ?? raw?.custom_css,
+    source:          raw?.source,
+  };
+}
+
+// Merge branch branding on top of org branding
+// Branch values take precedence; for any key that is empty/undefined in branch, use org value
+function mergeBranding(org: BrandingData, branch: BrandingData): BrandingData {
+  const result: BrandingData = { ...org };
+  const keys = Object.keys(branch) as (keyof BrandingData)[];
+  for (const k of keys) {
+    const v = branch[k];
+    if (v !== undefined && v !== null && v !== '') {
+      (result as any)[k] = v;
+    }
+  }
+  return result;
+}
+
 export function BrandingProvider({ orgId, branchId, children }: {
   orgId?: string; branchId?: string; children: React.ReactNode;
 }) {
@@ -80,37 +114,48 @@ export function BrandingProvider({ orgId, branchId, children }: {
   useEffect(() => {
     if (!orgId && !branchId) return;
     setLoading(true);
-    const p = branchId ? api.branch.getBranding(branchId) : api.org.getBranding(orgId!);
-    p.then((raw: any) => {
-      setBranding({
-        appName: raw?.appName ?? raw?.app_name,
-        logoUrl: raw?.logoUrl ?? raw?.logo_url,
-        loginBannerUrl: raw?.loginBannerUrl ?? raw?.login_banner_url,
-        primaryColor: raw?.primaryColor ?? raw?.primary_color,
-        secondaryColor: raw?.secondaryColor ?? raw?.secondary_color,
-        accentColor: raw?.accentColor ?? raw?.accent_color,
-        backgroundColor: raw?.backgroundColor ?? raw?.background_color,
-        foregroundColor: raw?.foregroundColor ?? raw?.foreground_color,
-        fontFamily: raw?.fontFamily ?? raw?.font_family,
-        borderRadius: raw?.borderRadius ?? raw?.border_radius,
-        sidebarStyle: raw?.sidebarStyle ?? raw?.sidebar_style,
-        theme: raw?.theme,
-        customCss: raw?.customCss ?? raw?.custom_css,
-        source: raw?.source,
-      });
-    }).catch(() => {}).finally(() => setLoading(false));
+
+    if (branchId && orgId) {
+      // Fetch BOTH org and branch branding, merge with branch taking precedence
+      Promise.all([
+        api.org.getBranding(orgId).catch(() => ({})),
+        api.branch.getBranding(branchId).catch(() => ({})),
+      ]).then(([orgRaw, branchRaw]) => {
+        const orgB    = normalizeRaw(orgRaw);
+        const branchB = normalizeRaw(branchRaw);
+        // Merge: org is the base, branch overrides non-empty values
+        setBranding(mergeBranding(orgB, branchB));
+      }).finally(() => setLoading(false));
+    } else if (branchId) {
+      // Only branchId, no orgId — just fetch branch
+      api.branch.getBranding(branchId)
+        .then(raw => setBranding(normalizeRaw(raw)))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    } else {
+      // Only orgId
+      api.org.getBranding(orgId!)
+        .then(raw => setBranding(normalizeRaw(raw)))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
   }, [orgId, branchId]);
 
+  // Apply / remove theme attr on <html>
   useEffect(() => {
     const root = document.documentElement;
     if (prevTheme.current) root.removeAttribute('data-org-theme');
-    if (branding.theme && branding.theme !== 'default') {
-      root.setAttribute('data-org-theme', branding.theme);
-      prevTheme.current = branding.theme;
-    } else { prevTheme.current = undefined; }
+    const themeId = branding.theme;
+    if (themeId && themeId !== 'default') {
+      root.setAttribute('data-org-theme', themeId);
+      prevTheme.current = themeId;
+    } else {
+      prevTheme.current = undefined;
+    }
     return () => { root.removeAttribute('data-org-theme'); };
   }, [branding.theme]);
 
+  // Apply dynamic CSS variable overrides
   useEffect(() => {
     const css = buildVars(branding);
     if (css) injectStyle(VARS_ID, css); else removeStyle(VARS_ID);
@@ -118,6 +163,7 @@ export function BrandingProvider({ orgId, branchId, children }: {
   }, [branding.primaryColor, branding.secondaryColor, branding.accentColor,
       branding.backgroundColor, branding.foregroundColor, branding.fontFamily, branding.borderRadius]);
 
+  // Apply custom CSS
   useEffect(() => {
     if (branding.customCss) injectStyle(CUSTOM_ID, branding.customCss);
     else removeStyle(CUSTOM_ID);

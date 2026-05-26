@@ -604,11 +604,19 @@ export default function BranchDashboard() {
   const { user } = useApp();
   const branchId = user?.branchId || '';
   const orgId    = user?.organizationId || '';
+  return (
+    <BrandingProvider branchId={branchId} orgId={orgId}>
+      <BranchDashboardInner branchId={branchId} orgId={orgId} />
+    </BrandingProvider>
+  );
+}
+
+function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: string }) {
+  const { branding } = useBranding();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashData, setDashData] = useState<any>(null);
   const [branchInfo, setBranchInfo] = useState<any>(null);
-  const [branding, setBranding] = useState<any>({});
   const [loadingDash, setLoadingDash] = useState(false);
 
   const loadDashboard = useCallback(() => {
@@ -624,16 +632,11 @@ export default function BranchDashboard() {
   }, [orgId, branchId]);
 
   useEffect(() => { if (activeTab === 'dashboard') loadDashboard(); }, [activeTab, loadDashboard]);
-  useEffect(() => {
-    if (!branchId) return;
-    api.branch.getBranding(branchId).then(d => setBranding(normalizeBranding(d))).catch(() => {});
-  }, [branchId]);
 
   const counts = dashData?.counts || {};
   const todayAtt = dashData?.attendanceToday || {};
 
   return (
-    <BrandingProvider branchId={branchId} orgId={orgId}>
     <PortalLayout
       title={branding.appName || branchInfo?.name || 'Branch'}
       subtitle="Branch Manager"
@@ -727,6 +730,5 @@ export default function BranchDashboard() {
         </div>
       )}
     </PortalLayout>
-    </BrandingProvider>
   );
 }
