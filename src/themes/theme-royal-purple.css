@@ -1,0 +1,14 @@
+/* THEME: Royal Purple - dark, violet accent */
+[data-org-theme="royal-purple"] {
+  --bg-base:#08050f; --bg-surface:#130c1f; --bg-card:#1c1230;
+  --bg-input:#130c1f; --bg-subtle:#261840;
+  --border:rgba(139,92,246,.12); --border-strong:rgba(139,92,246,.25);
+  --text-primary:#f3f0fa; --text-secondary:#c4b5e0; --text-muted:#9a83c2;
+  --accent:#8b5cf6; --accent-2:#7c3aed; --accent-3:#a78bfa;
+  --accent-glow:rgba(139,92,246,.2); --accent-light:rgba(139,92,246,.15);
+  --nav-bg:rgba(19,12,31,.92); --sidebar-bg:#130c1f;
+  --metric-bg:rgba(139,92,246,.1); --badge-bg:rgba(139,92,246,.22); --badge-text:#c4b5fd;
+  --danger:#f87171; --warning:#fbbf24; --info:#60a5fa;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.4); --shadow:0 4px 20px rgba(0,0,0,.45);
+  --shadow-lg:0 8px 40px rgba(0,0,0,.55); --shadow-accent:0 6px 24px rgba(139,92,246,.3);
+}

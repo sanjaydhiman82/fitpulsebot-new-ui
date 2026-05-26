@@ -1,0 +1,14 @@
+/* THEME: Ocean Dark - deep navy, teal accent */
+[data-org-theme="ocean-dark"] {
+  --bg-base:#050f1a; --bg-surface:#0d1f30; --bg-card:#122336;
+  --bg-input:#0d1f30; --bg-subtle:#1a3247;
+  --border:rgba(91,200,224,.12); --border-strong:rgba(91,200,224,.24);
+  --text-primary:#e8f4fa; --text-secondary:#a8cddd; --text-muted:#83a6b8;
+  --accent:#3dbf96; --accent-2:#4dd4a8; --accent-3:#5bc8e0;
+  --accent-glow:rgba(61,191,150,.15); --accent-light:rgba(61,191,150,.18);
+  --nav-bg:rgba(13,31,48,.92); --sidebar-bg:#0d1f30;
+  --metric-bg:rgba(91,200,224,.11); --badge-bg:rgba(61,191,150,.22); --badge-text:#6ee7b7;
+  --danger:#fc8181; --warning:#fbbf24; --info:#63b3ed;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.3); --shadow:0 4px 20px rgba(0,0,0,.35);
+  --shadow-lg:0 8px 40px rgba(0,0,0,.45); --shadow-accent:0 6px 24px rgba(61,191,150,.2);
+}

@@ -1,0 +1,14 @@
+/* THEME: Rose - clean light, rose/pink accent */
+[data-org-theme="rose"] {
+  --bg-base:#fff5f7; --bg-surface:#ffffff; --bg-card:#ffffff;
+  --bg-input:#fff0f3; --bg-subtle:#ffe4ea;
+  --border:rgba(244,63,94,.14); --border-strong:rgba(244,63,94,.28);
+  --text-primary:#1f0a10; --text-secondary:#6b2d40; --text-muted:#b06070;
+  --accent:#f43f5e; --accent-2:#e11d48; --accent-3:#fb7185;
+  --accent-glow:rgba(244,63,94,.18); --accent-light:#ffe4ea;
+  --nav-bg:rgba(255,255,255,.9); --sidebar-bg:#ffffff;
+  --metric-bg:#fff0f3; --badge-bg:#fecdd3; --badge-text:#be123c;
+  --danger:#dc2626; --warning:#d97706; --info:#0284c7;
+  --shadow-sm:0 2px 8px rgba(31,10,16,.06); --shadow:0 4px 20px rgba(31,10,16,.09);
+  --shadow-lg:0 8px 40px rgba(31,10,16,.13); --shadow-accent:0 6px 24px rgba(244,63,94,.25);
+}

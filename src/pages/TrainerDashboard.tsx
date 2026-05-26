@@ -14,6 +14,7 @@ import {
   CheckCircle, Clock, BarChart3, Flame, Apple, Beef,
   AlertCircle, ChevronDown, ChevronUp, Bot, Lightbulb,
 } from 'lucide-react';
+import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
 
 // ─── NAV ─────────────────────────────────────────────────
 const NAV = [
@@ -1387,16 +1388,35 @@ export default function TrainerDashboard() {
     setActiveTab('progress');
   };
 
+  return (
+    <BrandingProvider orgId={orgId} branchId={branchId}>
+    <TrainerPortalContent
+      orgId={orgId} branchId={branchId}
+      user={user} activeTab={activeTab} setActiveTab={setActiveTab}
+      dashData={dashData} loadingDash={loadingDash}
+      selectedMember={selectedMember} setSelectedMember={setSelectedMember}
+      allMembers={allMembers} handleSelectMember={handleSelectMember}
+    />
+    </BrandingProvider>
+  );
+}
+
+// ── Inner portal that can read branding context ──────────────────────────
+function TrainerPortalContent({ orgId, branchId, user, activeTab, setActiveTab, dashData, loadingDash, selectedMember, setSelectedMember, allMembers, handleSelectMember }: any) {
+  const { branding } = useBranding();
+
   const schedToday = dashData?.todaySchedule || [];
   const ps = dashData?.progressSummary || {};
 
   return (
     <PortalLayout
-      title="FitPulseBot" subtitle="Trainer Portal"
-      accentColor="#f59e0b"
+      title={branding.appName || "FitPulseBot"}
+      subtitle="Trainer Portal"
+      accentColor={branding.primaryColor || "#f59e0b"}
+      logoUrl={branding.logoUrl}
       navItems={NAV} activeTab={activeTab}
-      onTabChange={(tab) => { if (tab !== 'progress') setSelectedMember(null); setActiveTab(tab); }}
-      roleBadge="TRAINER" roleBadgeColor="#f59e0b"
+      onTabChange={(tab: string) => { if (tab !== 'progress') setSelectedMember(null); setActiveTab(tab); }}
+      roleBadge="TRAINER" roleBadgeColor={branding.accentColor || branding.primaryColor || "#f59e0b"}
     >
       {/* DASHBOARD */}
       {activeTab === 'dashboard' && (

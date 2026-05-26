@@ -4,11 +4,14 @@ import PortalLayout, {
   StatCard, SectionHeader, PrimaryBtn, OutlineBtn, StatusBadge,
   Modal, FormField, inputStyle, DataTable, GRID4,
 } from '../components/PortalLayout';
+import BranchDetailPanel from '../components/BranchDetailPanel';
 import { api } from '../api';
 import {
   LayoutDashboard, GitBranch, Palette, Users, Plus, Edit2,
-  Trash2, RefreshCw, Loader, CheckCircle2, TicketCheck,
+  Trash2, RefreshCw, Loader, CheckCircle2, TicketCheck, Eye,
 } from 'lucide-react';
+import AdvancedBrandingEditor from '../components/AdvancedBrandingEditor';
+import { BrandingProvider } from '../contexts/BrandingContext';
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
@@ -23,92 +26,7 @@ const addressText = (address: any) => {
   return [address.line1, address.city, address.state, address.country, address.pincode].filter(Boolean).join(', ');
 };
 
-// ─── Branding Editor ─────────────────────────────────────
-function BrandingEditor({ orgId }: { orgId: string }) {
-  const [data, setData] = useState<any>({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    api.org.getBranding(orgId).then(setData).catch(() => {}).finally(() => setLoading(false));
-  }, [orgId]);
-
-  const f = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setData((p: any) => ({ ...p, [k]: e.target.value }));
-
-  const save = async () => {
-    setSaving(true); setSaved(false);
-    try { await api.org.putBranding(orgId, data); setSaved(true); setTimeout(() => setSaved(false), 2500); }
-    catch (e: any) { alert(e.message); }
-    finally { setSaving(false); }
-  };
-
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={20} /></div>;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800, margin: 0 }}>Organization Branding</h2>
-        <PrimaryBtn onClick={save} loading={saving}>
-          {saving ? <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> : saved ? <CheckCircle2 size={13} /> : null}
-          {saved ? 'Saved!' : 'Save Branding'}
-        </PrimaryBtn>
-      </div>
-
-      {/* Preview */}
-      <div style={{
-        padding: 24, borderRadius: 16, background: data.primaryColor || 'var(--accent)',
-        border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 16,
-      }}>
-        {data.logoUrl ? (
-          <img src={data.logoUrl} alt="Logo" style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover', background: '#fff' }} />
-        ) : (
-          <div style={{ width: 56, height: 56, borderRadius: 12, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 900, color: '#fff' }}>
-            {data.appName?.[0] || 'G'}
-          </div>
-        )}
-        <div>
-          <div style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>{data.appName || 'Your Gym'}</div>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Branding Preview</div>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <FormField label="App / Gym Name">
-          <input style={inputStyle} value={data.appName || ''} onChange={f('appName')} placeholder="My Gym Name" />
-        </FormField>
-        <FormField label="Custom Domain">
-          <input style={inputStyle} value={data.customDomain || ''} onChange={f('customDomain')} placeholder="gym.example.com" />
-        </FormField>
-        <FormField label="Logo URL">
-          <input style={inputStyle} value={data.logoUrl || ''} onChange={f('logoUrl')} placeholder="https://cdn.example.com/logo.png" />
-        </FormField>
-        <FormField label="Login Banner URL">
-          <input style={inputStyle} value={data.loginBannerUrl || ''} onChange={f('loginBannerUrl')} placeholder="https://cdn.example.com/banner.png" />
-        </FormField>
-      </div>
-
-      <div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 12 }}>Brand Colors</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          {[
-            { key: 'primaryColor', label: 'Primary' },
-            { key: 'secondaryColor', label: 'Secondary' },
-            { key: 'accentColor', label: 'Accent' },
-          ].map(({ key, label }) => (
-            <FormField key={key} label={label}>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input type="color" value={data[key] || '#2563EB'} onChange={f(key)} style={{ width: 40, height: 38, borderRadius: 8, border: 'none', padding: 2, cursor: 'pointer' }} />
-                <input style={{ ...inputStyle, flex: 1 }} value={data[key] || ''} onChange={f(key)} placeholder="#2563EB" />
-              </div>
-            </FormField>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+// BrandingEditor replaced by AdvancedBrandingEditor
 
 // ─── Branch Form ─────────────────────────────────────────
 function BranchModal({ open, onClose, orgId, branch, onSaved }: {
@@ -192,6 +110,7 @@ export default function OrgDashboard() {
   const [branches, setBranches] = useState<any[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editBranch, setEditBranch] = useState<any>(null);
+  const [detailBranch, setDetailBranch] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const loadDash = useCallback(() => {
@@ -207,6 +126,7 @@ export default function OrgDashboard() {
 
   useEffect(() => { loadDash(); }, [loadDash]);
   useEffect(() => { if (activeTab === 'branches') loadBranches(); }, [activeTab, loadBranches]);
+  useEffect(() => { if (activeTab !== 'branches') setDetailBranch(null); }, [activeTab]);
 
   const deleteBranch = async (b: any) => {
     if (!window.confirm(`Deactivate branch "${b.name}"?`)) return;
@@ -272,7 +192,15 @@ export default function OrgDashboard() {
       )}
 
       {activeTab === 'branches' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        detailBranch ? (
+          <BranchDetailPanel
+            branchId={detailBranch.id}
+            branch={detailBranch}
+            title="Branch Detail"
+            onBack={() => setDetailBranch(null)}
+          />
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Branches</h2>
@@ -315,6 +243,12 @@ export default function OrgDashboard() {
                 {
                   key: 'actions', label: 'Actions', render: r => (
                     <div style={{ display: 'flex', gap: 6 }}>
+                      <button
+                        onClick={() => setDetailBranch(r)}
+                        aria-label={`View ${r.name}`}
+                        title="View branch details"
+                        style={{ width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0ea5e9', background: 'rgba(14,165,233,0.1)', border: 'none', cursor: 'pointer' }}
+                      ><Eye size={12} /></button>
                       <button onClick={() => { setEditBranch(r); setModalOpen(true); }} style={{ width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', cursor: 'pointer' }}><Edit2 size={12} /></button>
                       <button onClick={() => deleteBranch(r)} style={{ width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', background: 'rgba(229,62,62,0.08)', border: 'none', cursor: 'pointer' }}><Trash2 size={12} /></button>
                     </div>
@@ -325,9 +259,14 @@ export default function OrgDashboard() {
             />
           )}
         </div>
+        )
       )}
 
-      {activeTab === 'branding' && orgId && <BrandingEditor orgId={orgId} />}
+      {activeTab === 'branding' && orgId && (
+        <BrandingProvider orgId={orgId}>
+          <AdvancedBrandingEditor orgId={orgId} isOrg={true} />
+        </BrandingProvider>
+      )}
 
       <BranchModal
         open={modalOpen} onClose={() => setModalOpen(false)}

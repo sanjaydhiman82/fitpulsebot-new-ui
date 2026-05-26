@@ -11,6 +11,8 @@ import {
   Palette, Trash2, RefreshCw, Loader, Search,
   UserPlus, Link, Unlink, CheckCircle2, XCircle, Clock, AlertCircle,
 } from 'lucide-react';
+import AdvancedBrandingEditor from '../components/AdvancedBrandingEditor';
+import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
 
 // ─── NAV ─────────────────────────────────────────────────
 const NAV = [
@@ -227,77 +229,12 @@ function MarkAttendanceModal({ open, onClose, branchId, members, onSaved }: {
   );
 }
 
-// ─── Branch Branding Editor ───────────────────────────────
+// ─── Branch Branding Editor (Advanced) ─────────────────────────────────
 function BranchBrandingEditor({ branchId }: { branchId: string }) {
-  const [data, setData] = useState<any>({});
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    api.branch.getBranding(branchId).then(d => setData(normalizeBranding(d))).catch(() => {}).finally(() => setLoading(false));
-  }, [branchId]);
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await api.branch.putBranding(branchId, {
-        logoUrl: data.logoUrl, primaryColor: data.primaryColor,
-        secondaryColor: data.secondaryColor, accentColor: data.accentColor,
-        loginBannerUrl: data.loginBannerUrl, metadata: data.metadata || {},
-      });
-      setSaved(true); setTimeout(() => setSaved(false), 2000);
-    } catch (e: any) { alert(e.message); }
-    finally { setSaving(false); }
-  };
-
-  const f = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setData((p: any) => ({ ...p, [k]: e.target.value }));
-
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}><Loader size={22} style={{ animation: 'spin 1s linear infinite' }} /></div>;
-
   return (
-    <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 24, border: '1px solid var(--border)' }}>
-      {data.source === 'organization' && (
-        <div style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: 'var(--warning)' }}>
-          ⚡ Showing inherited Organization branding. Any changes here will create branch-specific branding.
-        </div>
-      )}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px,1fr))', gap: 16 }}>
-        <FormField label="Logo URL">
-          <input style={inputStyle} value={data.logoUrl || ''} onChange={f('logoUrl')} placeholder="https://cdn.example.com/logo.png" />
-        </FormField>
-        <FormField label="Login Banner URL">
-          <input style={inputStyle} value={data.loginBannerUrl || ''} onChange={f('loginBannerUrl')} placeholder="https://cdn.example.com/banner.png" />
-        </FormField>
-        <FormField label="Primary Color">
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="color" style={{ width: 44, height: 40, borderRadius: 8, border: '1px solid var(--border)', padding: 2, cursor: 'pointer', background: 'transparent' }} value={data.primaryColor || '#2563EB'} onChange={f('primaryColor')} />
-            <input style={{ ...inputStyle, flex: 1 }} value={data.primaryColor || ''} onChange={f('primaryColor')} placeholder="#2563EB" />
-          </div>
-        </FormField>
-        <FormField label="Accent Color">
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input type="color" style={{ width: 44, height: 40, borderRadius: 8, border: '1px solid var(--border)', padding: 2, cursor: 'pointer', background: 'transparent' }} value={data.accentColor || '#22C55E'} onChange={f('accentColor')} />
-            <input style={{ ...inputStyle, flex: 1 }} value={data.accentColor || ''} onChange={f('accentColor')} placeholder="#22C55E" />
-          </div>
-        </FormField>
-      </div>
-      {data.logoUrl && (
-        <div style={{ marginTop: 16, padding: 16, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-base)', textAlign: 'center' }}>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 8px' }}>Logo Preview</p>
-          <img src={data.logoUrl} alt="Logo" style={{ maxHeight: 60, maxWidth: 200, objectFit: 'contain' }} onError={e => (e.currentTarget.style.display = 'none')} />
-        </div>
-      )}
-      <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-        {saved && <span style={{ fontSize: 12, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle2 size={13} /> Saved!</span>}
-        <PrimaryBtn onClick={save} loading={saving}>
-          {saving && <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} />}
-          Save Branding
-        </PrimaryBtn>
-      </div>
-    </div>
+    <BrandingProvider branchId={branchId}>
+      <AdvancedBrandingEditor branchId={branchId} isOrg={false} />
+    </BrandingProvider>
   );
 }
 
@@ -696,6 +633,7 @@ export default function BranchDashboard() {
   const todayAtt = dashData?.attendanceToday || {};
 
   return (
+    <BrandingProvider branchId={branchId} orgId={orgId}>
     <PortalLayout
       title={branding.appName || branchInfo?.name || 'Branch'}
       subtitle="Branch Manager"
@@ -789,5 +727,6 @@ export default function BranchDashboard() {
         </div>
       )}
     </PortalLayout>
+    </BrandingProvider>
   );
 }

@@ -1,0 +1,14 @@
+/* THEME: Ember - charcoal dark, orange-red fire accent */
+[data-org-theme="ember"] {
+  --bg-base:#0f0a08; --bg-surface:#1a100c; --bg-card:#221410;
+  --bg-input:#1a100c; --bg-subtle:#2d1a14;
+  --border:rgba(249,115,22,.12); --border-strong:rgba(249,115,22,.25);
+  --text-primary:#faf5f2; --text-secondary:#d4b8ae; --text-muted:#9e7b6e;
+  --accent:#f97316; --accent-2:#ea580c; --accent-3:#fb923c;
+  --accent-glow:rgba(249,115,22,.2); --accent-light:rgba(249,115,22,.15);
+  --nav-bg:rgba(26,16,12,.92); --sidebar-bg:#1a100c;
+  --metric-bg:rgba(249,115,22,.09); --badge-bg:rgba(249,115,22,.2); --badge-text:#fdba74;
+  --danger:#f87171; --warning:#fbbf24; --info:#60a5fa;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.4); --shadow:0 4px 20px rgba(0,0,0,.45);
+  --shadow-lg:0 8px 40px rgba(0,0,0,.55); --shadow-accent:0 6px 24px rgba(249,115,22,.3);
+}
