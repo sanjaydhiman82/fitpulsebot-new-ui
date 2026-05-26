@@ -105,6 +105,14 @@ function BranchModal({ open, onClose, orgId, branch, onSaved }: {
 export default function OrgDashboard() {
   const { user } = useApp();
   const orgId = user?.organizationId || '';
+  return (
+    <BrandingProvider orgId={orgId}>
+      <OrgDashboardInner orgId={orgId} />
+    </BrandingProvider>
+  );
+}
+
+function OrgDashboardInner({ orgId }: { orgId: string }) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dash, setDash] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
@@ -263,9 +271,7 @@ export default function OrgDashboard() {
       )}
 
       {activeTab === 'branding' && orgId && (
-        <BrandingProvider orgId={orgId}>
-          <AdvancedBrandingEditor orgId={orgId} isOrg={true} />
-        </BrandingProvider>
+        <AdvancedBrandingEditor orgId={orgId} isOrg={true} />
       )}
 
       <BranchModal

@@ -230,12 +230,9 @@ function MarkAttendanceModal({ open, onClose, branchId, members, onSaved }: {
 }
 
 // ─── Branch Branding Editor (Advanced) ─────────────────────────────────
+// No nested BrandingProvider - already inside the main one from BranchDashboard
 function BranchBrandingEditor({ branchId }: { branchId: string }) {
-  return (
-    <BrandingProvider branchId={branchId}>
-      <AdvancedBrandingEditor branchId={branchId} isOrg={false} />
-    </BrandingProvider>
-  );
+  return <AdvancedBrandingEditor branchId={branchId} isOrg={false} />;
 }
 
 // ─── Users Tab (Members or Trainers) ─────────────────────
