@@ -18,6 +18,7 @@ import {
   Image as ImageIcon, Trash2, PenLine, Flag, Tag, MessageSquare, TestTube2,
 } from 'lucide-react';
 import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
+import { LabelProvider, useLabels } from '../contexts/LabelContext';
 import BioMarkersPage from '../components/BioMarkersPage';
 
 // ─── NAV ─────────────────────────────────────────────────
@@ -2679,14 +2680,16 @@ export default function TrainerDashboard() {
 
   return (
     <BrandingProvider orgId={orgId} branchId={branchId}>
-    <TrainerPortalContent
-      orgId={orgId} branchId={branchId}
-      user={user} activeTab={activeTab} setActiveTab={setActiveTab}
-      dashData={dashData} loadingDash={loadingDash}
-      selectedMember={selectedMember} setSelectedMember={setSelectedMember}
-      allMembers={allMembers} handleSelectMember={handleSelectMember}
-      onRefreshDashboard={() => { loadDashboard(); loadMembers(); }}
-    />
+      <LabelProvider organizationId={orgId} branchId={branchId}>
+        <TrainerPortalContent
+          orgId={orgId} branchId={branchId}
+          user={user} activeTab={activeTab} setActiveTab={setActiveTab}
+          dashData={dashData} loadingDash={loadingDash}
+          selectedMember={selectedMember} setSelectedMember={setSelectedMember}
+          allMembers={allMembers} handleSelectMember={handleSelectMember}
+          onRefreshDashboard={() => { loadDashboard(); loadMembers(); }}
+        />
+      </LabelProvider>
     </BrandingProvider>
   );
 }
@@ -2694,16 +2697,18 @@ export default function TrainerDashboard() {
 // ── Inner portal that can read branding context ──────────────────────────
 function TrainerPortalContent({ orgId, branchId, user, activeTab, setActiveTab, dashData, loadingDash, selectedMember, setSelectedMember, allMembers, handleSelectMember, onRefreshDashboard }: any) {
   const { branding } = useBranding();
+  const { t } = useLabels();
+  const navItems = NAV.map(item => ({ ...item, label: t(`trainer.menu.${item.id}`, item.label) }));
 
   return (
     <PortalLayout
       title={branding.appName || "FitPulseBot"}
-      subtitle="Trainer Portal"
+      subtitle={t('trainer.dashboard.title', 'Trainer Portal')}
       accentColor={branding.primaryColor || "#f59e0b"}
       logoUrl={branding.logoUrl}
-      navItems={NAV} activeTab={activeTab}
+      navItems={navItems} activeTab={activeTab}
       onTabChange={(tab: string) => { if (tab !== 'progress') setSelectedMember(null); setActiveTab(tab); }}
-      roleBadge="TRAINER" roleBadgeColor={branding.accentColor || branding.primaryColor || "#f59e0b"}
+      roleBadge={t('trainer.role_badge', 'TRAINER')} roleBadgeColor={branding.accentColor || branding.primaryColor || "#f59e0b"}
     >
       {/* DASHBOARD */}
       {activeTab === 'dashboard' && (

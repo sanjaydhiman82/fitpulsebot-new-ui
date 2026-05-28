@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import AdvancedBrandingEditor from '../components/AdvancedBrandingEditor';
 import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
+import { LabelProvider, useLabels } from '../contexts/LabelContext';
 
 // ─── NAV ─────────────────────────────────────────────────
 const NAV = [
@@ -739,18 +740,22 @@ export default function BranchDashboard() {
   const orgId    = user?.organizationId || '';
   return (
     <BrandingProvider branchId={branchId} orgId={orgId}>
-      <BranchDashboardInner branchId={branchId} orgId={orgId} />
+      <LabelProvider organizationId={orgId} branchId={branchId}>
+        <BranchDashboardInner branchId={branchId} orgId={orgId} />
+      </LabelProvider>
     </BrandingProvider>
   );
 }
 
 function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: string }) {
   const { branding } = useBranding();
+  const { t } = useLabels();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashData, setDashData] = useState<any>(null);
   const [branchInfo, setBranchInfo] = useState<any>(null);
   const [loadingDash, setLoadingDash] = useState(false);
+  const navItems = NAV.map(item => ({ ...item, label: t(`branch.menu.${item.id}`, item.label) }));
 
   const loadDashboard = useCallback(() => {
     if (!branchId) return;
@@ -772,11 +777,11 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
   return (
     <PortalLayout
       title={branding.appName || branchInfo?.name || 'Branch'}
-      subtitle="Branch Manager"
+      subtitle={t('branch.dashboard.title', 'Branch Manager')}
       accentColor={branding.primaryColor || '#0ea5e9'}
       logoUrl={branding.logoUrl}
-      navItems={NAV} activeTab={activeTab} onTabChange={setActiveTab}
-      roleBadge="BRANCH MANAGER" roleBadgeColor={branding.accentColor || branding.primaryColor || '#0ea5e9'}
+      navItems={navItems} activeTab={activeTab} onTabChange={setActiveTab}
+      roleBadge={t('branch.role_badge', 'BRANCH MANAGER')} roleBadgeColor={branding.accentColor || branding.primaryColor || '#0ea5e9'}
     >
       {activeTab === 'dashboard' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

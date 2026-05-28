@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import AdvancedBrandingEditor from '../components/AdvancedBrandingEditor';
 import { BrandingProvider } from '../contexts/BrandingContext';
+import { LabelProvider, useLabels } from '../contexts/LabelContext';
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={16} /> },
@@ -306,13 +307,16 @@ export default function OrgDashboard() {
   const orgId = user?.organizationId || '';
   return (
     <BrandingProvider orgId={orgId}>
-      <OrgDashboardInner orgId={orgId} />
+      <LabelProvider organizationId={orgId}>
+        <OrgDashboardInner orgId={orgId} />
+      </LabelProvider>
     </BrandingProvider>
   );
 }
 
 function OrgDashboardInner({ orgId }: { orgId: string }) {
   const { user } = useApp();
+  const { t } = useLabels();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dash, setDash] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
@@ -395,20 +399,24 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
   const membershipPct = memberTotal ? Math.round((activeMembers / memberTotal) * 100) : 0;
   const ticketStatuses = dash?.supportTickets?.statuses || {};
   const pending = dash?.pendingTasks || {};
+  const navItems = NAV.map(item => ({
+    ...item,
+    label: t(`org.menu.${item.id}`, item.label),
+  }));
 
   return (
     <PortalLayout
-      title="Organization Portal" subtitle="Admin Dashboard"
+      title={t('org.portal.title', 'Organization Portal')} subtitle={t('org.dashboard.title', 'Admin Dashboard')}
       accentColor="#0ea5e9"
-      navItems={NAV} activeTab={activeTab} onTabChange={setActiveTab}
+      navItems={navItems} activeTab={activeTab} onTabChange={setActiveTab}
       roleBadge="ORG ADMIN" roleBadgeColor="#0ea5e9"
     >
       {activeTab === 'dashboard' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div>
-              <h2 style={{ fontSize: 22, fontWeight: 900, margin: '0 0 4px' }}>Admin Dashboard</h2>
-              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>Overview of your organization performance</p>
+              <h2 style={{ fontSize: 22, fontWeight: 900, margin: '0 0 4px' }}>{t('org.dashboard.title', 'Admin Dashboard')}</h2>
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>{t('org.dashboard.subtitle', 'Overview of your organization performance')}</p>
             </div>
             <OutlineBtn onClick={loadDash}><RefreshCw size={13} /> Refresh</OutlineBtn>
           </div>
@@ -619,7 +627,6 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
       {activeTab === 'branding' && orgId && (
         <AdvancedBrandingEditor orgId={orgId} isOrg={true} />
       )}
-
       <BranchModal
         open={modalOpen} onClose={() => setModalOpen(false)}
         orgId={orgId} branch={editBranch}

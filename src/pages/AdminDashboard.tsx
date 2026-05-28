@@ -12,8 +12,9 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, 
 import styles from './AdminDashboard.module.css';
 import dropdowns from '../config/dropdowns.json';
 import SuperAdminDashboard from './SuperAdminDashboard';
+import AdminLabelManagement from '../components/AdminLabelManagement';
 
-type AdminTab = 'overview' | 'organizations' | 'users' | 'ai-costs' | 'reports' | 'plans' | 'broadcast' | 'settings';
+type AdminTab = 'overview' | 'organizations' | 'users' | 'ai-costs' | 'reports' | 'plans' | 'labels' | 'broadcast' | 'settings';
 
 const NAV: { id: AdminTab; icon: any; label: string }[] = [
   { id: 'overview',  icon: LayoutDashboard, label: 'Overview'  },
@@ -22,6 +23,7 @@ const NAV: { id: AdminTab; icon: any; label: string }[] = [
   { id: 'ai-costs',  icon: DollarSign,      label: 'AI Costs'  },
   { id: 'reports',   icon: BarChart2,       label: 'Reports'   },
   { id: 'plans',     icon: Crown,           label: 'Plans'     },
+  { id: 'labels',    icon: Database,        label: 'Labels'    },
   { id: 'broadcast', icon: MessageSquare,   label: 'Broadcast' },
   { id: 'settings',  icon: Settings,        label: 'Settings'  },
 ];
@@ -112,6 +114,7 @@ export default function AdminDashboard() {
           {tab === 'ai-costs'  && <AdminAICosts />}
           {tab === 'reports'   && <AdminReports />}
           {tab === 'plans'     && <AdminPlans />}
+          {tab === 'labels'    && <AdminLabelManagement />}
           {tab === 'broadcast' && <AdminBroadcast />}
           {tab === 'settings'  && <AdminSettings />}
         </div>

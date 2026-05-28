@@ -477,6 +477,41 @@ export const api = {
     },
   },
 
+  labels: {
+    get: (params: { organizationId?: string; branchId?: string; locale?: string; namespace?: string } = {}) => {
+      const q = new URLSearchParams();
+      if (params.organizationId) q.set('organizationId', params.organizationId);
+      if (params.branchId) q.set('branchId', params.branchId);
+      if (params.locale) q.set('locale', params.locale);
+      if (params.namespace) q.set('namespace', params.namespace);
+      return apiFetch(`/ui-labels?${q}`);
+    },
+    manage: (params: { organizationId?: string; branchId?: string; locale?: string; namespace?: string } = {}) => {
+      const q = new URLSearchParams();
+      if (params.organizationId) q.set('organizationId', params.organizationId);
+      if (params.branchId) q.set('branchId', params.branchId);
+      if (params.locale) q.set('locale', params.locale);
+      if (params.namespace) q.set('namespace', params.namespace);
+      return apiFetch(`/ui-labels/manage?${q}`);
+    },
+    upsert: (data: any) => apiFetch('/ui-labels', { method: 'PUT', body: JSON.stringify(data) }),
+    delete: (id: string) => apiFetch(`/ui-labels/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    importJson: (data: any) => apiFetch('/ui-labels/import', { method: 'POST', body: JSON.stringify(data) }),
+    exportJson: (params: { organizationId?: string; branchId?: string; locale?: string; namespace?: string } = {}) => {
+      const q = new URLSearchParams();
+      if (params.organizationId) q.set('organizationId', params.organizationId);
+      if (params.branchId) q.set('branchId', params.branchId);
+      if (params.locale) q.set('locale', params.locale);
+      if (params.namespace) q.set('namespace', params.namespace);
+      return apiFetch(`/ui-labels/export?${q}`);
+    },
+    listSavedExports: () => apiFetch('/ui-labels/exports'),
+    saveExport: (data: { name: string; description?: string; payload: any }) =>
+      apiFetch('/ui-labels/exports', { method: 'POST', body: JSON.stringify(data) }),
+    getSavedExport: (name: string) => apiFetch(`/ui-labels/exports/${encodeURIComponent(name)}`),
+    deleteSavedExport: (name: string) => apiFetch(`/ui-labels/exports/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  },
+
   // ── Trainer ───────────────────────────────────────────
   trainer: {
     getDashboard: () => apiFetch('/trainer/dashboard'),
