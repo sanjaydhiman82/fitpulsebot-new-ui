@@ -10,6 +10,7 @@ import {
   LayoutDashboard, Users, UserCheck, CalendarCheck, TicketCheck,
   Palette, Trash2, RefreshCw, Loader, Search,
   UserPlus, Link, Unlink, CheckCircle2, XCircle, Clock, AlertCircle,
+  TrendingUp, CreditCard, Bell, Star, Plus,
 } from 'lucide-react';
 import AdvancedBrandingEditor from '../components/AdvancedBrandingEditor';
 import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
@@ -17,6 +18,7 @@ import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
 // ─── NAV ─────────────────────────────────────────────────
 const NAV = [
   { id: 'dashboard',   label: 'Dashboard',     icon: <LayoutDashboard size={16} /> },
+  { id: 'onboard',     label: 'Onboard Member', icon: <UserPlus size={16} /> },
   { id: 'members',     label: 'Members',        icon: <Users size={16} /> },
   { id: 'trainers',    label: 'Trainers',       icon: <UserCheck size={16} /> },
   { id: 'assignments', label: 'Assignments',    icon: <Link size={16} /> },
@@ -38,6 +40,31 @@ const normalizeBranding = (row: any = {}) => ({
   accentColor: brandingField(row, 'accentColor', 'accent_color'),
   loginBannerUrl: brandingField(row, 'loginBannerUrl', 'login_banner_url'),
 });
+
+function BranchAvatar({ src, name, tone = 'member' }: { src?: string; name: string; tone?: 'member' | 'trainer' | 'join' }) {
+  const [failed, setFailed] = useState(false);
+  const fallbackBg = tone === 'trainer'
+    ? 'linear-gradient(135deg,#f59e0b33,#f59e0b66)'
+    : tone === 'join'
+      ? 'linear-gradient(135deg,#22c55e33,#0ea5e966)'
+      : 'linear-gradient(135deg,#0ea5e933,#0ea5e966)';
+  const fallbackColor = tone === 'trainer' ? '#f59e0b' : tone === 'join' ? '#22c55e' : '#0ea5e9';
+  if (src && !failed) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        style={{ width: 56, height: 56, borderRadius: 14, flexShrink: 0, objectFit: 'cover', background: 'var(--metric-bg)', border: '1px solid var(--border)' }}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+  return (
+    <div style={{ width: 56, height: 56, borderRadius: 14, flexShrink: 0, background: fallbackBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 900, color: fallbackColor }}>
+      {(name || 'U')[0].toUpperCase()}
+    </div>
+  );
+}
 
 // ─── Onboard User Modal ───────────────────────────────────
 function OnboardUserModal({ open, onClose, branchId, type, onSaved }: {
@@ -305,20 +332,7 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
             const name = displayName(u);
             return (
             <div key={userId} style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 18, border: '1px solid var(--border)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={name} style={{
-                  width: 56, height: 56, borderRadius: 14, flexShrink: 0, objectFit: 'cover',
-                  background: 'var(--metric-bg)', border: '1px solid var(--border)',
-                }} onError={e => (e.currentTarget.style.display = 'none')} />
-              ) : (
-                <div style={{
-                  width: 56, height: 56, borderRadius: 14, flexShrink: 0,
-                  background: type === 'MEMBER' ? 'linear-gradient(135deg,#0ea5e933,#0ea5e966)' : 'linear-gradient(135deg,#f59e0b33,#f59e0b66)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 20, fontWeight: 900,
-                  color: type === 'MEMBER' ? '#0ea5e9' : '#f59e0b',
-                }}>{name[0].toUpperCase()}</div>
-              )}
+              <BranchAvatar src={avatarUrl} name={name} tone={type === 'TRAINER' ? 'trainer' : 'member'} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
                   <div style={{ minWidth: 0 }}>
@@ -370,6 +384,128 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
         open={modalOpen} onClose={() => setModalOpen(false)}
         branchId={branchId} type={type} onSaved={load}
       />
+    </div>
+  );
+}
+
+// ─── Member Join Requests ────────────────────────────────
+function MemberRequestsTab({ branchId, onAccepted }: { branchId: string; onAccepted?: () => void }) {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [status, setStatus] = useState('Initiated');
+  const [loading, setLoading] = useState(false);
+  const [acceptingId, setAcceptingId] = useState('');
+  const [error, setError] = useState('');
+
+  const load = useCallback(() => {
+    setLoading(true);
+    setError('');
+    api.branch.listMemberRequests(branchId, { status, pageSize: 100 })
+      .then(d => { setRequests(d.requests || []); setTotal(d.total || 0); })
+      .catch((e: any) => setError(e.message || 'Failed to load member requests.'))
+      .finally(() => setLoading(false));
+  }, [branchId, status]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const displayName = (r: any) => {
+    const firstName = rowField(r, 'firstName', 'first_name') || '';
+    const lastName = rowField(r, 'lastName', 'last_name') || '';
+    return `${firstName} ${lastName}`.trim() || rowField(r, 'userName', 'user_name') || 'Unnamed member';
+  };
+  const formatDate = (value: any) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleString();
+  };
+  const accept = async (requestId: string) => {
+    setAcceptingId(requestId);
+    setError('');
+    try {
+      await api.branch.acceptMemberRequest(branchId, requestId);
+      await load();
+      onAccepted?.();
+    } catch (e: any) {
+      setError(e.message || 'Failed to accept member request.');
+    } finally {
+      setAcceptingId('');
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Onboard Member</h2>
+          <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{total} {status.toLowerCase()} request{total === 1 ? '' : 's'}</p>
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <select value={status} onChange={e => setStatus(e.target.value)} style={{ ...inputStyle, width: 150 }}>
+            <option value="Initiated">Initiated</option>
+            <option value="Accepted">Accepted</option>
+          </select>
+          <OutlineBtn onClick={load}><RefreshCw size={13} /></OutlineBtn>
+        </div>
+      </div>
+
+      {error && <div style={{ color: 'var(--danger)', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.2)', borderRadius: 10, padding: 12, fontSize: 13 }}>{error}</div>}
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 48 }}><Loader size={22} style={{ animation: 'spin 1s linear infinite', color: 'var(--text-muted)' }} /></div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px,1fr))', gap: 16 }}>
+          {requests.map(r => {
+            const requestId = rowField(r, 'requestId', 'request_id');
+            const userName = rowField(r, 'userName', 'user_name');
+            const phone = rowField(r, 'phone', 'phone');
+            const email = rowField(r, 'email', 'email') || userName;
+            const avatarUrl = normalizeProfileImageUrl(rowField(r, 'avatarUrl', 'avatar_url'));
+            const name = displayName(r);
+            const existingStatus = rowField(r, 'existingMemberStatus', 'existing_member_status');
+            return (
+              <div key={requestId} style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 18, border: '1px solid var(--border)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <BranchAvatar src={avatarUrl} name={name} tone="join" />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email || '-'}</div>
+                    </div>
+                    <StatusBadge status={r.status} />
+                  </div>
+                  <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {[
+                      { label: 'Request ID', value: requestId },
+                      { label: 'Phone', value: phone || '-' },
+                      { label: 'Requested', value: formatDate(rowField(r, 'createdAt', 'created_at')) },
+                      { label: 'Existing', value: existingStatus || 'No' },
+                    ].map(item => (
+                      <div key={item.label} style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{item.label}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {r.status === 'Initiated' && (
+                    <div style={{ marginTop: 14 }}>
+                      <PrimaryBtn onClick={() => accept(requestId)} loading={acceptingId === requestId}>
+                        {acceptingId === requestId ? <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> : <CheckCircle2 size={14} />}
+                        Accept
+                      </PrimaryBtn>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {requests.length === 0 && (
+            <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
+              <UserPlus size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
+              <p>No {status.toLowerCase()} member requests for this branch.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -617,16 +753,16 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
   const [loadingDash, setLoadingDash] = useState(false);
 
   const loadDashboard = useCallback(() => {
-    if (!orgId) return;
+    if (!branchId) return;
     setLoadingDash(true);
     Promise.all([
-      api.org.getDashboard(orgId).catch(() => null),
-      branchId ? api.branch.get(branchId).catch(() => null) : Promise.resolve(null),
-    ]).then(([dash, branch]) => {
-      setDashData(dash);
+      api.branch.getDashboard(branchId).catch(() => null),
+      api.branch.get(branchId).catch(() => null),
+    ]).then(([branchDash, branch]) => {
+      setDashData(branchDash || null);
       setBranchInfo(branch);
     }).finally(() => setLoadingDash(false));
-  }, [orgId, branchId]);
+  }, [branchId]);
 
   useEffect(() => { if (activeTab === 'dashboard') loadDashboard(); }, [activeTab, loadDashboard]);
 
@@ -643,68 +779,224 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
       roleBadge="BRANCH MANAGER" roleBadgeColor={branding.accentColor || branding.primaryColor || '#0ea5e9'}
     >
       {activeTab === 'dashboard' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 900, margin: '0 0 4px' }}>
-              {branchInfo ? branchInfo.name : 'Branch'} — Overview
-            </h2>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
-              {branchInfo?.address?.city} · {branchInfo?.contactEmail}
-            </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Greeting */}
+          <div style={{ display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexWrap:'wrap',gap:12 }}>
+            <div>
+              <h2 style={{ fontSize:22,fontWeight:900,margin:'0 0 4px' }}>
+                Good Morning, Manager! 👋
+              </h2>
+              <p style={{ margin:0,color:'var(--text-muted)',fontSize:13 }}>
+                Here's the overview of {branchInfo?.name||'your branch'}{branchInfo?.address?.city?` — ${branchInfo.address.city}`:''}
+              </p>
+            </div>
+            <PrimaryBtn onClick={loadDashboard} style={{ fontSize:12 }}><Plus size={13}/> New Enquiry</PrimaryBtn>
           </div>
 
           {loadingDash ? (
-            <div style={{ textAlign: 'center', padding: 48 }}><Loader size={22} style={{ animation: 'spin 1s linear infinite', color: 'var(--text-muted)' }} /></div>
-          ) : (
-            <>
-              <div style={GRID4}>
-                <StatCard label="Total Members" value={counts.members || 0} icon={<Users size={18} />} color="#0ea5e9" />
-                <StatCard label="Active Members" value={counts.activeMembers || 0} icon={<CheckCircle2 size={18} />} color="var(--accent)" />
-                <StatCard label="Trainers" value={counts.trainers || 0} icon={<UserCheck size={18} />} color="#f59e0b" />
-                <StatCard label="Open Tickets" value={counts.openSupportTickets || 0} icon={<TicketCheck size={18} />} color="var(--danger)" />
-              </div>
+            <div style={{ textAlign:'center',padding:48 }}><Loader size={22} style={{ animation:'spin 1s linear infinite',color:'var(--text-muted)' }}/></div>
+          ) : (() => {
+            const counts = dashData?.counts||{}; const todayAtt = dashData?.attendanceToday||{}; const revenue = dashData?.revenue||{}; const schedule:any[] = dashData?.todaySchedule||[]; const leads = dashData?.leads||{}; const payments = dashData?.payments||{}; const topTrainers:any[] = dashData?.topTrainers||[]; const expiring:any[] = dashData?.membershipExpiry||[]; const notifications:any[] = dashData?.recentNotifications||[]; const snapshot = dashData?.branchSnapshot||{};
+            return (
+              <>
+                {/* 6 top stat cards */}
+                <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12 }}>
+                  {[
+                    { label:'Total Members', value:counts.members??0, sub:`+${counts.newMembersMonth??0} this month`, color:'#0ea5e9', icon:<Users size={18}/> },
+                    { label:'New Members', value:counts.newMembersMonth??0, sub:`+${counts.newMembersMonthChange??0} this month`, color:'var(--accent)', icon:<UserPlus size={18}/> },
+                    { label:'Active Memberships', value:counts.activeMemberships??counts.activeMembers??0, sub:`${counts.activePct??'84.6'}% of total`, color:'#8b5cf6', icon:<CheckCircle2 size={18}/> },
+                    { label:'Revenue (This Month)', value:revenue.thisMonth?`₹${Number(revenue.thisMonth).toLocaleString('en-IN')}`:'—', sub:revenue.revenueChange?`+${revenue.revenueChange}% vs last month`:undefined, color:'#f59e0b', icon:<CreditCard size={18}/> },
+                    { label:'Pending Payments', value:payments.pending?`₹${Number(payments.pending).toLocaleString('en-IN')}`:'—', sub:`${payments.pendingCount??0} members`, color:'var(--danger)', icon:<Bell size={18}/> },
+                    { label:'Check-Ins Today', value:counts.checkInsToday??todayAtt.present??0, sub:'View details', color:'#22c55e', icon:<CalendarCheck size={18}/> },
+                  ].map(s=>(
+                    <div key={s.label} style={{ background:'var(--bg-card)',borderRadius:14,padding:'16px 18px',border:'1px solid var(--border)' }}>
+                      <div style={{ display:'flex',alignItems:'center',gap:10,marginBottom:10 }}>
+                        <div style={{ width:36,height:36,borderRadius:10,background:`${s.color}15`,display:'flex',alignItems:'center',justifyContent:'center',color:s.color }}>{s.icon}</div>
+                        <span style={{ fontSize:11,color:'var(--text-muted)',fontWeight:600 }}>{s.label}</span>
+                      </div>
+                      <div style={{ fontSize:22,fontWeight:900,color:s.color }}>{s.value}</div>
+                      {s.sub&&<div style={{ fontSize:10,color:'var(--text-muted)',marginTop:4 }}>{s.sub}</div>}
+                    </div>
+                  ))}
+                </div>
 
-              <div style={GRID2}>
-                <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 24, border: '1px solid var(--border)' }}>
-                  <SectionHeader title="Today's Attendance" />
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 4 }}>
-                    {[
-                      { label: 'Present', value: todayAtt.present || 0, color: 'var(--accent)', icon: <CheckCircle2 size={15} /> },
-                      { label: 'Absent',  value: todayAtt.absent  || 0, color: 'var(--danger)', icon: <XCircle size={15} /> },
-                      { label: 'Late',    value: todayAtt.late    || 0, color: 'var(--warning)', icon: <Clock size={15} /> },
-                    ].map(s => (
-                      <div key={s.label} style={{ textAlign: 'center', padding: '14px 0', borderRadius: 12, background: `${s.color}11`, border: `1px solid ${s.color}33` }}>
-                        <div style={{ color: s.color, marginBottom: 6 }}>{s.icon}</div>
-                        <div style={{ fontSize: 24, fontWeight: 900, color: s.color }}>{s.value}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{s.label}</div>
+                {/* Check-in Overview + Membership Overview + Revenue Overview */}
+                <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14 }}>
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Check-In Overview</div>
+                    <div style={{ fontSize:32,fontWeight:900,marginBottom:4 }}>{counts.checkInsToday??todayAtt.present??0}</div>
+                    <div style={{ fontSize:12,color:'var(--text-muted)',marginBottom:14 }}>Total Check-Ins</div>
+                    <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8 }}>
+                      {[{label:'Member',value:todayAtt.memberCheckins??counts.memberCheckIns??'—',color:'#22c55e'},{label:'Staff',value:todayAtt.staffCheckins??counts.staffCheckIns??'—',color:'#0ea5e9'},{label:'Guest',value:todayAtt.guestCheckins??counts.guestCheckIns??'—',color:'#a78bfa'}].map(c=>(
+                        <div key={c.label} style={{ textAlign:'center',padding:'10px 0',borderRadius:10,background:'var(--bg-base)',border:'1px solid var(--border)' }}>
+                          <div style={{ fontSize:18,fontWeight:900,color:c.color }}>{c.value}</div>
+                          <div style={{ fontSize:10,color:'var(--text-muted)',marginTop:2 }}>{c.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Membership Overview</div>
+                    <div style={{ display:'flex',gap:16,alignItems:'center' }}>
+                      <div style={{ position:'relative',width:80,height:80,flexShrink:0 }}>
+                        <svg width="80" height="80" style={{ transform:'rotate(-90deg)' }}>
+                          <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border)" strokeWidth="8"/>
+                          <circle cx="40" cy="40" r="30" fill="none" stroke="#22c55e" strokeWidth="8" strokeDasharray={`${2*Math.PI*30*0.846} ${2*Math.PI*30}`} strokeLinecap="round"/>
+                        </svg>
+                        <div style={{ position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:900 }}>{counts.members??0}</div>
+                      </div>
+                      <div style={{ flex:1,fontSize:12 }}>
+                        {[{label:'Active',value:counts.activeMembers??counts.activeMemberships??0,color:'#22c55e'},{label:'Expiring Soon',value:counts.expiringSoon??0,color:'#f59e0b'},{label:'On Hold',value:counts.onHold??0,color:'#0ea5e9'},{label:'Expired',value:counts.expired??0,color:'var(--danger)'}].map(r=>(
+                          <div key={r.label} style={{ display:'flex',justifyContent:'space-between',padding:'3px 0',borderBottom:'1px solid var(--border)' }}>
+                            <span style={{ color:'var(--text-secondary)',display:'flex',alignItems:'center',gap:5 }}><span style={{ width:7,height:7,borderRadius:'50%',background:r.color,display:'inline-block' }}/>{r.label}</span>
+                            <span style={{ fontWeight:800,color:r.color }}>{r.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Revenue Overview</div>
+                    <div style={{ fontSize:26,fontWeight:900,color:'#22c55e',marginBottom:4 }}>{revenue.thisMonth?`₹${Number(revenue.thisMonth).toLocaleString('en-IN')}`:'—'}</div>
+                    {revenue.revenueChange&&<div style={{ fontSize:11,color:'var(--accent)',marginBottom:14 }}>+{revenue.revenueChange}% vs last month</div>}
+                    {[{label:'Membership Fees',value:revenue.membershipFees,pct:71},{label:'PT & Classes',value:revenue.ptClasses,pct:16},{label:'Other Income',value:revenue.otherIncome,pct:13}].map(r=>(
+                      <div key={r.label} style={{ marginBottom:8 }}>
+                        <div style={{ display:'flex',justifyContent:'space-between',fontSize:11,marginBottom:3 }}>
+                          <span style={{ color:'var(--text-secondary)' }}>{r.label}</span>
+                          <span style={{ fontWeight:700 }}>{r.value?`₹${Number(r.value).toLocaleString('en-IN')}`:'—'} <span style={{ color:'var(--text-muted)' }}>({r.pct}%)</span></span>
+                        </div>
+                        <div style={{ height:4,borderRadius:20,background:'var(--metric-bg)',overflow:'hidden' }}><div style={{ height:'100%',width:`${r.pct}%`,borderRadius:20,background:'#8b5cf6' }}/></div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 24, border: '1px solid var(--border)' }}>
-                  <SectionHeader title="Branch Info" />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* Today's Schedule + Leads + Payments + Top Trainers */}
+                <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:14 }}>
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Today's Schedule</div>
+                    {schedule.length>0?schedule.slice(0,4).map((s:any,i:number)=>(
+                      <div key={i} style={{ display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:i<Math.min(schedule.length,4)-1?'1px solid var(--border)':'none' }}>
+                        <div style={{ width:44,height:44,borderRadius:10,background:'rgba(139,92,246,0.1)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flexShrink:0 }}>
+                          <div style={{ fontSize:10,fontWeight:800,color:'#a78bfa' }}>{s.startTime||'—'}</div>
+                        </div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <div style={{ fontWeight:700,fontSize:12,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{s.className||s.name||'Session'}</div>
+                          <div style={{ fontSize:10,color:'var(--text-muted)' }}>{s.trainerName||'—'}</div>
+                        </div>
+                        <span style={{ fontSize:9,padding:'2px 6px',borderRadius:20,background:s.status==='Completed'?'rgba(34,197,94,0.1)':s.status==='Ongoing'?'rgba(245,158,11,0.1)':'rgba(99,102,241,0.1)',color:s.status==='Completed'?'#22c55e':s.status==='Ongoing'?'#f59e0b':'#6366f1',fontWeight:700 }}>{s.status||'Upcoming'}</span>
+                      </div>
+                    )):<div style={{ textAlign:'center',padding:24,color:'var(--text-muted)',fontSize:12 }}>No sessions today</div>}
+                  </div>
+
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Leads & Enquiries</div>
+                    {[{label:'New Leads',value:leads.newLeads,change:leads.newLeadsChange},{label:'Contacted',value:leads.contacted,change:leads.contactedChange},{label:'Converted',value:leads.converted,change:leads.convertedChange}].map(r=>(
+                      <div key={r.label} style={{ display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13 }}>
+                        <span style={{ color:'var(--text-secondary)' }}>{r.label}</span>
+                        <span style={{ fontWeight:800 }}>{r.value??'—'} {r.change!=null&&<span style={{ fontSize:10,color:'var(--accent)' }}>+{r.change}</span>}</span>
+                      </div>
+                    ))}
+                    {leads.conversionRate!=null&&<div style={{ marginTop:10,padding:'8px 12px',background:'rgba(34,197,94,0.07)',borderRadius:8,fontSize:12,display:'flex',justifyContent:'space-between' }}><span style={{ color:'var(--text-secondary)' }}>Conversion Rate</span><span style={{ fontWeight:800,color:'var(--accent)' }}>{leads.conversionRate}%</span></div>}
+                  </div>
+
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Payments Summary</div>
+                    {[{label:'Total Collected',value:payments.total,color:'var(--accent)'},{label:'Online Payments',value:payments.online,pct:payments.onlinePct},{label:'Cash Payments',value:payments.cash,pct:payments.cashPct},{label:'Pending',value:payments.pending,color:'var(--danger)'}].map(r=>(
+                      <div key={r.label} style={{ display:'flex',justifyContent:'space-between',padding:'7px 0',borderBottom:'1px solid var(--border)',fontSize:12 }}>
+                        <span style={{ color:'var(--text-secondary)' }}>{r.label}</span>
+                        <span style={{ fontWeight:800,color:(r as any).color||'var(--text-primary)' }}>{r.value?`₹${Number(r.value).toLocaleString('en-IN')}`:'—'}{(r as any).pct&&<span style={{ fontSize:10,color:'var(--text-muted)',fontWeight:400 }}> {(r as any).pct}%</span>}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Top Performing Trainers</div>
+                    {topTrainers.length>0?topTrainers.slice(0,4).map((t:any,i:number)=>(
+                      <div key={i} style={{ display:'flex',alignItems:'center',gap:10,padding:'7px 0',borderBottom:i<3?'1px solid var(--border)':'none',fontSize:12 }}>
+                        <div style={{ width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,#0ea5e933,#0ea5e966)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:900,color:'#0ea5e9',flexShrink:0 }}>{(t.name||t.firstName||'T')[0].toUpperCase()}</div>
+                        <div style={{ flex:1,minWidth:0 }}>
+                          <div style={{ fontWeight:700,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{t.name||`${t.firstName||''} ${t.lastName||''}`.trim()}</div>
+                          <div style={{ fontSize:10,color:'var(--text-muted)' }}>{t.specialty||t.type||'Trainer'}</div>
+                        </div>
+                        <div style={{ textAlign:'right',flexShrink:0 }}>
+                          <div style={{ fontSize:11,fontWeight:800 }}>{t.sessions} Sessions</div>
+                          <div style={{ display:'flex',alignItems:'center',gap:2,justifyContent:'flex-end' }}><Star size={10} color="#f59e0b" fill="#f59e0b"/><span style={{ fontSize:10,color:'#f59e0b',fontWeight:700 }}>{t.rating}</span></div>
+                        </div>
+                      </div>
+                    )):<div style={{ textAlign:'center',padding:24,color:'var(--text-muted)',fontSize:12 }}>No trainer data yet.</div>}
+                  </div>
+                </div>
+
+                {/* Membership Expiry + Notifications */}
+                <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12,display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+                      Membership Expiry Alert
+                      <button style={{ fontSize:11,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',fontWeight:700 }}>View All</button>
+                    </div>
+                    {expiring.length>0?expiring.slice(0,5).map((m:any,i:number)=>(
+                      <div key={i} style={{ display:'flex',alignItems:'center',gap:12,padding:'8px 0',borderBottom:i<Math.min(expiring.length,5)-1?'1px solid var(--border)':'none',fontSize:12 }}>
+                        <div style={{ width:32,height:32,borderRadius:9,background:'rgba(239,68,68,0.1)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--danger)',flexShrink:0 }}><Clock size={14}/></div>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontWeight:700 }}>{m.name||m.memberName||'Member'}</div>
+                          <div style={{ fontSize:10,color:'var(--text-muted)' }}>Expires {m.expiresIn||m.expiryDate||'soon'}</div>
+                        </div>
+                        <span style={{ fontSize:10,padding:'2px 8px',borderRadius:20,background:'rgba(239,68,68,0.1)',color:'var(--danger)',fontWeight:700 }}>Expiring</span>
+                      </div>
+                    )):<div style={{ textAlign:'center',padding:24,color:'var(--text-muted)',fontSize:12 }}>No expiring memberships.</div>}
+                  </div>
+
+                  <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12,display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+                      Recent Notifications
+                      <button style={{ fontSize:11,color:'var(--accent)',background:'none',border:'none',cursor:'pointer',fontWeight:700 }}>View All</button>
+                    </div>
+                    {notifications.length>0?notifications.slice(0,5).map((n:any,i:number)=>(
+                      <div key={i} style={{ display:'flex',alignItems:'flex-start',gap:10,padding:'8px 0',borderBottom:i<Math.min(notifications.length,5)-1?'1px solid var(--border)':'none',fontSize:12 }}>
+                        <div style={{ width:30,height:30,borderRadius:8,background:'rgba(99,102,241,0.1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}><Bell size={12} color="#6366f1"/></div>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontWeight:600 }}>{n.message||n.text||'Notification'}</div>
+                          <div style={{ fontSize:10,color:'var(--text-muted)',marginTop:2 }}>{n.time||n.createdAt||'—'}</div>
+                        </div>
+                      </div>
+                    )):<div style={{ textAlign:'center',padding:24,color:'var(--text-muted)',fontSize:12 }}>No notifications.</div>}
+                  </div>
+                </div>
+
+                {/* Branch Snapshot */}
+                <div style={{ background:'var(--bg-card)',borderRadius:14,padding:20,border:'1px solid var(--border)' }}>
+                  <div style={{ fontWeight:800,fontSize:14,marginBottom:14 }}>Branch Snapshot</div>
+                  <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12 }}>
                     {[
-                      { label: 'Code', value: branchInfo?.code },
-                      { label: 'Status', value: branchInfo?.status },
-                      { label: 'Timezone', value: branchInfo?.timezone },
-                      { label: 'Phone', value: branchInfo?.contactPhone },
-                      { label: 'City', value: branchInfo?.address?.city },
-                    ].map(item => item.value && (
-                      <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                        <span style={{ color: 'var(--text-muted)' }}>{item.label}</span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{item.value}</span>
+                      { label:'Total Members', value:snapshot.totalMembers??counts.members??0, change:snapshot.totalMembersChange, color:'#0ea5e9', icon:<Users size={14}/> },
+                      { label:'Active Members', value:snapshot.activeMembers??counts.activeMembers??0, change:snapshot.activeMembersChange, color:'var(--accent)', icon:<CheckCircle2 size={14}/> },
+                      { label:'New Members', value:snapshot.newMembers??counts.newMembersMonth??0, change:snapshot.newMembersChange, color:'#22c55e', icon:<UserPlus size={14}/> },
+                      { label:'Avg Daily Check-Ins', value:snapshot.avgDailyCheckins??counts.avgDailyCheckins??0, change:snapshot.checkinChange, color:'#8b5cf6', icon:<CalendarCheck size={14}/> },
+                      { label:'Gross Revenue', value:snapshot.grossRevenue?`₹${Number(snapshot.grossRevenue).toLocaleString('en-IN')}`:revenue.thisMonth?`₹${Number(revenue.thisMonth).toLocaleString('en-IN')}`:'—', change:snapshot.revenueChange, color:'#f59e0b', icon:<CreditCard size={14}/> },
+                      { label:'Retention Rate', value:snapshot.retentionRate?`${snapshot.retentionRate}%`:counts.retentionRate?`${counts.retentionRate}%`:'—', change:snapshot.retentionChange, color:'#06b6d4', icon:<TrendingUp size={14}/> },
+                      { label:'Occupancy (Peak)', value:snapshot.peakOccupancy?`${snapshot.peakOccupancy}%`:'—', change:undefined, color:'#ef4444', icon:<Star size={14}/> },
+                    ].map(s=>(
+                      <div key={s.label} style={{ background:'var(--bg-base)',borderRadius:12,padding:'14px 16px',border:'1px solid var(--border)' }}>
+                        <div style={{ display:'flex',alignItems:'center',gap:8,marginBottom:8 }}>
+                          <div style={{ width:28,height:28,borderRadius:8,background:`${s.color}15`,display:'flex',alignItems:'center',justifyContent:'center',color:s.color }}>{s.icon}</div>
+                          <span style={{ fontSize:11,color:'var(--text-muted)',fontWeight:600 }}>{s.label}</span>
+                        </div>
+                        <div style={{ fontSize:20,fontWeight:900,color:s.color }}>{s.value}</div>
+                        {s.change!=null&&<div style={{ fontSize:10,color:'var(--accent)',marginTop:3 }}>+{s.change} this month</div>}
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            );
+          })()}
         </div>
       )}
 
+      {activeTab === 'onboard'     && branchId && <MemberRequestsTab branchId={branchId} onAccepted={loadDashboard} />}
       {activeTab === 'members'     && branchId && <UsersTab branchId={branchId} type="MEMBER" />}
       {activeTab === 'trainers'    && branchId && <UsersTab branchId={branchId} type="TRAINER" />}
       {activeTab === 'assignments' && branchId && <AssignmentsTab branchId={branchId} />}

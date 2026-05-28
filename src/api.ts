@@ -249,6 +249,43 @@ export const api = {
       return apiFetch(`/dashboard/section/goals?${q}`);
     },
   },
+  gymJoin: {
+    listRequests: () => apiFetch('/user/gym-requests'),
+    createRequest: (data: { organizationId: string; branchId: string }) =>
+      apiFetch('/user/gym-requests', { method: 'POST', body: JSON.stringify(data) }),
+  },
+  partner: {
+    branches: () => apiFetch('/user/partner-branches'),
+    profile: (branchId: string) => apiFetch(`/user/partner-branches/${branchId}/profile`),
+    add: (branchId: string, section: string, data: any) => apiFetch(`/user/partner-branches/${branchId}/${section}`, { method: 'POST', body: JSON.stringify(data) }),
+    addWorkoutSession: (branchId: string, data: any) => apiFetch(`/user/partner-branches/${branchId}/workout-sessions`, { method: 'POST', body: JSON.stringify(data) }),
+    workoutAllDone: (branchId: string, data: { workoutId: string; userWorkoutId?: string; notes?: string; rating?: number }) =>
+      apiFetch(`/user/partner-branches/${branchId}/workouts/all-done`, { method: 'POST', body: JSON.stringify(data) }),
+    delete: (branchId: string, section: string, itemId: string) => apiFetch(`/user/partner-branches/${branchId}/${section}/${itemId}`, { method: 'DELETE' }),
+  },
+  biomarkers: {
+    get: () => apiFetch('/user/biomarkers'),
+    getForTrainerMember: (memberId: string) => apiFetch(`/trainer/members/${memberId}/biomarkers`),
+    upload: async (data: { reportType: string; labName?: string; reportDate?: string; file: File }) => {
+      const form = new FormData();
+      form.set('reportType', data.reportType || 'Blood');
+      if (data.labName) form.set('labName', data.labName);
+      if (data.reportDate) form.set('reportDate', data.reportDate);
+      form.set('file', data.file);
+      const token = getToken();
+      const res = await fetch(`${BASE}/user/biomarkers/reports`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: form,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.detail || err?.message || `HTTP ${res.status}`);
+      }
+      return res.json();
+    },
+    deleteReport: (reportId: string) => apiFetch(`/user/biomarkers/reports/${reportId}`, { method: 'DELETE' }),
+  },
   aiCoach: {
     insight: () => {
       const q = new URLSearchParams({ userId: getUserId()! });
@@ -425,6 +462,19 @@ export const api = {
     markAttendance: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/attendance`, { method: 'POST', body: JSON.stringify(data) }),
     updateAttendance: (branchId: string, attendanceId: string, data: any) => apiFetch(`/branches/${branchId}/attendance/${attendanceId}`, { method: 'PATCH', body: JSON.stringify(data) }),
     getSupportTickets: (branchId: string) => apiFetch(`/branches/${branchId}/support/tickets`),
+    listMemberRequests: (branchId: string, params: { status?: string; page?: number; pageSize?: number } = {}) => {
+      const q = new URLSearchParams();
+      if (params.status) q.set('status', params.status);
+      if (params.page) q.set('page', String(params.page));
+      if (params.pageSize) q.set('pageSize', String(params.pageSize));
+      return apiFetch(`/branches/${branchId}/member-requests?${q}`);
+    },
+    acceptMemberRequest: (branchId: string, requestId: string) =>
+      apiFetch(`/branches/${branchId}/member-requests/${requestId}/accept`, { method: 'POST' }),
+    getDashboard: (branchId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/branches/${branchId}/dashboard?${q}`);
+    },
   },
 
   // ── Trainer ───────────────────────────────────────────
@@ -452,6 +502,51 @@ export const api = {
     },
     addMeasurement: (memberId: string, data: any) => apiFetch(`/members/${memberId}/measurements`, { method: 'POST', body: JSON.stringify(data) }),
     getNutritionSummary: (memberId: string, days = 7) => apiFetch(`/members/${memberId}/nutrition-summary?days=${days}`),
+    // ── New progress screen APIs ──
+    getProgressOverview: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/overview?${q}`);
+    },
+    getProgressWorkouts: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/workouts?${q}`);
+    },
+    getProgressDiet: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/diet?${q}`);
+    },
+    getProgressMeasurements: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/measurements?${q}`);
+    },
+    getProgressBodyComposition: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/body-composition?${q}`);
+    },
+    getProgressHealth: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/health?${q}`);
+    },
+    getProgressAttendance: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/attendance?${q}`);
+    },
+    getProgressPhotos: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/photos?${q}`);
+    },
+    getProgressNotes: (memberId: string, params: any = {}) => {
+      const q = new URLSearchParams(params);
+      return apiFetch(`/trainer/members/${memberId}/progress/notes?${q}`);
+    },
+    getMemberBiomarkers: (memberId: string) => apiFetch(`/trainer/members/${memberId}/biomarkers`),
+    createNote: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/notes`, { method: 'POST', body: JSON.stringify(data) }),
+    updateNote: (memberId: string, noteId: string, data: any) => apiFetch(`/trainer/members/${memberId}/notes/${noteId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteNote: (memberId: string, noteId: string) => apiFetch(`/trainer/members/${memberId}/notes/${noteId}`, { method: 'DELETE' }),
+    addBodyComposition: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/body-composition`, { method: 'POST', body: JSON.stringify(data) }),
+    addProgressPhoto: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/progress/photos`, { method: 'POST', body: JSON.stringify(data) }),
+    addHealthLog: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/health-logs`, { method: 'POST', body: JSON.stringify(data) }),
+    getHeader: (memberId: string) => apiFetch(`/trainer/members/${memberId}/header`),
   },
 
   // ── AI ────────────────────────────────────────────────

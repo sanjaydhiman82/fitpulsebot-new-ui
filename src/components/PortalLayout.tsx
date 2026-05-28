@@ -91,11 +91,11 @@ export default function PortalLayout({
           </div>
           {roleBadge && (
             <div style={{
-              marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700,
-              background: `${roleBadgeColor}22`, color: roleBadgeColor, letterSpacing: 0.5,
+              marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 7,
+              padding: '6px 12px', borderRadius: 20, fontSize: 13, fontWeight: 900,
+              background: `${roleBadgeColor}22`, color: roleBadgeColor, letterSpacing: 0,
             }}>
-              <Shield size={9} /> {roleBadge}
+              <Shield size={13} /> {roleBadge}
             </div>
           )}
         </div>

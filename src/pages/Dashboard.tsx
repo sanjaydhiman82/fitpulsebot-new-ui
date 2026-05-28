@@ -3,7 +3,7 @@ import { useApp } from '../App';
 import {
   LayoutDashboard, Activity, Droplets, UtensilsCrossed, Moon, Scale,
   Bell, BarChart2, Settings, LogOut, Sun, Menu, X, User,
-  MessageSquare, HeadphonesIcon, Sparkles
+  MessageSquare, HeadphonesIcon, Sparkles, Dumbbell, TestTube2
 } from 'lucide-react';
 import styles from './Dashboard.module.css';
 import { api } from '../api';
@@ -20,9 +20,11 @@ import NotificationsPage from '../components/NotificationsPage';
 import SupportPage from '../components/SupportPage';
 import MessagesPage from '../components/MessagesPage';
 import SettingsPage from '../components/SettingsPageFull';
+import JoinGymPage from '../components/JoinGymPage';
+import PartnerBranchProfile from '../components/PartnerBranchProfile';
+import BioMarkersPage from '../components/BioMarkersPage';
 
-export type DashTab = 'home' | 'activity' | 'nutrition' | 'hydration' | 'sleep' | 'weight'
-  | 'reports' | 'profile' | 'notifications' | 'support' | 'messages' | 'settings';
+export type DashTab = string;
 
 const NAV_ITEMS: { id: DashTab; icon: any; label: string; group?: string }[] = [
   { id: 'home', icon: LayoutDashboard, label: 'Dashboard' },
@@ -32,6 +34,8 @@ const NAV_ITEMS: { id: DashTab; icon: any; label: string; group?: string }[] = [
   { id: 'sleep', icon: Moon, label: 'Sleep', group: 'Tracking' },
   { id: 'weight', icon: Scale, label: 'Weight', group: 'Tracking' },
   { id: 'reports', icon: BarChart2, label: 'Reports', group: 'Insights' },
+  { id: 'biomarkers', icon: TestTube2, label: 'BioMarkers', group: 'Insights' },
+  { id: 'joinGym', icon: Dumbbell, label: 'Programs', group: 'Our Partners' },
   { id: 'profile', icon: User, label: 'Profile', group: 'Account' },
   { id: 'notifications', icon: Bell, label: 'Reminders', group: 'Account' },
   { id: 'support', icon: HeadphonesIcon, label: 'Support', group: 'Account' },
@@ -39,7 +43,7 @@ const NAV_ITEMS: { id: DashTab; icon: any; label: string; group?: string }[] = [
   { id: 'settings', icon: Settings, label: 'Settings', group: 'Account' },
 ];
 
-const GROUPS = ['', 'Tracking', 'Insights', 'Account'];
+const GROUPS = ['', 'Tracking', 'Insights', 'Our Partners', 'Account'];
 
 interface UserCredit {
   allocatedCredit: number;
@@ -54,6 +58,7 @@ export default function Dashboard() {
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [credit, setCredit] = useState<UserCredit | null>(null);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [partnerBranches, setPartnerBranches] = useState<any[]>([]);
 
   const refreshUnreadCount = useCallback(() => {
     if (user?.userId) {
@@ -66,7 +71,14 @@ export default function Dashboard() {
     }
   }, [user?.userId]);
 
-  const currentLabel = NAV_ITEMS.find(n => n.id === tab)?.label || '';
+  const partnerItems = partnerBranches.map(b => ({
+    id: `partner:${b.branch_id || b.branchId}`,
+    icon: Dumbbell,
+    label: b.branch_name || b.branchName || 'Branch',
+    group: 'Our Partners',
+  }));
+  const navItems = [...NAV_ITEMS, ...partnerItems];
+  const currentLabel = navItems.find(n => n.id === tab)?.label || '';
   const avatarUrl = typeof user?.avatarUrl === 'string' ? normalizeProfileImageUrl(user.avatarUrl) : '';
   const avatarFallback = (user?.firstName || user?.userName || 'U').charAt(0).toUpperCase();
   const logoSrc = '/coach.png';
@@ -83,12 +95,13 @@ export default function Dashboard() {
         .catch(() => setCredit(null));
       
       refreshUnreadCount();
+      api.partner.branches().then(d => setPartnerBranches(d.branches || [])).catch(() => setPartnerBranches([]));
     }
   }, [user?.userId, refreshUnreadCount]);
 
   return (
-    <div className={styles.layout}>
-      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
+    <div className={styles.layout} data-testid="dashboard" aria-label="Dashboard">
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`} data-testid="sidebar">
         <div className={styles.sidebarTop}>
           <button className={styles.sidebarClose} onClick={() => setSidebarOpen(false)}><X size={18} /></button>
         </div>
@@ -101,7 +114,7 @@ export default function Dashboard() {
         </div>
         <nav className={styles.nav}>
           {GROUPS.map(group => {
-            const items = NAV_ITEMS.filter(n => (n.group || '') === group);
+            const items = navItems.filter(n => (n.group || '') === group);
             if (!items.length) return null;
             return (
               <React.Fragment key={group}>
@@ -132,7 +145,14 @@ export default function Dashboard() {
 
       <main className={styles.main}>
         <header className={styles.topbar}>
-          <button className={styles.menuBtn} onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
+          <button
+            className={styles.menuBtn}
+            data-testid="mobile-menu"
+            aria-label="Open navigation menu"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu size={20} />
+          </button>
           <div className={styles.topbarBrand}>
             <img src={logoSrc} alt="FitPulseBot" className={styles.topbarLogoImg} onError={e => (e.currentTarget.style.display='none')} />
             <div>
@@ -186,7 +206,8 @@ export default function Dashboard() {
                 onClick={() => setAccountMenuOpen(open => !open)}
                 aria-haspopup="menu"
                 aria-expanded={accountMenuOpen}
-                title="Account menu"
+                aria-label="Account"
+                title="Account"
               >
                 {avatarUrl ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : avatarFallback}
               </button>
@@ -221,6 +242,9 @@ export default function Dashboard() {
           {tab === 'sleep' && <SleepLog />}
           {tab === 'weight' && <WeightLog />}
           {tab === 'reports' && <ReportsPage />}
+          {tab === 'biomarkers' && <BioMarkersPage />}
+          {tab === 'joinGym' && <JoinGymPage />}
+          {tab.startsWith('partner:') && <PartnerBranchProfile branchId={tab.slice('partner:'.length)} />}
           {tab === 'profile' && <UserProfilePage />}
           {tab === 'notifications' && <NotificationsPage />}
           {tab === 'support' && <SupportPage />}
