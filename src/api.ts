@@ -1,4 +1,4 @@
-const API_ORIGIN = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+export const API_ORIGIN = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 const BASE = `${API_ORIGIN.replace(/\/$/, '')}/api/v1`;
 const AI_BASE = `${API_ORIGIN.replace(/\/$/, '')}/api/ai/v1`;
 
@@ -135,6 +135,28 @@ export const api = {
     create: (data: any) =>
       apiFetch('/activity-log', { method: 'POST', body: JSON.stringify({ ...data, userId: getUserId() }) }),
     delete: (id: string) => apiFetch(`/activity-log/${id}`, { method: 'DELETE' }),
+  },
+
+  reports: {
+    catalog: (type: 'user' | 'admin' | 'resource' = 'user') => apiFetch(`/reports/catalog?type=${encodeURIComponent(type)}`),
+    list: (type: 'user' | 'admin' | 'resource' = 'user') => apiFetch(`/reports/my?type=${encodeURIComponent(type)}`),
+    render: (reportKey: string, type: 'user' | 'admin' | 'resource' = 'user') =>
+      apiFetch(`/reports/render/${encodeURIComponent(reportKey)}?type=${encodeURIComponent(type)}`),
+    generate: (data: { reportKey: string; dateFrom: string; dateTo: string; type?: 'user' | 'admin' | 'resource' }) =>
+      apiFetch('/reports/my', { method: 'POST', body: JSON.stringify(data) }),
+    schedules: (type: 'user' | 'admin' | 'resource' = 'user') => apiFetch(`/reports/schedules?type=${encodeURIComponent(type)}`),
+    schedule: (data: { reportKey: string; type?: 'user' | 'admin' | 'resource'; dateRangeDays: number; recurrenceDays: number; runTime: string; timezone?: string; email?: boolean }) =>
+      apiFetch('/reports/schedules', { method: 'POST', body: JSON.stringify(data) }),
+    updateScheduleStatus: (id: string, status: 'ACTIVE' | 'PAUSED') =>
+      apiFetch(`/reports/schedules/${encodeURIComponent(id)}?status=${encodeURIComponent(status)}`, { method: 'PATCH' }),
+    deleteSchedule: (id: string) => apiFetch(`/reports/schedules/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    get: (id: string) => apiFetch(`/reports/my/${encodeURIComponent(id)}`),
+    email: (id: string) => apiFetch(`/reports/my/${encodeURIComponent(id)}/email`, { method: 'POST' }),
+    pdfUrl: (id: string) => `${BASE}/reports/my/${encodeURIComponent(id)}/pdf`,
+    healthMetrics: (startDate: string, endDate: string) =>
+      apiFetch(`/report/health-metrics?userId=${getUserId()}&startDate=${startDate}&endDate=${endDate}`),
+    healthCompare: (p1s: string, p1e: string, p2s: string, p2e: string) =>
+      apiFetch(`/report/health-compare?userId=${getUserId()}&period1Start=${p1s}&period1End=${p1e}&period2Start=${p2s}&period2End=${p2e}`),
   },
 
   food: {
@@ -293,13 +315,6 @@ export const api = {
       const url = `${API_ORIGIN.replace(/\/$/, '')}/api/ai/v1/dashboard/insight?${q}`;
       return apiFetch(url);
     },
-  },
-
-  reports: {
-    healthMetrics: (startDate: string, endDate: string) =>
-      apiFetch(`/report/health-metrics?userId=${getUserId()}&startDate=${startDate}&endDate=${endDate}`),
-    healthCompare: (p1s: string, p1e: string, p2s: string, p2e: string) =>
-      apiFetch(`/report/health-compare?userId=${getUserId()}&period1Start=${p1s}&period1End=${p1e}&period2Start=${p2s}&period2End=${p2e}`),
   },
 
   notifications: {
@@ -510,6 +525,20 @@ export const api = {
       apiFetch('/ui-labels/exports', { method: 'POST', body: JSON.stringify(data) }),
     getSavedExport: (name: string) => apiFetch(`/ui-labels/exports/${encodeURIComponent(name)}`),
     deleteSavedExport: (name: string) => apiFetch(`/ui-labels/exports/${encodeURIComponent(name)}`, { method: 'DELETE' }),
+  },
+
+  reminders: {
+    catalog: (recipientType?: 'member' | 'resource' | 'branch' | 'system') =>
+      apiFetch(`/admin/reminders/catalog${recipientType ? `?recipientType=${encodeURIComponent(recipientType)}` : ''}`),
+    orgList: (organizationId: string) => apiFetch(`/admin/organizations/${encodeURIComponent(organizationId)}/reminders`),
+    assignToOrg: (organizationId: string, data: { reminderCatalogId: string; isActive?: boolean }) =>
+      apiFetch(`/admin/organizations/${encodeURIComponent(organizationId)}/reminders`, { method: 'PUT', body: JSON.stringify(data) }),
+    removeFromOrg: (organizationId: string, orgReminderId: string) =>
+      apiFetch(`/admin/organizations/${encodeURIComponent(organizationId)}/reminders/${encodeURIComponent(orgReminderId)}`, { method: 'DELETE' }),
+    mine: (organizationId?: string) =>
+      apiFetch(`/reminders/my${organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : ''}`),
+    saveMine: (orgReminderId: string, data: { isOptedIn: boolean; channels?: Record<string, any> }) =>
+      apiFetch(`/reminders/my/${encodeURIComponent(orgReminderId)}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
 
   // ── Trainer ───────────────────────────────────────────

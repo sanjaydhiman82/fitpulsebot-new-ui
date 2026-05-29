@@ -169,6 +169,48 @@
 .emptyRow { text-align: center; color: var(--text-muted); font-size: 14px; padding: 32px; background: var(--bg-card); border: 1px dashed var(--border-strong); border-radius: var(--radius-xl); }
 .refreshBtn { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--text-secondary); transition: all var(--transition); flex-shrink: 0; }
 .refreshBtn:hover { border-color: var(--accent); color: var(--accent); }
+.input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font: inherit;
+}
+.input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.primaryBtn {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 18px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 800;
+  transition: all var(--transition);
+}
+.primaryBtn:hover { background: var(--accent-2); transform: translateY(-1px); }
+.primaryBtn:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+.secondaryBtn {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  transition: all var(--transition);
+}
+.secondaryBtn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinning { animation: spin 0.8s linear infinite; }
 
@@ -184,3 +226,42 @@
 .aiInsight strong { color: var(--text-primary); }
 .activityName { font-size: 14px; font-weight: 700; color: var(--text-primary); }
 .activityMeta { font-size: 12px; color: var(--text-muted); }
+
+/* SaaS responsive utilities for dense dashboard/report screens */
+.responsiveStatsGrid { min-width: 0; }
+.responsiveFormGrid { min-width: 0; }
+.responsiveTwoCol { min-width: 0; }
+.responsiveThreeCol { min-width: 0; }
+.responsiveFourCol { min-width: 0; }
+.responsiveReportShell { min-width: 0; }
+.responsiveActions { min-width: 0; }
+.scrollTable { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.scrollTable table { min-width: 760px; }
+
+@media (max-width: 1100px) {
+  .responsiveStatsGrid,
+  .responsiveFourCol { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  .responsiveReportShell,
+  .responsiveTwoCol { grid-template-columns: 1fr !important; }
+}
+
+@media (max-width: 820px) {
+  .responsiveFormGrid,
+  .responsiveThreeCol,
+  .responsiveFourCol,
+  .responsiveStatsGrid,
+  .responsiveActions { grid-template-columns: 1fr !important; }
+  .responsiveReportHeader { flex-direction: column !important; align-items: stretch !important; }
+  .responsiveReportHeader > * { width: 100%; }
+}
+
+@media (max-width: 640px) {
+  .chartCard,
+  .formCard,
+  .sumCard { padding: 14px; border-radius: var(--radius-lg); }
+  .page { gap: 14px; }
+  .pageTitle { font-size: 20px; }
+  .primaryBtn,
+  .secondaryBtn { width: 100%; }
+  .scrollTable table { min-width: 680px; }
+}

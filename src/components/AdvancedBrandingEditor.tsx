@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import { FormField, inputStyle, PrimaryBtn, OutlineBtn } from './PortalLayout';
 import {
-  Palette, Image, Type, Layers, Code2, Eye,
+  Palette, Image, Layers, Code2, Eye,
   CheckCircle2, Loader, RotateCcw, Sparkles,
   Sun, Moon, ChevronRight,
 } from 'lucide-react';

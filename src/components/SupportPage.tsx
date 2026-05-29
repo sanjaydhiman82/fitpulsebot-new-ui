@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { useApp } from '../App';
 import { Plus, RefreshCw, ChevronDown, ChevronUp, Send, X } from 'lucide-react';
@@ -30,7 +30,7 @@ export default function SupportPage() {
     .filter(t => t.createdAt)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
     setLoading(true); setError('');
     try {
@@ -39,9 +39,9 @@ export default function SupportPage() {
       setTickets(Array.isArray(data) ? data : (data?.tickets || []));
     } catch (e: any) { setError(e.message); }
     setLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { load(); }, [load]);
 
   const loadDetail = async (ticketId: string) => {
     try {

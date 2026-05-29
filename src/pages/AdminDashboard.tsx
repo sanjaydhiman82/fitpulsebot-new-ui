@@ -4,17 +4,17 @@ import {
   LayoutDashboard, Users, BarChart2, Settings, LogOut,
   Sun, Moon, Menu, X, RefreshCw, TrendingUp,
   Shield, Activity, MessageSquare, Zap, DollarSign,
-  UserCheck, UserPlus, Crown, AlertCircle, Clock, Building2,
+  UserCheck, UserPlus, Crown, Clock, Building2,
   TrendingDown, Percent, Star, Database, Wifi, CreditCard
 } from 'lucide-react';
-import { api } from '../api';
+import { API_ORIGIN, api } from '../api';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, PieChart, Pie, Legend } from 'recharts';
 import styles from './AdminDashboard.module.css';
-import dropdowns from '../config/dropdowns.json';
 import SuperAdminDashboard from './SuperAdminDashboard';
 import AdminLabelManagement from '../components/AdminLabelManagement';
+import AdminReminderManagement from '../components/AdminReminderManagement';
 
-type AdminTab = 'overview' | 'organizations' | 'users' | 'ai-costs' | 'reports' | 'plans' | 'labels' | 'broadcast' | 'settings';
+type AdminTab = 'overview' | 'organizations' | 'users' | 'ai-costs' | 'reports' | 'plans' | 'labels' | 'reminders' | 'broadcast' | 'settings';
 
 const NAV: { id: AdminTab; icon: any; label: string }[] = [
   { id: 'overview',  icon: LayoutDashboard, label: 'Overview'  },
@@ -24,6 +24,7 @@ const NAV: { id: AdminTab; icon: any; label: string }[] = [
   { id: 'reports',   icon: BarChart2,       label: 'Reports'   },
   { id: 'plans',     icon: Crown,           label: 'Plans'     },
   { id: 'labels',    icon: Database,        label: 'Labels'    },
+  { id: 'reminders', icon: Clock,           label: 'Reminders' },
   { id: 'broadcast', icon: MessageSquare,   label: 'Broadcast' },
   { id: 'settings',  icon: Settings,        label: 'Settings'  },
 ];
@@ -115,6 +116,7 @@ export default function AdminDashboard() {
           {tab === 'reports'   && <AdminReports />}
           {tab === 'plans'     && <AdminPlans />}
           {tab === 'labels'    && <AdminLabelManagement />}
+          {tab === 'reminders' && <AdminReminderManagement />}
           {tab === 'broadcast' && <AdminBroadcast />}
           {tab === 'settings'  && <AdminSettings />}
         </div>
@@ -461,7 +463,7 @@ function AdminUsers() {
   };
 
   useEffect(() => { loadAll(); }, []);
-  useEffect(() => { load(1); setPage(1); }, [filterRole, filterPlan, filterStatus]);
+  useEffect(() => { load(1); setPage(1); }, [filterRole, filterPlan, filterStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPages = Math.ceil(total / pageSize);
   const handlePage = (p: number) => { setPage(p); load(p); };
@@ -1520,7 +1522,7 @@ function AdminPlans() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [selectedPlan]);
+  useEffect(() => { load(); }, [selectedPlan]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Helpers ──
   const pkCol = limitCols.find(c => c === 'id') || 'id';
@@ -1590,7 +1592,6 @@ function AdminPlans() {
   // Render a generic input for any column type
   const renderField = (col: string, form: any, setForm: (f: any) => void, disabled = false) => {
     const val = form[col] ?? '';
-    const isBoolean = ['enabled', 'active', 'is_active', 'popular'].includes(col) && typeof val === 'boolean';
     const isBoolStr = ['enabled', 'active'].includes(col);
     const isNumeric = ['price', 'credit', 'limit_value', 'max_value', 'value', 'amount'].includes(col);
     const isTextarea = ['description', 'features', 'notes'].includes(col);
@@ -1793,6 +1794,7 @@ function AdminPlans() {
 
 /* ── Reports ── */
 function AdminReports() {
+  const apiOrigin = API_ORIGIN.replace(/\/$/, '');
   return (
     <div className={styles.page}>
       <div className={styles.sectionTitle}>Platform Reports</div>
@@ -1803,8 +1805,8 @@ function AdminReports() {
         </p>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {[
-            { label: 'API Docs', url: 'http://localhost:8000/docs' },
-            { label: 'Health Metrics', url: 'http://localhost:8000/api/v1/report/health-metrics' },
+            { label: 'API Docs', url: `${apiOrigin}/docs` },
+            { label: 'Health Metrics', url: `${apiOrigin}/api/v1/report/health-metrics` },
           ].map(l => (
             <a key={l.label} href={l.url} target="_blank" rel="noreferrer"
               style={{ padding: '9px 18px', background: 'var(--accent)', color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
@@ -1910,6 +1912,7 @@ function AdminBroadcast() {
 /* ── Settings ── */
 function AdminSettings() {
   const { user } = useApp();
+  const apiOrigin = API_ORIGIN.replace(/\/$/, '');
   return (
     <div className={styles.page}>
       <div className={styles.sectionTitle}>Admin Settings</div>
@@ -1917,7 +1920,7 @@ function AdminSettings() {
         <div className={styles.infoTitle}>API Configuration</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14 }}>
           {[
-            { label: 'API Base URL', value: 'http://localhost:8000' },
+            { label: 'API Base URL', value: apiOrigin },
             { label: 'Logged in as', value: user?.userName || '—' },
             { label: 'Role', value: 'Administrator' },
             { label: 'Plan', value: user?.plan || '—' },
@@ -1929,7 +1932,7 @@ function AdminSettings() {
           ))}
         </div>
         <div style={{ marginTop: 16 }}>
-          <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer"
+          <a href={`${apiOrigin}/docs`} target="_blank" rel="noreferrer"
             style={{ padding: '9px 18px', background: 'var(--accent)', color: '#fff', borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
             Open API Docs →
           </a>

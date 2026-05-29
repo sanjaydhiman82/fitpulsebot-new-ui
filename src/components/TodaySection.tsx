@@ -38,12 +38,6 @@ function Sparkline({ values, color, height = 40 }: { values: number[]; color: st
   );
 }
 
-/* ─── Animated number ────────────────────────────────────────── */
-function AN({ val, dec = 0 }: { val: number; dec?: number }) {
-  const n = useCountUp(val, 900);
-  return <>{dec > 0 ? n.toFixed(dec) : Math.round(n)}</>;
-}
-
 /* ─── Ring SVG ───────────────────────────────────────────────── */
 function Ring({ pct, color, size, stroke, children }: { pct:number; color:string|string[]; size:number; stroke:number; children?:React.ReactNode }) {
   const r = (size - stroke) / 2;
@@ -618,10 +612,7 @@ export default function TodaySection({ range }: Props) {
   ].filter(Boolean).slice(0, 4) as any[];
 
   /* Sparkline seeds */
-  const calSpark   = seedSpark(Math.abs(netCalories) || 200);
-  const actSpark   = seedSpark(activity.activeMin || 30);
   const distSpark  = seedSpark(activity.distanceKm || 5);
-  const sleepSpark = seedSpark(bars.sleepHrs || 5);
 
   const CARD_STYLE = {
     background:'var(--bg-card)', border:'1px solid rgba(255,255,255,0.07)',

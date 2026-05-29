@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../App';
 import { api } from '../api';
 import { Check, CreditCard, Download, History, RefreshCw, X, Zap } from 'lucide-react';
@@ -63,7 +63,7 @@ export default function SettingsPageFull() {
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
-  const loadSub = async () => {
+  const loadSub = useCallback(async () => {
     if (!user) return;
     setSubLoading(true); setSubError('');
     try {
@@ -82,9 +82,9 @@ export default function SettingsPageFull() {
       api.profile.get().then(setProfile).catch(() => null);
     } catch (e: any) { setSubError(e.message); }
     setSubLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { loadSub(); }, [user]);
+  useEffect(() => { loadSub(); }, [loadSub]);
 
   const currentPlan = subscription?.plan || user?.plan || 'Start';
   const currentIdx = PLAN_ORDER.findIndex(p => p.toLowerCase() === currentPlan.toLowerCase());

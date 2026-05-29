@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../App';
 import PortalLayout, {
-  StatCard, SectionHeader, PrimaryBtn, OutlineBtn, StatusBadge,
-  Modal, FormField, inputStyle, DataTable, GRID4, GRID2,
+  SectionHeader, PrimaryBtn, OutlineBtn, StatusBadge,
+  Modal, FormField, inputStyle,
 } from '../components/PortalLayout';
 import { api } from '../api';
 import { normalizeProfileImageUrl } from '../profileImageUrl';
 import {
   LayoutDashboard, Users, Dumbbell, Salad, TrendingUp, Ruler,
   Plus, RefreshCw, Loader, Search, ArrowLeft,
-  Target, Scale, Activity, CalendarCheck,
+  Target, Activity, CalendarCheck,
   ChevronRight, X, Sparkles, Zap, Brain, AlertTriangle,
-  CheckCircle, Clock, BarChart3, Flame, Apple, Beef,
+  CheckCircle, Flame,
   AlertCircle, ChevronDown, ChevronUp, Bot, Lightbulb,
-  Heart, Camera, FileText, Star, Filter, SortAsc, Edit2,
-  Droplets, Moon, Battery, Zap as ZapIcon, BookOpen, 
-  Image as ImageIcon, Trash2, PenLine, Flag, Tag, MessageSquare, TestTube2,
+  Heart, Camera, FileText, Star, Edit2,
+  BookOpen, MessageSquare, TestTube2,
 } from 'lucide-react';
 import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
 import { LabelProvider, useLabels } from '../contexts/LabelContext';
 import BioMarkersPage from '../components/BioMarkersPage';
+import MyReportsPage from '../components/MyReportsPage';
 
 // ─── NAV ─────────────────────────────────────────────────
 const NAV = [
@@ -29,6 +29,7 @@ const NAV = [
   { id: 'diets',      label: 'Diet Plans',         icon: <Salad size={16} /> },
   { id: 'plateau',    label: 'Plateau AI',         icon: <Brain size={16} /> },
   { id: 'progress',   label: 'Progress',           icon: <TrendingUp size={16} /> },
+  { id: 'reports',    label: 'My Reports',         icon: <FileText size={16} /> },
 ];
 
 const field = (row: any, camel: string, snake: string) => row?.[camel] ?? row?.[snake];
@@ -1161,25 +1162,6 @@ function ProgressLineChart({ data }: { data: { labels: string[]; weight: number[
           <text key={lbl} x={(i / (n - 1)) * (W - 20) + 10} y={H + 4} fontSize="9" fill="var(--text-muted)" textAnchor="middle">{lbl}</text>
         ))}
       </svg>
-    </div>
-  );
-}
-
-// ─── Mini Ring for member card ────────────────────────────
-function MiniRing({ pct, color = '#22c55e', size = 36 }: { pct: number; color?: string; size?: number }) {
-  const [p, setP] = React.useState(0);
-  React.useEffect(() => { const t = setTimeout(() => setP(pct), 200); return () => clearTimeout(t); }, [pct]);
-  const r = (size - 6) / 2;
-  const circ = 2 * Math.PI * r;
-  return (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--metric-bg)" strokeWidth={4} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={4}
-          strokeDasharray={`${circ * p / 100} ${circ}`} strokeLinecap="round"
-          style={{ transition: 'stroke-dasharray 0.8s ease' }} />
-      </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 900, color }}>{pct}%</div>
     </div>
   );
 }
@@ -2751,6 +2733,10 @@ function TrainerPortalContent({ orgId, branchId, user, activeTab, setActiveTab, 
 
       {activeTab === 'plateau' && (
         <PlateauDashboard members={allMembers.length ? allMembers : []} orgId={orgId} branchId={branchId} />
+      )}
+
+      {activeTab === 'reports' && (
+        <MyReportsPage audience="resource" />
       )}
 
       {activeTab === 'progress' && (

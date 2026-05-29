@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Trash2, RefreshCw, PenLine, Sparkles } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend, Label } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { api } from '../api';
 import DateFilter, { dateWithCurrentTime, displayDate, formatLocalDate } from './DateFilter';
 import ImageUploadLogger from './ImageUploadLogger';

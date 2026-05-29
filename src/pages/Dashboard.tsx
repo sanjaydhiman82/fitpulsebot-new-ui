@@ -3,7 +3,7 @@ import { useApp } from '../App';
 import {
   LayoutDashboard, Activity, Droplets, UtensilsCrossed, Moon, Scale,
   Bell, BarChart2, Settings, LogOut, Sun, Menu, X, User,
-  MessageSquare, HeadphonesIcon, Sparkles, Dumbbell, TestTube2
+  MessageSquare, HeadphonesIcon, Sparkles, Dumbbell, TestTube2, FileText
 } from 'lucide-react';
 import styles from './Dashboard.module.css';
 import { api } from '../api';
@@ -15,6 +15,7 @@ import HydrationLog from '../components/HydrationLog';
 import SleepLog from '../components/SleepLog';
 import WeightLog from '../components/WeightLog';
 import ReportsPage from '../components/ReportsPage';
+import MyReportsPage from '../components/MyReportsPage';
 import UserProfilePage from '../components/UserProfilePage';
 import NotificationsPage from '../components/NotificationsPage';
 import SupportPage from '../components/SupportPage';
@@ -33,7 +34,8 @@ const NAV_ITEMS: { id: DashTab; icon: any; label: string; group?: string }[] = [
   { id: 'hydration', icon: Droplets, label: 'Hydration', group: 'Tracking' },
   { id: 'sleep', icon: Moon, label: 'Sleep', group: 'Tracking' },
   { id: 'weight', icon: Scale, label: 'Weight', group: 'Tracking' },
-  { id: 'reports', icon: BarChart2, label: 'Reports', group: 'Insights' },
+  { id: 'reports', icon: BarChart2, label: '360° HTR', group: 'Insights' },
+  { id: 'myReports', icon: FileText, label: 'My Reports', group: 'Insights' },
   { id: 'biomarkers', icon: TestTube2, label: 'BioMarkers', group: 'Insights' },
   { id: 'joinGym', icon: Dumbbell, label: 'Programs', group: 'Our Partners' },
   { id: 'profile', icon: User, label: 'Profile', group: 'Account' },
@@ -52,7 +54,7 @@ interface UserCredit {
 }
 
 export default function Dashboard() {
-  const { setPage, toggleTheme, theme, user, requestLogout } = useApp();
+  const { toggleTheme, theme, user, requestLogout } = useApp();
   const [tab, setTab] = useState<DashTab>('home');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -242,6 +244,7 @@ export default function Dashboard() {
           {tab === 'sleep' && <SleepLog />}
           {tab === 'weight' && <WeightLog />}
           {tab === 'reports' && <ReportsPage />}
+          {tab === 'myReports' && <MyReportsPage />}
           {tab === 'biomarkers' && <BioMarkersPage />}
           {tab === 'joinGym' && <JoinGymPage />}
           {tab.startsWith('partner:') && <PartnerBranchProfile branchId={tab.slice('partner:'.length)} />}

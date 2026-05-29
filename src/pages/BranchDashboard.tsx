@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../App';
 import PortalLayout, {
-  StatCard, SectionHeader, PrimaryBtn, OutlineBtn, StatusBadge,
-  Modal, FormField, inputStyle, DataTable, GRID4, GRID2,
+  PrimaryBtn, OutlineBtn, StatusBadge,
+  Modal, FormField, inputStyle, DataTable,
 } from '../components/PortalLayout';
 import { api } from '../api';
 import { normalizeProfileImageUrl } from '../profileImageUrl';
@@ -10,9 +10,10 @@ import {
   LayoutDashboard, Users, UserCheck, CalendarCheck, TicketCheck,
   Palette, Trash2, RefreshCw, Loader, Search,
   UserPlus, Link, Unlink, CheckCircle2, XCircle, Clock, AlertCircle,
-  TrendingUp, CreditCard, Bell, Star, Plus,
+  TrendingUp, CreditCard, Bell, Star, Plus, FileText,
 } from 'lucide-react';
 import AdvancedBrandingEditor from '../components/AdvancedBrandingEditor';
+import MyReportsPage from '../components/MyReportsPage';
 import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
 import { LabelProvider, useLabels } from '../contexts/LabelContext';
 
@@ -25,22 +26,13 @@ const NAV = [
   { id: 'assignments', label: 'Assignments',    icon: <Link size={16} /> },
   { id: 'attendance',  label: 'Attendance',     icon: <CalendarCheck size={16} /> },
   { id: 'support',     label: 'Support',        icon: <TicketCheck size={16} /> },
+  { id: 'reports',     label: 'My Reports',     icon: <FileText size={16} /> },
   { id: 'branding',    label: 'Branding',       icon: <Palette size={16} /> },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────
 function today() { return new Date().toISOString().split('T')[0]; }
-const brandingField = (row: any, camel: string, snake: string) => row?.[camel] ?? row?.[snake];
 const rowField = (row: any, camel: string, snake: string) => row?.[camel] ?? row?.[snake];
-const normalizeBranding = (row: any = {}) => ({
-  ...row,
-  appName: brandingField(row, 'appName', 'app_name'),
-  logoUrl: brandingField(row, 'logoUrl', 'logo_url'),
-  primaryColor: brandingField(row, 'primaryColor', 'primary_color'),
-  secondaryColor: brandingField(row, 'secondaryColor', 'secondary_color'),
-  accentColor: brandingField(row, 'accentColor', 'accent_color'),
-  loginBannerUrl: brandingField(row, 'loginBannerUrl', 'login_banner_url'),
-});
 
 function BranchAvatar({ src, name, tone = 'member' }: { src?: string; name: string; tone?: 'member' | 'trainer' | 'join' }) {
   const [failed, setFailed] = useState(false);
@@ -771,9 +763,6 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
 
   useEffect(() => { if (activeTab === 'dashboard') loadDashboard(); }, [activeTab, loadDashboard]);
 
-  const counts = dashData?.counts || {};
-  const todayAtt = dashData?.attendanceToday || {};
-
   return (
     <PortalLayout
       title={branding.appName || branchInfo?.name || 'Branch'}
@@ -1007,6 +996,7 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
       {activeTab === 'assignments' && branchId && <AssignmentsTab branchId={branchId} />}
       {activeTab === 'attendance'  && branchId && <AttendanceTab branchId={branchId} />}
       {activeTab === 'support'     && branchId && <SupportTab branchId={branchId} />}
+      {activeTab === 'reports'     && branchId && <MyReportsPage audience="admin" />}
       {activeTab === 'branding'    && branchId && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>

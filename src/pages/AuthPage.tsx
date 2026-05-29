@@ -174,7 +174,7 @@ export default function AuthPage() {
                     <div className={`${styles.checkbox} ${form.terms ? styles.checkboxActive : ''}`} onClick={() => setForm(p => ({ ...p, terms: !p.terms }))}>
                       {form.terms && <Check size={11} color="#fff" />}
                     </div>
-                    <span>I agree to the <a href="#" className={styles.link}>Terms</a> and <a href="#" className={styles.link}>Privacy Policy</a></span>
+                    <span>I agree to the <button type="button" onClick={() => setPage('terms' as any)} className={styles.link}>Terms</button> and <button type="button" onClick={() => setPage('privacy' as any)} className={styles.link}>Privacy Policy</button></span>
                   </label>
                 </>
               )}

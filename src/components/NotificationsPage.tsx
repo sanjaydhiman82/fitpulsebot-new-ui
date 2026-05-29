@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { useApp } from '../App';
 import { Save, RefreshCw } from 'lucide-react';
@@ -7,40 +7,35 @@ import styles from './LogPage.module.css';
 export default function NotificationsPage() {
   const { user } = useApp();
   const [allNotifs, setAllNotifs] = useState<any[]>([]);
-  const [selected, setSelected] = useState<Record<number, boolean>>({});
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!user) return;
     setLoading(true); setError('');
     try {
-      const [allRes, userRes] = await Promise.all([
-        api.notifications.getTypes(user.plan || 'Start').catch(() => ({ notifications: [] })),
-        api.notifications.getUserNotifications(user.userId).catch(() => []),
-      ]);
-      const notifs: any[] = allRes.notifications || [];
-      const userCodes: string[] = Array.isArray(userRes) ? userRes.map((r: any) => r.notificationCode) : [];
+      const allRes = await api.reminders.mine(user.organizationId).catch(() => ({ reminders: [] }));
+      const notifs: any[] = allRes.reminders || [];
       setAllNotifs(notifs);
-      const init: Record<number, boolean> = {};
-      notifs.forEach((n: any) => { init[n.id] = userCodes.includes(n.code); });
+      const init: Record<string, boolean> = {};
+      notifs.forEach((n: any) => { init[n.org_reminder_id] = n.is_opted_in !== false; });
       setSelected(init);
     } catch (e: any) { setError(e.message); }
     setLoading(false);
-  };
+  }, [user]);
 
-  useEffect(() => { load(); }, [user]);
+  useEffect(() => { load(); }, [load]);
 
-  const toggle = (id: number) => setSelected(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggle = (id: string) => setSelected(prev => ({ ...prev, [id]: !prev[id] }));
 
   const handleSave = async () => {
     if (!user) return;
     setSaving(true); setError(''); setSuccess('');
     try {
-      const codes = allNotifs.filter(n => selected[n.id]).map(n => n.code);
-      await api.notifications.saveNotifications(user.userId, codes);
+      await Promise.all(allNotifs.map(n => api.reminders.saveMine(n.org_reminder_id, { isOptedIn: selected[n.org_reminder_id] !== false })));
       setSuccess('Reminder preferences saved!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (e: any) { setError(e.message); }
@@ -69,14 +64,15 @@ export default function NotificationsPage() {
           <h3 className={styles.formTitle}>{cat}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {items.map((n: any) => (
-              <label key={n.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
-                <div style={{ width: 20, height: 20, borderRadius: 4, border: `1.5px solid ${selected[n.id] ? 'var(--accent)' : 'var(--border-strong)'}`, background: selected[n.id] ? 'var(--accent)' : 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2, transition: 'all 200ms', cursor: 'pointer' }}
-                  onClick={() => toggle(n.id)}>
-                  {selected[n.id] && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+              <label key={n.org_reminder_id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
+                <div style={{ width: 20, height: 20, borderRadius: 4, border: `1.5px solid ${selected[n.org_reminder_id] ? 'var(--accent)' : 'var(--border-strong)'}`, background: selected[n.org_reminder_id] ? 'var(--accent)' : 'var(--bg-input)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2, transition: 'all 200ms', cursor: 'pointer' }}
+                  onClick={() => toggle(n.org_reminder_id)}>
+                  {selected[n.org_reminder_id] && <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{n.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{n.description}</div>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{n.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{n.purpose}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{n.organization_name} · {(n.channels || []).join(', ')} · {n.frequency || 'As configured'}</div>
                 </div>
               </label>
             ))}
@@ -84,7 +80,7 @@ export default function NotificationsPage() {
         </div>
       ))}
 
-      {!loading && allNotifs.length === 0 && <div className={styles.emptyRow}>No reminders available for your plan.</div>}
+      {!loading && allNotifs.length === 0 && <div className={styles.emptyRow}>No organization reminders assigned to you yet.</div>}
     </div>
   );
 }

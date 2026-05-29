@@ -5,10 +5,10 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { Upload, Camera, Sparkles, X, CheckCircle, Loader } from 'lucide-react';
-import { getToken, getUserId } from '../api';
+import { API_ORIGIN, getToken, getUserId } from '../api';
 import styles from './ImageUploadLogger.module.css';
 
-const AI_BASE = `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000'}/api/ai/v1`;
+const AI_BASE = `${API_ORIGIN.replace(/\/$/, '')}/api/ai/v1`;
 
 interface Props {
   endpoint: string;

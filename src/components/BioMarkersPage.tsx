@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CalendarCheck, Download, Eye, FileText, Plus, RefreshCw, Trash2, UploadCloud } from 'lucide-react';
 import { api } from '../api';
+import styles from './LogPage.module.css';
 
 const panel: React.CSSProperties = {
   background: 'var(--bg-card)',
@@ -101,7 +102,7 @@ export default function BioMarkersPage({ memberId, readOnly = false }: { memberI
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18, color: 'var(--text-primary)' }}>
       {saving && <ReportUploadOverlay />}
-      {!readOnly && <form onSubmit={submit} style={{ ...panel, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr)) auto', gap: 12, alignItems: 'end' }}>
+      {!readOnly && <form onSubmit={submit} className={styles.responsiveFormGrid} style={{ ...panel, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(160px, 1fr)) auto', gap: 12, alignItems: 'end' }}>
         <div style={{ display: 'grid', gap: 7 }}>
           <span style={labelStyle}>Report Type</span>
           <select style={inputStyle} value={form.reportType} onChange={e => setForm({ ...form, reportType: e.target.value })}>
@@ -128,7 +129,7 @@ export default function BioMarkersPage({ memberId, readOnly = false }: { memberI
 
       {loading ? <div style={panel}>Loading BioMarkers...</div> : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr .8fr 2fr .9fr', gap: 14 }}>
+          <div className={styles.responsiveFourCol} style={{ display: 'grid', gridTemplateColumns: '1.5fr .8fr 2fr .9fr', gap: 14 }}>
             <div style={panel}>
               <h3 style={{ margin: '0 0 18px', fontSize: 18 }}>{latest?.report_type || 'Blood'} Report Summary</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -163,7 +164,7 @@ export default function BioMarkersPage({ memberId, readOnly = false }: { memberI
               <div style={{ display: 'grid', gap: 12 }}>
                 {comparison.length ? comparison.map((c: any) => {
                   const max = Math.max(Number(c.latest || 0), Number(c.previous || 0), 1);
-                  return <div key={c.parameter} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px', gap: 10, alignItems: 'center' }}>
+                  return <div key={c.parameter} className={styles.responsiveThreeCol} style={{ display: 'grid', gridTemplateColumns: '150px 1fr 80px', gap: 10, alignItems: 'center' }}>
                     <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>{c.parameter}</span>
                     <div style={{ display: 'grid', gap: 4 }}>
                       <div style={{ width: c.previous == null ? 0 : `${Math.max(4, Number(c.previous || 0) / max * 100)}%`, height: 10, background: 'var(--text-muted)', borderRadius: 99 }} />
@@ -184,10 +185,10 @@ export default function BioMarkersPage({ memberId, readOnly = false }: { memberI
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
+          <div className={styles.responsiveTwoCol} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
             <div style={panel}>
               <h3 style={{ margin: '0 0 16px', fontSize: 18 }}>All Reports</h3>
-              <div style={{ overflowX: 'auto' }}>
+              <div className={styles.scrollTable}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead><tr>{['Report Date', 'Lab Name', 'Report File', 'Health Score', 'Status', 'Action'].map(h => <th key={h} style={{ textAlign: 'left', padding: '10px 8px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>)}</tr></thead>
                   <tbody>
@@ -211,7 +212,7 @@ export default function BioMarkersPage({ memberId, readOnly = false }: { memberI
             <div style={panel}>
               <h3 style={{ margin: '0 0 8px', fontSize: 18 }}>Latest Report Highlights</h3>
               <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 12 }}>Report Date: {safeDate(latest?.report_date || latest?.created_at)} {latest?.lab_name ? `- Lab: ${latest.lab_name}` : ''}</div>
-              <div style={{ overflowX: 'auto' }}>
+              <div className={styles.scrollTable}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead><tr>{['Parameter', 'Result', 'Reference Range', 'Status', 'Insight'].map(h => <th key={h} style={{ textAlign: 'left', padding: '9px 6px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>)}</tr></thead>
                   <tbody>{latestValues.map((v: any) => <tr key={v.id}>
@@ -226,12 +227,12 @@ export default function BioMarkersPage({ memberId, readOnly = false }: { memberI
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+          <div className={styles.responsiveThreeCol} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
             <InfoList title="Insights" items={insights} icon={<AlertTriangle size={16} color="var(--success)" />} />
             <InfoList title="Recommendations" items={recommendations} icon={<Plus size={16} color="var(--success)" />} />
             <InfoList title="Trainer Insights" items={latest?.trainer_friendly_insights || []} icon={<FileText size={16} color="var(--accent)" />} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+          <div className={styles.responsiveThreeCol} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
             <InfoList title="Critical Findings" items={(latest?.critical_findings || []).map((f: any) => `${f.name}: ${f.value}${f.referenceRange ? ` (${f.referenceRange})` : ''} - ${f.reason || f.status}`)} icon={<AlertTriangle size={16} color="var(--danger)" />} />
             <InfoList title="Follow-Up Tests" items={(latest?.follow_up_tests || []).map((f: any) => `${f.test}: ${f.reason}`)} icon={<CalendarCheck size={16} color="var(--accent)" />} />
             <InfoList title="AI Feedback" items={[latest?.health_summary, latest?.doctor_review_suggested ? 'Doctor review is suggested for this report.' : '', latest?.ai_feedback].filter(Boolean)} icon={<FileText size={16} color="var(--accent)" />} />

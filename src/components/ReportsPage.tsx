@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend,
-  ReferenceLine,
 } from 'recharts';
 import styles from './LogPage.module.css';
 import { api, getUserId } from '../api';
@@ -280,8 +279,8 @@ export default function ReportsPage() {
       {/* Header */}
       <div className={styles.header}>
         <div>
-          <h2 className={styles.pageTitle}>Health Reports</h2>
-          <p className={styles.pageDesc}>Analyse your wellness trends over time</p>
+          <h2 className={styles.pageTitle}>360° Health Transformation Report (HTR)</h2>
+          <p className={styles.pageDesc}>Complete view of your health, fitness, nutrition, recovery, biomarkers, and transformation journey.</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <div className={styles.periodTabs}>

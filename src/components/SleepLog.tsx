@@ -5,8 +5,6 @@ import { api } from '../api';
 import DateFilter, { dateWithCurrentTime, displayDate, formatLocalDate } from './DateFilter';
 import ImageUploadLogger from './ImageUploadLogger';
 import styles from './LogPage.module.css';
-import iStyles from './ImageUploadLogger.module.css';
-import dropdowns from '../config/dropdowns.json';
 
 type Mode = 'manual' | 'ai';
 

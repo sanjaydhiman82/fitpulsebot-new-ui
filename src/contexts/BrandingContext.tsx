@@ -163,11 +163,26 @@ export function BrandingProvider({ orgId, branchId, children }: {
 
   // Apply dynamic CSS variable overrides
   useEffect(() => {
-    const css = buildVars(branding);
+    const css = buildVars({
+      primaryColor: branding.primaryColor,
+      secondaryColor: branding.secondaryColor,
+      accentColor: branding.accentColor,
+      backgroundColor: branding.backgroundColor,
+      foregroundColor: branding.foregroundColor,
+      fontFamily: branding.fontFamily,
+      borderRadius: branding.borderRadius,
+    });
     if (css) injectStyle(VARS_ID, css); else removeStyle(VARS_ID);
     return () => removeStyle(VARS_ID);
-  }, [branding.primaryColor, branding.secondaryColor, branding.accentColor,
-      branding.backgroundColor, branding.foregroundColor, branding.fontFamily, branding.borderRadius]);
+  }, [
+    branding.primaryColor,
+    branding.secondaryColor,
+    branding.accentColor,
+    branding.backgroundColor,
+    branding.foregroundColor,
+    branding.fontFamily,
+    branding.borderRadius,
+  ]);
 
   // Apply custom CSS
   useEffect(() => {

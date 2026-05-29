@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
 import { useApp } from '../App';
 import { normalizeProfileImageUrl } from '../profileImageUrl';
 import {
   Camera, Save, RefreshCw, Sparkles, PenLine,
   Flame, Droplets, BedDouble, Footprints, Scale,
-  Activity, Target, ChevronRight, CheckCircle2, Loader2,
+  ChevronRight, CheckCircle2, Loader2,
 } from 'lucide-react';
 import styles from './LogPage.module.css';
 import pStyles from './UserProfilePage.module.css';
@@ -60,7 +60,7 @@ export default function UserProfilePage() {
   const [error,     setError]     = useState('');
   const [success,   setSuccess]   = useState('');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
       const p = await api.profile.get();
@@ -81,9 +81,9 @@ export default function UserProfilePage() {
       });
     } catch(e:any){ setError(e.message); }
     setLoading(false);
-  };
+  }, [user?.avatarUrl]);
 
-  useEffect(()=>{ load(); },[]);
+  useEffect(()=>{ load(); },[load]);
 
   const f = (k:string) => (e:React.ChangeEvent<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>) =>
     setForm(prev=>({...prev,[k]:e.target.value}));
