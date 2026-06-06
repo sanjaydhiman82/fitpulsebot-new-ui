@@ -16,11 +16,13 @@ import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import OrgDashboard from './pages/OrgDashboard';
 import BranchDashboard from './pages/BranchDashboard';
 import ResourceDashboard from './pages/ResourceDashboard';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 export type Theme = 'light' | 'dark';
 export type Page =
   | 'landing' | 'onboarding' | 'dashboard' | 'admin' | 'auth' | 'privacy' | 'terms'
-  | 'org-auth' | 'super-admin' | 'org-dashboard' | 'branch-dashboard' | 'resource-dashboard';
+  | 'org-auth' | 'super-admin' | 'org-dashboard' | 'branch-dashboard' | 'resource-dashboard'
+  | 'reset-password';
 
 export type UserRole = 'user' | 'admin' | 'SUPER_ADMIN' | 'ORGANIZATION_ADMIN' | 'BRANCH_MANAGER' | 'RESOURCE' | 'CLIENT';
 
@@ -104,8 +106,15 @@ export default function App() {
   const [user, setUserState] = useState<AuthUser | null>(loadStoredUser);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
 
+  useEffect(() => {
+    if (window.location.pathname === '/reset-password') {
+      setPage('reset-password');
+    }
+  }, []);
+
   // On mount: if we have a stored session, route to the right page
   useEffect(() => {
+    if (window.location.pathname === '/reset-password') return;
     const stored = loadStoredUser();
     if (stored) {
       setUserState(stored);
@@ -159,6 +168,7 @@ export default function App() {
         {page === 'resource-dashboard' && <ResourceDashboard />}
         {page === 'privacy'           && <PrivacyPolicy />}
         {page === 'terms'             && <TermsOfService />}
+        {page === 'reset-password'    && <ResetPasswordPage />}
         <SessionGuard />
         <GlobalApiSpinner />
         {logoutConfirmOpen && (
