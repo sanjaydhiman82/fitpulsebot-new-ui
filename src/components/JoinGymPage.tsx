@@ -55,8 +55,8 @@ export default function JoinGymPage() {
         <div className={styles.joinGymHeader}>
           <div className={styles.joinGymIcon}><Dumbbell size={20} /></div>
           <div>
-            <h3>Join Gym</h3>
-            <p>Select an organization and branch to initiate your membership request.</p>
+            <h3>Join Organization</h3>
+            <p>Select an organization and branch to initiate your client request.</p>
           </div>
         </div>
         <div className={styles.joinGymControls}>

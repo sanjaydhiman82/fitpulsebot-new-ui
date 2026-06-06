@@ -201,7 +201,7 @@ export default function UserProfilePage() {
       {/* ── Header ── */}
       <div className={styles.header}>
         <div>
-          <h2 className={styles.pageTitle}>User Profile</h2>
+          <h2 className={styles.pageTitle}>Client Profile</h2>
           <p className={styles.pageDesc}>Manage your personal information and health goals</p>
         </div>
         <div style={{display:'flex',gap:8}}>

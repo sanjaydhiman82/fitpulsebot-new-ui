@@ -10,12 +10,12 @@ const dateOnly = (v: any) => v ? String(v).slice(0, 10) : '';
 const SECTIONS = [
   { id: 'body-composition', key: 'bodyComposition', title: 'Body Composition', icon: <UserRound size={16} /> },
   { id: 'body-measurements', key: 'bodyMeasurements', title: 'Body Measurements', icon: <Ruler size={16} /> },
-  { id: 'conditions', key: 'memberConditions', title: 'Member Condition', icon: <HeartPulse size={16} /> },
+  { id: 'conditions', key: 'memberConditions', title: 'Client Condition', icon: <HeartPulse size={16} /> },
   { id: 'health-logs', key: 'healthLogs', title: 'Vitals', icon: <HeartPulse size={16} /> },
   { id: 'injuries', key: 'injuryLogs', title: 'Injury Logs', icon: <ClipboardList size={16} /> },
   { id: 'lifestyle', key: 'lifestyleLogs', title: 'Lifestyle', icon: <UserRound size={16} /> },
   { id: 'progress-photos', key: 'progressPhotos', title: 'Progress Photos', icon: <Camera size={16} /> },
-  { id: 'trainer-notes', key: 'trainerNotes', title: 'Trainer Notes', icon: <ClipboardList size={16} />, readOnly: true },
+  { id: 'resource-notes', key: 'trainerNotes', title: 'Resource Notes', icon: <ClipboardList size={16} />, readOnly: true },
   { id: 'workouts', key: 'workouts', title: 'Workouts', icon: <Dumbbell size={16} /> },
   { id: 'biomarkers', key: 'biomarkers', title: 'Biomarks', icon: <TestTube2 size={16} />, readOnly: true },
 ];
@@ -53,7 +53,7 @@ function latestText(section: string, rows: any[]) {
   if (section === 'injuries') return `${fmt(r.body_part)} - ${fmt(r.description)}`;
   if (section === 'lifestyle') return `${fmt(r.occupation)}, Smoking: ${fmt(r.smoking)}, Alcohol: ${fmt(r.alcohol)}`;
   if (section === 'progress-photos') return `${rows.length} photos`;
-  if (section === 'trainer-notes') return fmt(r.body || r.title);
+  if (section === 'resource-notes') return fmt(r.body || r.title);
   return fmt(r.title);
 }
 
@@ -185,7 +185,7 @@ export default function PartnerBranchProfile({ branchId }: { branchId: string })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>{header.first_name || 'Member'} {header.last_name || ''}</h2>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900 }}>{header.first_name || 'Client'} {header.last_name || ''}</h2>
         <p style={{ margin: '4px 0 0', color: 'var(--text-muted)' }}>{data?.membership?.organization_name} · {data?.membership?.branch_name}</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginTop: 16 }}>
           {[['Weight', summary.currentWeightKg], ['Body Fat %', summary.bodyFatPercent], ['Muscle Mass', summary.muscleMassKg], ['Sleep', summary.sleepHours], ['Height', summary.heightCm]].map(([l,v]) => (
@@ -251,7 +251,7 @@ function WorkoutMemberLogger({ workouts, saving, manualWorkoutId, setManualWorko
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
             <h3 style={{ margin: '0 0 4px', fontSize: 16 }}>Assigned Workouts</h3>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>Log workouts assigned by your trainer, or create your own workout manually or with AI.</p>
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>Log workouts assigned by your resource, or create your own workout manually or with AI.</p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button onClick={() => setCreateWorkoutMode(createWorkoutMode === 'manual' ? null : 'manual')} style={{ padding: '9px 12px', borderRadius: 8, background: 'var(--accent-light)', color: 'var(--accent)', fontWeight: 900 }}>Manual Workout</button>
@@ -298,7 +298,7 @@ function WorkoutMemberLogger({ workouts, saving, manualWorkoutId, setManualWorko
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: 17 }}>{w.title}</h3>
-                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{w.goal || 'Workout'} · {w.level || 'Any level'} · {w.created_by_type === 'TRAINER' ? 'Trainer assigned' : 'Self plan'}</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{w.goal || 'Workout'} · {w.level || 'Any level'} · {w.created_by_type === 'RESOURCE' ? 'Resource assigned' : 'Self plan'}</p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 12 }}>Sessions logged: {w.sessions_count || 0}{w.last_completed_at ? ` · Last: ${dateOnly(w.last_completed_at)}` : ''}{todaySchedule ? ` · Scheduled today` : ''}</p>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

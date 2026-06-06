@@ -3,7 +3,7 @@ import { useApp } from '../App';
 import { api } from '../api';
 import { Building2, GitBranch, Shield, Eye, EyeOff, ArrowLeft, Loader, ChevronDown } from 'lucide-react';
 
-type LoginMode = 'org' | 'branch' | 'trainer';
+type LoginMode = 'org' | 'branch' | 'resource';
 
 // Normalize org/branch objects — backend may return snake_case
 const normalizeOrg = (o: any) => ({
@@ -51,7 +51,7 @@ export default function OrgAuthPage() {
   const modeConfig = {
     org: { label: 'Organization Admin', icon: <Building2 size={18} />, color: '#6366f1', badge: 'ORGANIZATION_ADMIN' },
     branch: { label: 'Branch Manager', icon: <GitBranch size={18} />, color: '#0ea5e9', badge: 'BRANCH_MANAGER' },
-    trainer: { label: 'Trainer / Coach', icon: <Shield size={18} />, color: '#f59e0b', badge: 'TRAINER' },
+    resource: { label: 'Resource / Coach', icon: <Shield size={18} />, color: '#f59e0b', badge: 'RESOURCE' },
   };
 
   const cfg = modeConfig[mode];
@@ -76,7 +76,7 @@ export default function OrgAuthPage() {
       const rolePageMap: Record<string, string> = {
         ORGANIZATION_ADMIN: 'org-dashboard',
         BRANCH_MANAGER: 'branch-dashboard',
-        TRAINER: 'trainer-dashboard',
+        RESOURCE: 'resource-dashboard',
         SUPER_ADMIN: 'super-admin',
         admin: 'super-admin',
       };
@@ -301,9 +301,9 @@ export default function OrgAuthPage() {
           )}
 
           <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--text-muted)' }}>
-            Member?{' '}
+            Client?{' '}
             <button onClick={() => setPage('auth')} style={{ color: 'var(--accent)', fontWeight: 700 }}>
-              Use member login
+              Use client login
             </button>
           </p>
         </div>

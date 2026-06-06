@@ -183,7 +183,7 @@ function MiniPreview({ data, mode = 'dark' }: { data: any; mode?: 'dark' | 'ligh
           ? <img src={data.logoUrl} alt="" style={{ width: 18, height: 18, borderRadius: 4, objectFit: 'cover' }} />
           : <div style={{ width: 18, height: 18, borderRadius: 4, background: accent, display:'flex', alignItems:'center', justifyContent:'center', fontSize: 9, fontWeight: 900, color: '#fff' }}>{(data.appName || 'G')[0]}</div>
         }
-        <span style={{ fontSize: 11, fontWeight: 800, color: text }}>{data.appName || 'Your Gym'}</span>
+        <span style={{ fontSize: 11, fontWeight: 800, color: text }}>{data.appName || 'Your Organization'}</span>
         <div style={{ marginLeft: 'auto', width: 8, height: 8, borderRadius: '50%', background: accent }} />
       </div>
       {/* Content area */}
@@ -307,7 +307,7 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
           </h2>
           <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>
             {isOrg
-              ? 'Your branding cascades to all branches, trainers, and members unless overridden at branch level.'
+              ? 'Your branding cascades to all branches, resources, and clients unless overridden at branch level.'
               : 'Branch-level overrides apply on top of organization branding for this branch.'}
           </p>
         </div>
@@ -437,11 +437,11 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
             {/* ── BRAND TAB ── */}
             {tab === 'brand' && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <FormField label="App / Gym Name">
+                <FormField label="App / Organization Name">
                   <input style={inputStyle} value={data.appName || ''} onChange={e => set('appName', e.target.value)} placeholder="My Fitness Club" />
                 </FormField>
                 <FormField label="Custom Domain">
-                  <input style={inputStyle} value={data.customDomain || ''} onChange={e => set('customDomain', e.target.value)} placeholder="app.mygym.com" />
+                  <input style={inputStyle} value={data.customDomain || ''} onChange={e => set('customDomain', e.target.value)} placeholder="app.myorg.com" />
                 </FormField>
                 <div style={{ gridColumn: '1/-1' }}>
                   <FormField label="Logo URL">
@@ -583,8 +583,8 @@ export default function AdvancedBrandingEditor({ orgId, branchId, isOrg = true }
             {[
               { label: isOrg ? 'Organization (you)' : 'Organization', active: isOrg, color: '#0ea5e9' },
               { label: 'Branches', active: true, color: '#f59e0b' },
-              { label: 'Trainers', active: true, color: '#8b5cf6' },
-              { label: 'Members', active: true, color: 'var(--accent)' },
+              { label: 'Resources', active: true, color: '#8b5cf6' },
+              { label: 'Clients', active: true, color: 'var(--accent)' },
             ].map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.color, flexShrink: 0 }} />

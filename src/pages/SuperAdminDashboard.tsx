@@ -6,7 +6,8 @@ import PortalLayout, {
 import { api } from '../api';
 import {
   LayoutDashboard, Building2, GitBranch, Plus, Edit2, Trash2,
-  Users, RefreshCw, Search, Loader, CheckCircle2,
+  Users, RefreshCw, Search, Loader, CheckCircle2, Mail, Phone, MapPin,
+  ChevronUp, ChevronRight,
 } from 'lucide-react';
 
 const NAV = [
@@ -23,7 +24,7 @@ interface Org {
   address?: any;
   branchCount?: number; branch_count?: number;
   memberCount?: number; member_count?: number;
-  trainerCount?: number; trainer_count?: number;
+  resourceCount?: number; resource_count?: number;
   createdAt?: string; created_at?: string;
 }
 
@@ -32,6 +33,13 @@ const addressText = (address: any) => {
   if (!address) return '';
   if (typeof address === 'string') return address;
   return [address.line1, address.city, address.state, address.country, address.pincode].filter(Boolean).join(', ');
+};
+const orgControlStyle: React.CSSProperties = {
+  ...inputStyle,
+  height: 46,
+  minHeight: 46,
+  paddingTop: 0,
+  paddingBottom: 0,
 };
 
 // ─── Org Form Modal ──────────────────────────────────────
@@ -96,7 +104,7 @@ function OrgFormModal({ open, onClose, org, onSaved }: {
     <Modal open={open} onClose={onClose} title={editing ? 'Edit Organization' : 'New Organization'} width={580}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <FormField label="Org Name" required>
-          <input style={inputStyle} value={form.orgName} onChange={f('orgName')} placeholder="FitPulse Gym" />
+          <input style={inputStyle} value={form.orgName} onChange={f('orgName')} placeholder="FitPulse Organization" />
         </FormField>
         {!editing && (
           <FormField label="Org Code" required>
@@ -104,7 +112,7 @@ function OrgFormModal({ open, onClose, org, onSaved }: {
           </FormField>
         )}
         <FormField label="Contact Email">
-          <input style={inputStyle} value={form.contactEmail} onChange={f('contactEmail')} placeholder="contact@gym.com" />
+          <input style={inputStyle} value={form.contactEmail} onChange={f('contactEmail')} placeholder="contact@organization.com" />
         </FormField>
         <FormField label="Contact Phone">
           <input style={inputStyle} value={form.contactPhone} onChange={f('contactPhone')} placeholder="+919999999999" />
@@ -131,7 +139,7 @@ function OrgFormModal({ open, onClose, org, onSaved }: {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <FormField label="Admin Email" required>
-                <input style={inputStyle} value={form.adminEmail} onChange={f('adminEmail')} placeholder="admin@gym.com" />
+                <input style={inputStyle} value={form.adminEmail} onChange={f('adminEmail')} placeholder="admin@organization.com" />
               </FormField>
               <FormField label="Admin Phone">
                 <input style={inputStyle} value={form.adminPhone} onChange={f('adminPhone')} placeholder="+919999999998" />
@@ -163,7 +171,7 @@ function OrgFormModal({ open, onClose, org, onSaved }: {
 }
 
 // ─── Branches sub-panel ──────────────────────────────────
-function BranchesPanel({ orgId, orgName }: { orgId: string; orgName: string }) {
+function BranchesPanel({ orgId }: { orgId: string; orgName?: string }) {
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -237,7 +245,7 @@ function BranchesPanel({ orgId, orgName }: { orgId: string; orgName: string }) {
 
   return (
     <div>
-      <SectionHeader title={`Branches — ${orgName}`} action={
+      <SectionHeader title={`Branches (${branches.length})`} action={
         <PrimaryBtn onClick={showForm ? () => setShowForm(false) : openCreate} style={{ padding: '7px 14px', fontSize: 12 }}>
           <Plus size={13} /> Add Branch
         </PrimaryBtn>
@@ -273,10 +281,10 @@ function BranchesPanel({ orgId, orgName }: { orgId: string; orgName: string }) {
       <DataTable
         columns={[
           {
-            key: 'name', label: 'Branch', render: r => (
+            key: 'name', label: 'Branch Name', render: r => (
               <div>
                 <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{r.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.code}</div>
+                <div style={{ display: 'inline-flex', marginTop: 4, padding: '2px 7px', borderRadius: 6, background: 'var(--metric-bg)', border: '1px solid var(--border)', fontSize: 10, color: 'var(--text-muted)', fontWeight: 800 }}>{r.code}</div>
               </div>
             )
           },
@@ -290,14 +298,14 @@ function BranchesPanel({ orgId, orgName }: { orgId: string; orgName: string }) {
           },
           { key: 'address', label: 'Address', render: r => <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{addressText(r.address) || '-'}</span> },
           { key: 'managerUserName', label: 'Manager', render: r => field(r, 'managerUserName', 'manager_user_name') || '-' },
-          { key: 'memberCount', label: 'Members', render: r => field(r, 'memberCount', 'member_count') || 0 },
-          { key: 'trainerCount', label: 'Trainers', render: r => field(r, 'trainerCount', 'trainer_count') || 0 },
+          { key: 'memberCount', label: 'Clients', render: r => field(r, 'memberCount', 'member_count') || 0 },
+          { key: 'resourceCount', label: 'Resources', render: r => field(r, 'resourceCount', 'resource_count') || 0 },
           { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
           {
             key: 'actions', label: 'Actions', render: r => (
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => openEdit(r)} aria-label={`Edit ${r.name}`} style={{ width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', background: 'var(--accent-light)', border: 'none', cursor: 'pointer' }}><Edit2 size={12} /></button>
-                <button onClick={() => deleteBranch(r)} aria-label={`Delete ${r.name}`} style={{ width: 28, height: 28, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', background: 'rgba(229,62,62,0.08)', border: 'none', cursor: 'pointer' }}><Trash2 size={12} /></button>
+                <button onClick={() => openEdit(r)} aria-label={`Edit ${r.name}`} style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', background: 'var(--accent-light)', border: '1px solid var(--border)', cursor: 'pointer' }}><Edit2 size={13} /></button>
+                <button onClick={() => deleteBranch(r)} aria-label={`Delete ${r.name}`} style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger)', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.2)', cursor: 'pointer' }}><Trash2 size={13} /></button>
               </div>
             )
           },
@@ -310,25 +318,30 @@ function BranchesPanel({ orgId, orgName }: { orgId: string; orgName: string }) {
 }
 
 // ─── Main Super Admin Dashboard ──────────────────────────
-export default function SuperAdminDashboard() {
+export default function SuperAdminDashboard({ embedded = false }: { embedded?: boolean }) {
   const [activeTab, setActiveTab] = useState('organizations');
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editOrg, setEditOrg] = useState<Org | null>(null);
-  const [expandedOrg, setExpandedOrg] = useState<string | null>(null);
+  const [expandedOrgs, setExpandedOrgs] = useState<Record<string, boolean>>({});
 
   const load = useCallback(() => {
     setLoading(true);
-    api.superAdmin.listOrgs({ search, pageSize: 50 })
+    api.superAdmin.listOrgs({
+      search,
+      pageSize: 50,
+      ...(statusFilter ? { status: statusFilter } : {}),
+    })
       .then(d => { setOrgs(d.organizations || []); setTotal(d.total || 0); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [search]);
+  }, [search, statusFilter]);
 
-  useEffect(() => { if (activeTab === 'organizations') load(); }, [activeTab, load]);
+  useEffect(() => { if (activeTab === 'organizations' || activeTab === 'dashboard') load(); }, [activeTab, load]);
 
   const deleteOrg = async (org: Org) => {
     if (!window.confirm(`Deactivate "${org.name}"?`)) return;
@@ -336,12 +349,199 @@ export default function SuperAdminDashboard() {
     load();
   };
 
+  const activeOrgCount = orgs.filter(o => o.status === 'active').length;
+  const inactiveOrgCount = Math.max(total - activeOrgCount, 0);
+  const totalBranches = orgs.reduce((s, o) => s + (field(o, 'branchCount', 'branch_count') || 0), 0);
+  const totalClients = orgs.reduce((s, o) => s + (field(o, 'memberCount', 'member_count') || 0), 0);
+  const totalResources = orgs.reduce((s, o) => s + (field(o, 'resourceCount', 'resource_count') || 0), 0);
+
   const stats = [
     { label: 'Total Organizations', value: total, icon: <Building2 size={18} />, color: '#6366f1' },
-    { label: 'Active', value: orgs.filter(o => o.status === 'active').length, icon: <CheckCircle2 size={18} />, color: 'var(--accent)' },
-    { label: 'Total Branches', value: orgs.reduce((s, o) => s + (field(o, 'branchCount', 'branch_count') || 0), 0), icon: <GitBranch size={18} />, color: '#0ea5e9' },
-    { label: 'Total Members', value: orgs.reduce((s, o) => s + (field(o, 'memberCount', 'member_count') || 0), 0), icon: <Users size={18} />, color: '#f59e0b' },
+    { label: 'Active', value: activeOrgCount, icon: <CheckCircle2 size={18} />, color: 'var(--accent)' },
+    { label: 'Total Branches', value: totalBranches, icon: <GitBranch size={18} />, color: '#0ea5e9' },
+    { label: 'Total Clients', value: totalClients, icon: <Users size={18} />, color: '#f59e0b' },
   ];
+  const orgStats = [
+    { label: 'Total Organizations', value: total, icon: <Building2 size={24} />, color: 'var(--accent)', sub: `Active: ${activeOrgCount}    Inactive: ${inactiveOrgCount}` },
+    { label: 'Total Branches', value: totalBranches, icon: <GitBranch size={24} />, color: '#8b5cf6', sub: `Active: ${totalBranches}    Inactive: 0` },
+    { label: 'Total Clients', value: totalClients, icon: <Users size={24} />, color: '#0ea5e9', sub: 'Across all organizations' },
+    { label: 'Total Resources', value: totalResources, icon: <Building2 size={24} />, color: '#f59e0b', sub: 'Across all organizations' },
+  ];
+
+  const dashboardContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div>
+        <h2 style={{ fontSize: 22, fontWeight: 900, margin: '0 0 4px' }}>Platform Overview</h2>
+        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>All organizations across the FitPulseBot platform</p>
+      </div>
+      <div style={GRID4}>
+        {stats.map((s, i) => <StatCard key={i} {...s} />)}
+      </div>
+      <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 20, border: '1px solid var(--border)' }}>
+        <SectionHeader title="Recent Organizations" />
+        <DataTable
+          columns={[
+            { key: 'name', label: 'Name' },
+            { key: 'code', label: 'Code' },
+            { key: 'branchCount', label: 'Branches' },
+            { key: 'memberCount', label: 'Clients' },
+            { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
+          ]}
+          rows={orgs.slice(0, 5)}
+        />
+      </div>
+    </div>
+  );
+
+  const organizationsContent = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Organizations</h2>
+          <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>Manage all organizations and their branches</p>
+        </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={14} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+            <input
+              value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search organizations..."
+              style={{ ...orgControlStyle, paddingLeft: 34, width: 260 }}
+            />
+          </div>
+          <select
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            style={{ ...orgControlStyle, width: 190, cursor: 'pointer' }}
+            aria-label="Filter organizations by status"
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="suspended">Suspended</option>
+          </select>
+          <OutlineBtn onClick={load} style={{ height: 46, minHeight: 46, width: 46, padding: 0 }}><RefreshCw size={15} /></OutlineBtn>
+          <PrimaryBtn onClick={() => { setEditOrg(null); setModalOpen(true); }} style={{ height: 46, minHeight: 46, padding: '0 18px' }}>
+            <Plus size={14} /> New Organization
+          </PrimaryBtn>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }}>
+        {orgStats.map((item) => (
+          <div key={item.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 22, display: 'flex', alignItems: 'center', gap: 18, minHeight: 118 }}>
+            <div style={{ width: 58, height: 58, borderRadius: 16, background: item.color + '22', color: item.color, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{item.icon}</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>{item.label}</div>
+              <div style={{ fontSize: 28, fontWeight: 950, color: 'var(--text-primary)', marginTop: 8 }}>{item.value}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, whiteSpace: 'pre-wrap' }}>{item.sub}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 34, border: '1px solid var(--border)', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Loader size={22} style={{ animation: 'spin 1s linear infinite' }} />
+          <div style={{ marginTop: 10, fontSize: 13 }}>Loading organizations...</div>
+        </div>
+      ) : orgs.length === 0 ? (
+        <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 42, border: '1px solid var(--border)', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <Building2 size={36} style={{ opacity: 0.4, marginBottom: 10 }} />
+          <div style={{ fontSize: 14 }}>No organizations found for the selected filters.</div>
+        </div>
+      ) : (
+        orgs.map(org => {
+          const contactEmail = field(org, 'contactEmail', 'contact_email') || '-';
+          const contactPhone = field(org, 'contactPhone', 'contact_phone') || '-';
+          const ownerName = field(org, 'ownerUserName', 'owner_user_name') || '-';
+          const branchCount = field(org, 'branchCount', 'branch_count') || 0;
+          const memberCount = field(org, 'memberCount', 'member_count') || 0;
+          const resourceCount = field(org, 'resourceCount', 'resource_count') || 0;
+          const isExpanded = !!expandedOrgs[org.id];
+
+          return (
+            <div key={org.id} style={{ background: 'linear-gradient(135deg, var(--bg-card), rgba(91,200,224,.035))', borderRadius: 16, border: '1px solid var(--border)', borderLeft: '4px solid var(--accent)', overflow: 'hidden', boxShadow: '0 14px 36px rgba(0,0,0,.14)' }}>
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', minWidth: 260, flex: 1 }}>
+                    <div style={{
+                      width: 52, height: 52, borderRadius: 12, flexShrink: 0,
+                      background: 'linear-gradient(135deg, #6366f133, #6366f166)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 24, fontWeight: 900, color: '#fff',
+                    }}>{(org.name || 'O').charAt(0).toUpperCase()}</div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0, fontSize: 22, fontWeight: 950, color: 'var(--text-primary)' }}>{org.name}</h3>
+                        <StatusBadge status={org.status} />
+                      </div>
+                      <div style={{ marginTop: 5, fontSize: 13, color: 'var(--text-muted)' }}>{org.code} · Admin: {ownerName}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" onClick={() => setExpandedOrgs(prev => ({ ...prev, [org.id]: !prev[org.id] }))} style={{ height: 38, padding: '0 18px', borderRadius: 9, border: '1px solid var(--accent)', color: 'var(--accent)', background: 'rgba(61,191,150,.08)', fontSize: 13, fontWeight: 900 }}>
+                      View Details
+                    </button>
+                    <button onClick={() => { setEditOrg(org); setModalOpen(true); }} aria-label={`Edit ${org.name}`} style={{
+                      width: 38, height: 38, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--accent)', background: 'var(--accent-light)', border: '1px solid var(--border)', cursor: 'pointer',
+                    }}><Edit2 size={13} /></button>
+                    <button onClick={() => deleteOrg(org)} aria-label={`Delete ${org.name}`} style={{
+                      width: 38, height: 38, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--danger)', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.2)', cursor: 'pointer',
+                    }}><Trash2 size={13} /></button>
+                    <button onClick={() => setExpandedOrgs(prev => ({ ...prev, [org.id]: !prev[org.id] }))} aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${org.name}`} style={{
+                      width: 38, height: 38, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--text-primary)', background: 'transparent', border: '1px solid var(--border)', cursor: 'pointer',
+                    }}>{isExpanded ? <ChevronUp size={15} /> : <ChevronRight size={15} />}</button>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.15fr .95fr 1.4fr .6fr .6fr .7fr', gap: 0, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+                  {[
+                    ['Email', contactEmail, <Mail size={14} />],
+                    ['Phone', contactPhone, <Phone size={14} />],
+                    ['Address', addressText(org.address) || '-', <MapPin size={14} />],
+                    ['Branches', branchCount, <GitBranch size={14} />],
+                    ['Clients', memberCount, <Users size={14} />],
+                    ['Resources', resourceCount, <Users size={14} />],
+                  ].map(([label, value, icon]) => (
+                    <div key={String(label)} style={{ padding: '0 18px', borderRight: label === 'Resources' ? 'none' : '1px solid var(--border)', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 800, color: 'var(--text-muted)' }}>{icon}{label}</div>
+                      <div style={{ marginTop: 7, fontSize: 13, lineHeight: 1.35, fontWeight: 750, color: 'var(--text-primary)', overflowWrap: 'anywhere' }}>{value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <BranchesPanel orgId={org.id} orgName={org.name} />
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })
+      )}
+    </div>
+  );
+
+  const modal = (
+    <OrgFormModal
+      open={modalOpen} onClose={() => setModalOpen(false)}
+      org={editOrg} onSaved={load}
+    />
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {organizationsContent}
+        {modal}
+      </>
+    );
+  }
 
   return (
     <PortalLayout
@@ -350,117 +550,9 @@ export default function SuperAdminDashboard() {
       navItems={NAV} activeTab={activeTab} onTabChange={setActiveTab}
       roleBadge="SUPER ADMIN" roleBadgeColor="#6366f1"
     >
-      {activeTab === 'dashboard' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div>
-            <h2 style={{ fontSize: 22, fontWeight: 900, margin: '0 0 4px' }}>Platform Overview</h2>
-            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>All organizations across the FitPulseBot platform</p>
-          </div>
-          <div style={GRID4}>
-            {stats.map((s, i) => <StatCard key={i} {...s} />)}
-          </div>
-          <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 20, border: '1px solid var(--border)' }}>
-            <SectionHeader title="Recent Organizations" />
-            <DataTable
-              columns={[
-                { key: 'name', label: 'Name' },
-                { key: 'code', label: 'Code' },
-                { key: 'branchCount', label: 'Branches' },
-                { key: 'memberCount', label: 'Members' },
-                { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
-              ]}
-              rows={orgs.slice(0, 5)}
-            />
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'organizations' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-            <div>
-              <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Organizations</h2>
-              <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{total} total</p>
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ position: 'relative' }}>
-                <Search size={14} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input
-                  value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search orgs..."
-                  style={{ ...inputStyle, paddingLeft: 32, width: 200 }}
-                />
-              </div>
-              <OutlineBtn onClick={load}><RefreshCw size={13} /></OutlineBtn>
-              <PrimaryBtn onClick={() => { setEditOrg(null); setModalOpen(true); }}>
-                <Plus size={14} /> New Organization
-              </PrimaryBtn>
-            </div>
-          </div>
-
-          {/* Org cards */}
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}><Loader size={22} style={{ animation: 'spin 1s linear infinite' }} /></div>
-          ) : orgs.map(org => (
-            <div key={org.id} style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', overflow: 'hidden' }}>
-              <div style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-                  background: 'linear-gradient(135deg, #6366f133, #6366f166)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 900, color: '#6366f1',
-                }}>{org.name[0]}</div>
-                <div style={{ flex: 1, minWidth: 120 }}>
-                  <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text-primary)' }}>{org.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{org.code} · {field(org, 'ownerUserName', 'owner_user_name') || '-'}</div>
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 7, fontSize: 12, color: 'var(--text-secondary)' }}>
-                    <span>{field(org, 'contactEmail', 'contact_email') || 'No contact email'}</span>
-                    <span>{field(org, 'contactPhone', 'contact_phone') || 'No phone'}</span>
-                  </div>
-                  <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)' }}>{addressText(org.address) || 'No address saved'}</div>
-                </div>
-                <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-                  <span><strong>{field(org, 'branchCount', 'branch_count') || 0}</strong> Branches</span>
-                  <span><strong>{field(org, 'memberCount', 'member_count') || 0}</strong> Members</span>
-                  <span><strong>{field(org, 'trainerCount', 'trainer_count') || 0}</strong> Trainers</span>
-                </div>
-                <StatusBadge status={org.status} />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <OutlineBtn onClick={() => setExpandedOrg(expandedOrg === org.id ? null : org.id)} style={{ fontSize: 11, padding: '6px 12px' }}>
-                    <GitBranch size={12} /> Branches
-                  </OutlineBtn>
-                  <button onClick={() => { setEditOrg(org); setModalOpen(true); }} style={{
-                    width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--accent)', background: 'var(--accent-light)', border: '1px solid var(--border)',
-                  }}><Edit2 size={13} /></button>
-                  <button onClick={() => deleteOrg(org)} style={{
-                    width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--danger)', background: 'rgba(229,62,62,0.08)', border: '1px solid rgba(229,62,62,0.2)',
-                  }}><Trash2 size={13} /></button>
-                </div>
-              </div>
-              {expandedOrg === org.id && (
-                <div style={{ padding: '0 20px 20px', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ paddingTop: 16 }}>
-                    <BranchesPanel orgId={org.id} orgName={org.name} />
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {!loading && orgs.length === 0 && (
-            <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-              <Building2 size={40} style={{ marginBottom: 12, opacity: 0.3 }} />
-              <p>No organizations found. Create one to get started.</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      <OrgFormModal
-        open={modalOpen} onClose={() => setModalOpen(false)}
-        org={editOrg} onSaved={load}
-      />
+      {activeTab === 'dashboard' && dashboardContent}
+      {activeTab === 'organizations' && organizationsContent}
+      {modal}
     </PortalLayout>
   );
 }

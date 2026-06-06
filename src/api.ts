@@ -1,6 +1,31 @@
+import { hideGlobalApiSpinner, showGlobalApiSpinner } from './components/GlobalApiSpinner';
+
 export const API_ORIGIN = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+
 const BASE = `${API_ORIGIN.replace(/\/$/, '')}/api/v1`;
 const AI_BASE = `${API_ORIGIN.replace(/\/$/, '')}/api/ai/v1`;
+
+type ApiSpinnerOptions = {
+  showSpinner?: boolean;
+  spinnerLabel?: string;
+  spinnerDelayMs?: number;
+};
+
+function startDelayedSpinner(options: ApiSpinnerOptions = {}) {
+  const { showSpinner = true, spinnerLabel = 'Loading data...', spinnerDelayMs = 550 } = options;
+  let shown = false;
+  const timer = showSpinner
+    ? setTimeout(() => {
+        shown = true;
+        showGlobalApiSpinner(spinnerLabel);
+      }, spinnerDelayMs)
+    : undefined;
+
+  return () => {
+    if (timer) clearTimeout(timer);
+    if (shown) hideGlobalApiSpinner();
+  };
+}
 
 // ── Token helpers ────────────────────────────────────────
 export function getToken(): string | null {
@@ -16,11 +41,21 @@ let _sessionDialogPromise: Promise<boolean> | null = null;
 
 export async function apiFetch(
   path: string,
-  options: RequestInit & { timeoutMs?: number; skipAuth?: boolean; _isRetry?: boolean } = {}
+  options: RequestInit & { timeoutMs?: number; skipAuth?: boolean; _isRetry?: boolean } & ApiSpinnerOptions = {}
 ): Promise<any> {
-  const { timeoutMs = 90000, skipAuth = false, headers, _isRetry = false, ...rest } = options;
+  const {
+    timeoutMs = 90000,
+    skipAuth = false,
+    headers,
+    _isRetry = false,
+    showSpinner,
+    spinnerLabel,
+    spinnerDelayMs,
+    ...rest
+  } = options;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const stopSpinner = startDelayedSpinner({ showSpinner, spinnerLabel, spinnerDelayMs });
   try {
     // Always read token fresh from localStorage so it reflects the current logged-in user
     const token = getToken();
@@ -52,7 +87,8 @@ export async function apiFetch(
         throw new Error('Session expired. Please log in again.');
       }
 
-      throw new Error(err?.detail || err?.message || `HTTP ${res.status}`);
+      const detail = err?.detail || err?.message;
+      throw new Error(typeof detail === 'string' ? detail : detail ? JSON.stringify(detail) : `HTTP ${res.status}`);
     }
     if (res.status === 204) return {};
     return res.json();
@@ -61,42 +97,54 @@ export async function apiFetch(
     throw e;
   } finally {
     clearTimeout(timer);
+    stopSpinner();
   }
 }
 
 // ── AI JSON fetch ─────────────────────────────────────
-export async function apiFetchAI(path: string, options: RequestInit & { skipAuth?: boolean } = {}): Promise<any> {
-  const { skipAuth = false, headers, ...rest } = options;
+export async function apiFetchAI(path: string, options: RequestInit & { skipAuth?: boolean } & ApiSpinnerOptions = {}): Promise<any> {
+  const { skipAuth = false, headers, showSpinner, spinnerLabel, spinnerDelayMs, ...rest } = options;
+  const stopSpinner = startDelayedSpinner({ showSpinner, spinnerLabel: spinnerLabel || 'Loading AI data...', spinnerDelayMs });
   const token = getToken();
-  const res = await fetch(`${AI_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(headers as any || {}),
-    },
-    ...rest,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.detail || err?.message || `HTTP ${res.status}`);
+  try {
+    const res = await fetch(`${AI_BASE}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(!skipAuth && token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(headers as any || {}),
+      },
+      ...rest,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      const detail = err?.detail || err?.message;
+      throw new Error(typeof detail === 'string' ? detail : detail ? JSON.stringify(detail) : `HTTP ${res.status}`);
+    }
+    if (res.status === 204) return {};
+    return res.json();
+  } finally {
+    stopSpinner();
   }
-  if (res.status === 204) return {};
-  return res.json();
 }
 
 // ── AI multipart fetch (image upload) ───────────────────
-export async function apiAiUpload(endpoint: string, formData: FormData): Promise<any> {
+export async function apiAiUpload(endpoint: string, formData: FormData, options: ApiSpinnerOptions = {}): Promise<any> {
+  const stopSpinner = startDelayedSpinner({ ...options, spinnerLabel: options.spinnerLabel || 'Uploading data...' });
   const token = getToken();
-  const res = await fetch(`${AI_BASE}/${endpoint}`, {
-    method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: formData,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.detail || err?.message || `HTTP ${res.status}`);
+  try {
+    const res = await fetch(`${AI_BASE}/${endpoint}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.detail || err?.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  } finally {
+    stopSpinner();
   }
-  return res.json();
 }
 
 // ── API surface ──────────────────────────────────────────
@@ -272,22 +320,22 @@ export const api = {
     },
   },
   gymJoin: {
-    listRequests: () => apiFetch('/user/gym-requests'),
+    listRequests: () => apiFetch('/client/organization-requests'),
     createRequest: (data: { organizationId: string; branchId: string }) =>
-      apiFetch('/user/gym-requests', { method: 'POST', body: JSON.stringify(data) }),
+      apiFetch('/client/organization-requests', { method: 'POST', body: JSON.stringify(data) }),
   },
   partner: {
-    branches: () => apiFetch('/user/partner-branches'),
-    profile: (branchId: string) => apiFetch(`/user/partner-branches/${branchId}/profile`),
-    add: (branchId: string, section: string, data: any) => apiFetch(`/user/partner-branches/${branchId}/${section}`, { method: 'POST', body: JSON.stringify(data) }),
-    addWorkoutSession: (branchId: string, data: any) => apiFetch(`/user/partner-branches/${branchId}/workout-sessions`, { method: 'POST', body: JSON.stringify(data) }),
+    branches: () => apiFetch('/client/partner-branches'),
+    profile: (branchId: string) => apiFetch(`/client/partner-branches/${branchId}/profile`),
+    add: (branchId: string, section: string, data: any) => apiFetch(`/client/partner-branches/${branchId}/${section}`, { method: 'POST', body: JSON.stringify(data) }),
+    addWorkoutSession: (branchId: string, data: any) => apiFetch(`/client/partner-branches/${branchId}/workout-sessions`, { method: 'POST', body: JSON.stringify(data) }),
     workoutAllDone: (branchId: string, data: { workoutId: string; userWorkoutId?: string; notes?: string; rating?: number }) =>
-      apiFetch(`/user/partner-branches/${branchId}/workouts/all-done`, { method: 'POST', body: JSON.stringify(data) }),
-    delete: (branchId: string, section: string, itemId: string) => apiFetch(`/user/partner-branches/${branchId}/${section}/${itemId}`, { method: 'DELETE' }),
+      apiFetch(`/client/partner-branches/${branchId}/workouts/all-done`, { method: 'POST', body: JSON.stringify(data) }),
+    delete: (branchId: string, section: string, itemId: string) => apiFetch(`/client/partner-branches/${branchId}/${section}/${itemId}`, { method: 'DELETE' }),
   },
   biomarkers: {
-    get: () => apiFetch('/user/biomarkers'),
-    getForTrainerMember: (memberId: string) => apiFetch(`/trainer/members/${memberId}/biomarkers`),
+    get: () => apiFetch('/client/biomarkers'),
+    getForTrainerMember: (memberId: string) => apiFetch(`/resource/clients/${memberId}/biomarkers`),
     upload: async (data: { reportType: string; labName?: string; reportDate?: string; file: File }) => {
       const form = new FormData();
       form.set('reportType', data.reportType || 'Blood');
@@ -295,7 +343,7 @@ export const api = {
       if (data.reportDate) form.set('reportDate', data.reportDate);
       form.set('file', data.file);
       const token = getToken();
-      const res = await fetch(`${BASE}/user/biomarkers/reports`, {
+      const res = await fetch(`${BASE}/client/biomarkers/reports`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: form,
@@ -306,7 +354,7 @@ export const api = {
       }
       return res.json();
     },
-    deleteReport: (reportId: string) => apiFetch(`/user/biomarkers/reports/${reportId}`, { method: 'DELETE' }),
+    deleteReport: (reportId: string) => apiFetch(`/client/biomarkers/reports/${reportId}`, { method: 'DELETE' }),
   },
   aiCoach: {
     insight: () => {
@@ -319,13 +367,13 @@ export const api = {
 
   notifications: {
     getTypes: (plan: string) => apiFetch(`/notifications?plan=${plan}`),
-    getUserNotifications: (userId: string) => apiFetch(`/user/notification/${userId}`),
+    getUserNotifications: (userId: string) => apiFetch(`/client/notifications/${userId}`),
     saveNotifications: (userId: string, codes: string[]) =>
       Promise.all(codes.map(code =>
-        apiFetch('/user/notification', { method: 'POST', body: JSON.stringify({ userId, notificationCode: code }) })
+        apiFetch('/client/notifications', { method: 'POST', body: JSON.stringify({ clientId: userId, notificationCode: code }) })
       )),
     deleteNotification: (userId: string, code: string) =>
-      apiFetch('/user/notification', { method: 'DELETE', body: JSON.stringify({ userId, notificationCode: code }) }),
+      apiFetch('/client/notifications', { method: 'DELETE', body: JSON.stringify({ clientId: userId, notificationCode: code }) }),
   },
 
   subscription: {
@@ -364,15 +412,21 @@ export const api = {
       page?: number;
       pageSize?: number;
       role?: string;
+      type?: string;
       plan?: string;
       status?: string;
+      organizationId?: string;
+      branchId?: string;
     } = {}) => {
       const q = new URLSearchParams();
       if (params.page)     q.set('page',     String(params.page));
       if (params.pageSize) q.set('pageSize', String(params.pageSize));
       if (params.role)     q.set('role',     params.role);
+      if (params.type)     q.set('type',     params.type);
       if (params.plan)     q.set('plan',     params.plan);
       if (params.status)   q.set('status',   params.status);
+      if (params.organizationId) q.set('organizationId', params.organizationId);
+      if (params.branchId)       q.set('branchId',       params.branchId);
       return apiFetch(`/users?${q.toString()}`);
     },
     // AI cost logs — all entries, ordered newest first
@@ -417,7 +471,7 @@ export const api = {
       const q = new URLSearchParams();
       if (params.search)   q.set('search',   params.search);
       if (params.page)     q.set('page',     String(params.page));
-      if (params.pageSize) q.set('pageSize', String(params.pageSize));
+      if (params.pageSize) q.set('pageSize', String(Math.min(params.pageSize, 100)));
       if (params.status)   q.set('status',   params.status);
       return apiFetch(`/admin/organizations?${q}`);
     },
@@ -436,7 +490,7 @@ export const api = {
       const q = new URLSearchParams();
       if (params.search)   q.set('search',   params.search);
       if (params.page)     q.set('page',     String(params.page));
-      if (params.pageSize) q.set('pageSize', String(params.pageSize));
+      if (params.pageSize) q.set('pageSize', String(Math.min(params.pageSize, 100)));
       if (params.status)   q.set('status',   params.status);
       return apiFetch(`/organizations/${orgId}/branches?${q}`);
     },
@@ -459,17 +513,17 @@ export const api = {
       if (params.page)     q.set('page',     String(params.page));
       if (params.pageSize) q.set('pageSize', String(params.pageSize));
       if (params.status)   q.set('status',   params.status);
-      return apiFetch(`/branches/${branchId}/users?${q}`);
+      return apiFetch(`/branches/${branchId}/clients?${q}`);
     },
-    createUser: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/users`, { method: 'POST', body: JSON.stringify(data) }),
-    updateUser: (branchId: string, userId: string, data: any) => apiFetch(`/branches/${branchId}/users/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    deleteUser: (branchId: string, userId: string) => apiFetch(`/branches/${branchId}/users/${userId}`, { method: 'DELETE' }),
+    createUser: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/clients`, { method: 'POST', body: JSON.stringify(data) }),
+    updateUser: (branchId: string, userId: string, data: any) => apiFetch(`/branches/${branchId}/clients/${userId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteUser: (branchId: string, userId: string) => apiFetch(`/branches/${branchId}/clients/${userId}`, { method: 'DELETE' }),
     listAssignments: (branchId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/branches/${branchId}/trainer-assignments?${q}`);
+      return apiFetch(`/branches/${branchId}/resource-assignments?${q}`);
     },
-    createAssignment: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/trainer-assignments`, { method: 'POST', body: JSON.stringify(data) }),
-    deleteAssignment: (branchId: string, assignmentId: string) => apiFetch(`/branches/${branchId}/trainer-assignments/${assignmentId}`, { method: 'DELETE' }),
+    createAssignment: (branchId: string, data: any) => apiFetch(`/branches/${branchId}/resource-assignments`, { method: 'POST', body: JSON.stringify(data) }),
+    deleteAssignment: (branchId: string, assignmentId: string) => apiFetch(`/branches/${branchId}/resource-assignments/${assignmentId}`, { method: 'DELETE' }),
     getAttendance: (branchId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
       return apiFetch(`/branches/${branchId}/attendance?${q}`);
@@ -482,10 +536,10 @@ export const api = {
       if (params.status) q.set('status', params.status);
       if (params.page) q.set('page', String(params.page));
       if (params.pageSize) q.set('pageSize', String(params.pageSize));
-      return apiFetch(`/branches/${branchId}/member-requests?${q}`);
+      return apiFetch(`/branches/${branchId}/client-requests?${q}`);
     },
     acceptMemberRequest: (branchId: string, requestId: string) =>
-      apiFetch(`/branches/${branchId}/member-requests/${requestId}/accept`, { method: 'POST' }),
+      apiFetch(`/branches/${branchId}/client-requests/${requestId}/accept`, { method: 'POST' }),
     getDashboard: (branchId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
       return apiFetch(`/branches/${branchId}/dashboard?${q}`);
@@ -512,6 +566,13 @@ export const api = {
     upsert: (data: any) => apiFetch('/ui-labels', { method: 'PUT', body: JSON.stringify(data) }),
     delete: (id: string) => apiFetch(`/ui-labels/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     importJson: (data: any) => apiFetch('/ui-labels/import', { method: 'POST', body: JSON.stringify(data) }),
+    importMockIndustry: (industrySlug: string, params: { organizationId: string; branchId?: string; locale?: string }) => {
+      const q = new URLSearchParams();
+      q.set('organizationId', params.organizationId);
+      if (params.branchId) q.set('branchId', params.branchId);
+      if (params.locale) q.set('locale', params.locale);
+      return apiFetch(`/ui-labels/import/mock/${encodeURIComponent(industrySlug)}?${q}`, { method: 'POST' });
+    },
     exportJson: (params: { organizationId?: string; branchId?: string; locale?: string; namespace?: string } = {}) => {
       const q = new URLSearchParams();
       if (params.organizationId) q.set('organizationId', params.organizationId);
@@ -528,7 +589,7 @@ export const api = {
   },
 
   reminders: {
-    catalog: (recipientType?: 'member' | 'resource' | 'branch' | 'system') =>
+    catalog: (recipientType?: 'client' | 'resource' | 'branch' | 'system') =>
       apiFetch(`/admin/reminders/catalog${recipientType ? `?recipientType=${encodeURIComponent(recipientType)}` : ''}`),
     orgList: (organizationId: string) => apiFetch(`/admin/organizations/${encodeURIComponent(organizationId)}/reminders`),
     assignToOrg: (organizationId: string, data: { reminderCatalogId: string; isActive?: boolean }) =>
@@ -541,76 +602,84 @@ export const api = {
       apiFetch(`/reminders/my/${encodeURIComponent(orgReminderId)}`, { method: 'PUT', body: JSON.stringify(data) }),
   },
 
-  // ── Trainer ───────────────────────────────────────────
-  trainer: {
-    getDashboard: () => apiFetch('/trainer/dashboard'),
-    listMembers: () => apiFetch('/trainer/members'),
-    getMemberProgress: (memberId: string) => apiFetch(`/trainer/members/${memberId}/progress`),
-    createWorkout: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/workouts`, { method: 'POST', body: JSON.stringify(data) }),
-    listWorkouts: (memberId: string) => apiFetch(`/trainer/members/${memberId}/workouts`),
+  appFunctions: {
+    list: () => apiFetch('/admin/app-functions'),
+    orgList: (organizationId: string) => apiFetch(`/admin/organizations/${encodeURIComponent(organizationId)}/app-functions`),
+    visibleForOrg: (organizationId: string) => apiFetch(`/organizations/${encodeURIComponent(organizationId)}/app-functions/visible`),
+    setForOrg: (organizationId: string, data: { appFunctionId: number; visibleOnUi: boolean }) =>
+      apiFetch(`/admin/organizations/${encodeURIComponent(organizationId)}/app-functions`, { method: 'PUT', body: JSON.stringify(data) }),
+  },
+
+  // ── Resource ──────────────────────────────────────────
+  resource: {
+    getDashboard: () => apiFetch('/resource/dashboard'),
+    listMembers: () => apiFetch('/resource/clients'),
+    getMemberProgress: (memberId: string) => apiFetch(`/resource/clients/${memberId}/progress`),
+    createWorkout: (memberId: string, data: any) => apiFetch(`/resource/clients/${memberId}/workouts`, { method: 'POST', body: JSON.stringify(data) }),
+    listWorkouts: (memberId: string) => apiFetch(`/resource/clients/${memberId}/workouts`),
     getWorkout: (workoutId: string) => apiFetch(`/workouts/${workoutId}`),
     updateWorkout: (workoutId: string, data: any) => apiFetch(`/workouts/${workoutId}`, { method: 'PATCH', body: JSON.stringify(data) }),
     deleteWorkout: (workoutId: string) => apiFetch(`/workouts/${workoutId}`, { method: 'DELETE' }),
     scheduleWorkout: (workoutId: string, data: any) => apiFetch(`/workouts/${workoutId}/schedule`, { method: 'POST', body: JSON.stringify(data) }),
-    createDietPlan: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/diet-plans`, { method: 'POST', body: JSON.stringify(data) }),
+    createDietPlan: (memberId: string, data: any) => apiFetch(`/resource/clients/${memberId}/diet-plans`, { method: 'POST', body: JSON.stringify(data) }),
     listDietPlans: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/diet-plans?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/diet-plans?${q}`);
     },
     getDietPlan: (dietPlanId: string) => apiFetch(`/diet-plans/${dietPlanId}`),
     updateDietPlan: (dietPlanId: string, data: any) => apiFetch(`/diet-plans/${dietPlanId}`, { method: 'PATCH', body: JSON.stringify(data) }),
     deleteDietPlan: (dietPlanId: string) => apiFetch(`/diet-plans/${dietPlanId}`, { method: 'DELETE' }),
     getMeasurements: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/members/${memberId}/measurements?${q}`);
+      return apiFetch(`/clients/${memberId}/measurements?${q}`);
     },
-    addMeasurement: (memberId: string, data: any) => apiFetch(`/members/${memberId}/measurements`, { method: 'POST', body: JSON.stringify(data) }),
-    getNutritionSummary: (memberId: string, days = 7) => apiFetch(`/members/${memberId}/nutrition-summary?days=${days}`),
+    addMeasurement: (memberId: string, data: any) => apiFetch(`/clients/${memberId}/measurements`, { method: 'POST', body: JSON.stringify(data) }),
+    getNutritionSummary: (memberId: string, days = 7) => apiFetch(`/clients/${memberId}/nutrition-summary?days=${days}`),
     // ── New progress screen APIs ──
     getProgressOverview: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/overview?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/overview?${q}`);
     },
     getProgressWorkouts: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/workouts?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/workouts?${q}`);
     },
     getProgressDiet: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/diet?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/diet?${q}`);
     },
     getProgressMeasurements: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/measurements?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/measurements?${q}`);
     },
     getProgressBodyComposition: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/body-composition?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/body-composition?${q}`);
     },
     getProgressHealth: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/health?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/health?${q}`);
     },
     getProgressAttendance: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/attendance?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/attendance?${q}`);
     },
     getProgressPhotos: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/photos?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/photos?${q}`);
     },
     getProgressNotes: (memberId: string, params: any = {}) => {
       const q = new URLSearchParams(params);
-      return apiFetch(`/trainer/members/${memberId}/progress/notes?${q}`);
+      return apiFetch(`/resource/clients/${memberId}/progress/notes?${q}`);
     },
-    getMemberBiomarkers: (memberId: string) => apiFetch(`/trainer/members/${memberId}/biomarkers`),
-    createNote: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/notes`, { method: 'POST', body: JSON.stringify(data) }),
-    updateNote: (memberId: string, noteId: string, data: any) => apiFetch(`/trainer/members/${memberId}/notes/${noteId}`, { method: 'PATCH', body: JSON.stringify(data) }),
-    deleteNote: (memberId: string, noteId: string) => apiFetch(`/trainer/members/${memberId}/notes/${noteId}`, { method: 'DELETE' }),
-    addBodyComposition: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/body-composition`, { method: 'POST', body: JSON.stringify(data) }),
-    addProgressPhoto: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/progress/photos`, { method: 'POST', body: JSON.stringify(data) }),
-    addHealthLog: (memberId: string, data: any) => apiFetch(`/trainer/members/${memberId}/health-logs`, { method: 'POST', body: JSON.stringify(data) }),
-    getHeader: (memberId: string) => apiFetch(`/trainer/members/${memberId}/header`),
+    getMemberBiomarkers: (memberId: string) => apiFetch(`/resource/clients/${memberId}/biomarkers`),
+    createNote: (memberId: string, data: any) => apiFetch(`/resource/clients/${memberId}/notes`, { method: 'POST', body: JSON.stringify(data) }),
+    updateNote: (memberId: string, noteId: string, data: any) => apiFetch(`/resource/clients/${memberId}/notes/${noteId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteNote: (memberId: string, noteId: string) => apiFetch(`/resource/clients/${memberId}/notes/${noteId}`, { method: 'DELETE' }),
+    addBodyComposition: (memberId: string, data: any) => apiFetch(`/resource/clients/${memberId}/body-composition`, { method: 'POST', body: JSON.stringify(data) }),
+    addProgressPhoto: (memberId: string, data: any) => apiFetch(`/resource/clients/${memberId}/progress/photos`, { method: 'POST', body: JSON.stringify(data) }),
+    addHealthLog: (memberId: string, data: any) => apiFetch(`/resource/clients/${memberId}/health-logs`, { method: 'POST', body: JSON.stringify(data) }),
+    getHeader: (memberId: string) => apiFetch(`/resource/clients/${memberId}/header`),
   },
 
   // ── AI ────────────────────────────────────────────────
@@ -632,8 +701,8 @@ export const api = {
       if (params.organizationId) q.set('organizationId', params.organizationId);
       if (params.branchId) q.set('branchId', params.branchId);
       if (params.days) q.set('days', String(params.days));
-      return apiFetchAI(`/members/${memberId}/plateau-dashboard?${q}`);
+      return apiFetchAI(`/clients/${memberId}/plateau-dashboard?${q}`);
     },
-    optimizePlateau: (memberId: string, data: any) => apiFetchAI(`/members/${memberId}/plateau-optimize`, { method: 'POST', body: JSON.stringify(data) }),
+    optimizePlateau: (memberId: string, data: any) => apiFetchAI(`/clients/${memberId}/plateau-optimize`, { method: 'POST', body: JSON.stringify(data) }),
   },
 };

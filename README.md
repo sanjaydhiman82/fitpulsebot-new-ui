@@ -139,7 +139,7 @@ All backend communication goes through `src/api.ts`:
 - **AI Image Logging** — GPT-4o Vision identifies food/water/activity from photos
 - **Google OAuth** — social login via `@react-oauth/google`
 - **Session Guard** — auto token refresh with session-expired dialog
-- **Multi-role Dashboards** — Member, Trainer, Admin, Org Manager, Branch Manager, Super Admin
+- **Multi-role Dashboards** — Member, Resource, Admin, Org Manager, Branch Manager, Super Admin
 - **Subscription & Billing** — plan selection with Razorpay checkout
 - **Reports** — scheduled and on-demand reports with PDF export
 - **Biomarkers** — PDF lab report upload + AI extraction
@@ -237,7 +237,7 @@ graph TD
 
     APP --> DASH[Dashboard — MEMBER]
     APP --> ADMIN[AdminDashboard]
-    APP --> TRAINER[TrainerDashboard]
+    APP --> TRAINER[ResourceDashboard]
     APP --> ORG[OrgDashboard]
     APP --> BRANCH[BranchDashboard]
     APP --> SUPER[SuperAdminDashboard]
@@ -310,7 +310,7 @@ flowchart LR
     ROLE -->|SUPER_ADMIN| SUPER[Super Admin\n/super-admin]
     ROLE -->|ORGANIZATION_ADMIN| ORG[Org Dashboard\n/org-dashboard]
     ROLE -->|BRANCH_MANAGER| BRANCH[Branch Dashboard\n/branch-dashboard]
-    ROLE -->|TRAINER| TRAINER[Trainer Dashboard\n/trainer-dashboard]
+    ROLE -->|TRAINER| TRAINER[Resource Dashboard\n/trainer-dashboard]
 ```
 
 ---
@@ -445,7 +445,7 @@ mindmap
       Step 2 Goals
       Step 3 Activity Level
       Done
-    Trainer
+    Resource
       Dashboard
       My Members
       Workouts
@@ -457,7 +457,7 @@ mindmap
       Dashboard
       Onboard Member
       Members
-      Trainers
+      Resources
       Assignments
       Attendance
       Support Tickets
@@ -499,7 +499,7 @@ flowchart TD
     AUTH -->|role: SUPER_ADMIN| SUPER[👑 Super Admin Dashboard]
     AUTH -->|role: ORGANIZATION_ADMIN| ORG[🏢 Org Dashboard]
     AUTH -->|role: BRANCH_MANAGER| BRANCH[🔀 Branch Dashboard]
-    AUTH -->|role: TRAINER| TRAINER[🏋️ Trainer Dashboard]
+    AUTH -->|role: TRAINER| TRAINER[🏋️ Resource Dashboard]
 
     DASH --> D1[Dashboard Home]
     DASH --> D2[Activity Log]
@@ -559,17 +559,17 @@ All sections live inside `pages/Dashboard.tsx` (sidebar nav) and render their re
 | **BioMarkers** | `BioMarkersPage.tsx` | BioMarkers | Upload PDF lab reports; AI extraction of blood biomarkers (HbA1c, cholesterol, glucose, etc.); historical biomarker trends |
 | **AI Coach** | `AICoachSection.tsx` | *(DashboardHome)* | Personalised AI-generated health insight card using GPT-4o — surfaced on the dashboard home |
 | **Programs / Join Gym** | `JoinGymPage.tsx` | Programs | Browse partner gyms and fitness branches; send join request; view request status |
-| **Partner Branch Profile** | `PartnerBranchProfile.tsx` | *(from Programs)* | Detailed profile of a partner gym branch — trainers, workout sessions, schedule |
+| **Partner Branch Profile** | `PartnerBranchProfile.tsx` | *(from Programs)* | Detailed profile of a partner gym branch — resources, workout sessions, schedule |
 | **Profile** | `UserProfilePage.tsx` | Profile | Edit personal details, upload profile picture, manage fitness goals, set target weight, update preferences |
 | **Reminders** | `NotificationsPage.tsx` | Reminders | Enable/disable push notifications by type (water reminders, goal alerts, weekly reports, etc.) per subscription plan |
 | **Support** | `SupportPage.tsx` | Support | Raise support tickets, add messages to open tickets, view ticket history and status; close resolved tickets |
-| **Messages** | `MessagesPage.tsx` | Messages | In-app inbox — messages from trainers, admins, and the system; mark as read |
+| **Messages** | `MessagesPage.tsx` | Messages | In-app inbox — messages from resources, admins, and the system; mark as read |
 | **Settings** | `SettingsPageFull.tsx` | Settings | App preferences — theme toggle, account security, subscription details, linked accounts, danger zone (account deletion) |
 | **Subscription / Upgrade** | `SubscriptionPage.tsx` | *(from Settings/banner)* | Plan comparison table; Razorpay payment checkout; order history; current plan status |
 
 ---
 
-#### 🏋️ Trainer Dashboard Screens
+#### 🏋️ Resource Dashboard Screens
 
 All screens inside `pages/TrainerDashboard.tsx`.
 
@@ -580,8 +580,8 @@ All screens inside `pages/TrainerDashboard.tsx`.
 | **Workouts** | Workouts | Create, view, edit, delete and schedule workout plans for members; AI workout generation |
 | **Diet Plans** | Diet Plans | Create and manage personalised diet plans; AI macro calculator and meal alternatives |
 | **Plateau AI** | Plateau AI | AI-powered plateau detection dashboard — identifies members who have stalled in progress and suggests optimisations |
-| **Progress** | Progress | Comprehensive member progress view — overview, workouts, diet, measurements, body composition, health logs, attendance, photos, trainer notes |
-| **My Reports** | My Reports | Trainer-scoped reports — member trends, workout adherence, nutrition compliance |
+| **Progress** | Progress | Comprehensive member progress view — overview, workouts, diet, measurements, body composition, health logs, attendance, photos, resource notes |
+| **My Reports** | My Reports | Resource-scoped reports — member trends, workout adherence, nutrition compliance |
 
 ---
 
@@ -591,11 +591,11 @@ All screens inside `pages/BranchDashboard.tsx`.
 
 | Screen | Nav Label | Purpose |
 |---|---|---|
-| **Dashboard** | Dashboard | Branch KPIs — member count, active trainers, attendance rate, revenue summary |
+| **Dashboard** | Dashboard | Branch KPIs — member count, active resources, attendance rate, revenue summary |
 | **Onboard Member** | Onboard Member | Create new member accounts directly within the branch |
 | **Members** | Members | Full member list — search, filter by status; update member details or deactivate |
-| **Trainers** | Trainers | Trainer roster for the branch; add/remove trainers |
-| **Assignments** | Assignments | Assign and unassign trainer–member pairs |
+| **Resources** | Resources | Resource roster for the branch; add/remove resources |
+| **Assignments** | Assignments | Assign and unassign resource–member pairs |
 | **Attendance** | Attendance | Mark and view daily attendance; edit attendance records |
 | **Support Tickets** | Support | View all open support tickets raised by branch members |
 | **My Reports** | My Reports | Branch-scoped reports — attendance trends, member health summaries |
@@ -609,7 +609,7 @@ All screens inside `pages/OrgDashboard.tsx`.
 
 | Screen | Nav Label | Purpose |
 |---|---|---|
-| **Dashboard** | Dashboard | Organisation-level KPIs — total branches, members, trainers, revenue |
+| **Dashboard** | Dashboard | Organisation-level KPIs — total branches, members, resources, revenue |
 | **Branches** | Branches | Create, view, and manage branches under the organisation; view per-branch detail panel |
 | **Branding** | Branding | Organisation-wide white-label settings — logo, theme, custom labels |
 
@@ -656,6 +656,6 @@ All screens inside `pages/SuperAdminDashboard.tsx`.
 | Weight Log | GPT-4o Vision — photo → weight reading |
 | BioMarkers | GPT-4o — PDF lab report → structured biomarker extraction |
 | Profile | AI goal generation based on profile data |
-| Trainer → Workouts | AI workout plan generation |
-| Trainer → Diet Plans | AI diet plan generation + macro calculator |
-| Trainer → Plateau AI | AI plateau detection + optimisation recommendations |
+| Resource → Workouts | AI workout plan generation |
+| Resource → Diet Plans | AI diet plan generation + macro calculator |
+| Resource → Plateau AI | AI plateau detection + optimisation recommendations |

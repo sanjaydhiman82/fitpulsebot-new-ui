@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../App';
 import PortalLayout, {
   PrimaryBtn, OutlineBtn, StatusBadge,
@@ -14,15 +14,16 @@ import {
 } from 'lucide-react';
 import AdvancedBrandingEditor from '../components/AdvancedBrandingEditor';
 import MyReportsPage from '../components/MyReportsPage';
+import { useOrgAppFunctions } from '../utils/useOrgAppFunctions';
 import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
 import { LabelProvider, useLabels } from '../contexts/LabelContext';
 
 // ─── NAV ─────────────────────────────────────────────────
 const NAV = [
   { id: 'dashboard',   label: 'Dashboard',     icon: <LayoutDashboard size={16} /> },
-  { id: 'onboard',     label: 'Onboard Member', icon: <UserPlus size={16} /> },
-  { id: 'members',     label: 'Members',        icon: <Users size={16} /> },
-  { id: 'trainers',    label: 'Trainers',       icon: <UserCheck size={16} /> },
+  { id: 'onboard',     label: 'Onboard Client', icon: <UserPlus size={16} /> },
+  { id: 'clients',     label: 'Clients',        icon: <Users size={16} /> },
+  { id: 'resources',    label: 'Resources',       icon: <UserCheck size={16} /> },
   { id: 'assignments', label: 'Assignments',    icon: <Link size={16} /> },
   { id: 'attendance',  label: 'Attendance',     icon: <CalendarCheck size={16} /> },
   { id: 'support',     label: 'Support',        icon: <TicketCheck size={16} /> },
@@ -34,14 +35,14 @@ const NAV = [
 function today() { return new Date().toISOString().split('T')[0]; }
 const rowField = (row: any, camel: string, snake: string) => row?.[camel] ?? row?.[snake];
 
-function BranchAvatar({ src, name, tone = 'member' }: { src?: string; name: string; tone?: 'member' | 'trainer' | 'join' }) {
+function BranchAvatar({ src, name, tone = 'client' }: { src?: string; name: string; tone?: 'client' | 'resource' | 'join' }) {
   const [failed, setFailed] = useState(false);
-  const fallbackBg = tone === 'trainer'
+  const fallbackBg = tone === 'resource'
     ? 'linear-gradient(135deg,#f59e0b33,#f59e0b66)'
     : tone === 'join'
       ? 'linear-gradient(135deg,#22c55e33,#0ea5e966)'
       : 'linear-gradient(135deg,#0ea5e933,#0ea5e966)';
-  const fallbackColor = tone === 'trainer' ? '#f59e0b' : tone === 'join' ? '#22c55e' : '#0ea5e9';
+  const fallbackColor = tone === 'resource' ? '#f59e0b' : tone === 'join' ? '#22c55e' : '#0ea5e9';
   if (src && !failed) {
     return (
       <img
@@ -62,7 +63,7 @@ function BranchAvatar({ src, name, tone = 'member' }: { src?: string; name: stri
 // ─── Onboard User Modal ───────────────────────────────────
 function OnboardUserModal({ open, onClose, branchId, type, onSaved }: {
   open: boolean; onClose: () => void; branchId: string;
-  type: 'MEMBER' | 'TRAINER'; onSaved: () => void;
+  type: 'CLIENT' | 'RESOURCE'; onSaved: () => void;
 }) {
   const [form, setForm] = useState({
     userName: '', firstName: '', lastName: '', phone: '',
@@ -88,7 +89,7 @@ function OnboardUserModal({ open, onClose, branchId, type, onSaved }: {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={`Onboard ${type === 'MEMBER' ? 'Member' : 'Trainer'}`} width={520}>
+    <Modal open={open} onClose={onClose} title={`Onboard ${type === 'CLIENT' ? 'Client' : 'Resource'}`} width={520}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <FormField label="Email / Username" required>
           <input style={inputStyle} value={form.userName} onChange={f('userName')} placeholder="user@example.com" />
@@ -111,24 +112,24 @@ function OnboardUserModal({ open, onClose, branchId, type, onSaved }: {
         <OutlineBtn onClick={onClose}>Cancel</OutlineBtn>
         <PrimaryBtn onClick={submit} loading={loading}>
           {loading && <Loader size={13} style={{ animation: 'spin 1s linear infinite' }} />}
-          Onboard {type === 'MEMBER' ? 'Member' : 'Trainer'}
+          Onboard {type === 'CLIENT' ? 'Client' : 'Resource'}
         </PrimaryBtn>
       </div>
     </Modal>
   );
 }
 
-// ─── Assign Trainer Modal ─────────────────────────────────
-function AssignTrainerModal({ open, onClose, branchId, members, trainers, onSaved }: {
+// ─── Assign Resource Modal ─────────────────────────────────
+function AssignResourceModal({ open, onClose, branchId, clients, resources, onSaved }: {
   open: boolean; onClose: () => void; branchId: string;
-  members: any[]; trainers: any[]; onSaved: () => void;
+  clients: any[]; resources: any[]; onSaved: () => void;
 }) {
   const [memberId, setMemberId] = useState('');
-  const [trainerId, setTrainerId] = useState('');
+  const [resourceId, setResourceId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => { if (open) { setMemberId(''); setTrainerId(''); setError(''); } }, [open]);
+  useEffect(() => { if (open) { setMemberId(''); setResourceId(''); setError(''); } }, [open]);
 
   const optionLabel = (u: any) => {
     const firstName = rowField(u, 'firstName', 'first_name') || '';
@@ -139,35 +140,35 @@ function AssignTrainerModal({ open, onClose, branchId, members, trainers, onSave
   };
 
   const submit = async () => {
-    if (!memberId || !trainerId) { setError('Please select both member and trainer.'); return; }
+    if (!memberId || !resourceId) { setError('Please select both client and resource.'); return; }
     setError(''); setLoading(true);
     try {
-      await api.branch.createAssignment(branchId, { memberUserId: memberId, trainerUserId: trainerId });
+      await api.branch.createAssignment(branchId, { clientUserId: memberId, resourceUserId: resourceId });
       onSaved(); onClose();
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Assign Trainer to Member" width={440}>
-      <FormField label="Member" required>
+    <Modal open={open} onClose={onClose} title="Assign Resource to Client" width={440}>
+      <FormField label="Client" required>
         <select style={inputStyle} value={memberId} onChange={e => setMemberId(e.target.value)}>
-          <option value="">Select member...</option>
-          {members.map(m => (
+          <option value="">Select client...</option>
+          {clients.map(m => (
             <option key={rowField(m, 'userId', 'user_id')} value={rowField(m, 'userId', 'user_id')}>{optionLabel(m)}</option>
           ))}
         </select>
       </FormField>
-      <FormField label="Trainer" required>
-        <select style={inputStyle} value={trainerId} onChange={e => setTrainerId(e.target.value)}>
-          <option value="">Select trainer...</option>
-          {trainers.map(t => (
+      <FormField label="Resource" required>
+        <select style={inputStyle} value={resourceId} onChange={e => setResourceId(e.target.value)}>
+          <option value="">Select resource...</option>
+          {resources.map(t => (
             <option key={rowField(t, 'userId', 'user_id')} value={rowField(t, 'userId', 'user_id')}>{optionLabel(t)}</option>
           ))}
         </select>
       </FormField>
-      {members.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0 }}>No active members found for this branch.</p>}
-      {trainers.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0 }}>No active trainers found for this branch. Onboard a trainer first.</p>}
+      {clients.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0 }}>No active clients found for this branch.</p>}
+      {resources.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 12, margin: 0 }}>No active resources found for this branch. Onboard a resource first.</p>}
       {error && <p style={{ color: 'var(--danger)', fontSize: 12, margin: 0 }}>{error}</p>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
         <OutlineBtn onClick={onClose}>Cancel</OutlineBtn>
@@ -181,9 +182,9 @@ function AssignTrainerModal({ open, onClose, branchId, members, trainers, onSave
 }
 
 // ─── Mark Attendance Modal ────────────────────────────────
-function MarkAttendanceModal({ open, onClose, branchId, members, onSaved }: {
+function MarkAttendanceModal({ open, onClose, branchId, clients, onSaved }: {
   open: boolean; onClose: () => void; branchId: string;
-  members: any[]; onSaved: () => void;
+  clients: any[]; onSaved: () => void;
 }) {
   const [form, setForm] = useState({ userId: '', attendanceDate: today(), checkInAt: '', status: 'PRESENT', notes: '' });
   const [loading, setLoading] = useState(false);
@@ -194,7 +195,7 @@ function MarkAttendanceModal({ open, onClose, branchId, members, onSaved }: {
   }, [open]);
 
   const submit = async () => {
-    if (!form.userId) { setError('Please select a member.'); return; }
+    if (!form.userId) { setError('Please select a client.'); return; }
     setError(''); setLoading(true);
     try {
       await api.branch.markAttendance(branchId, {
@@ -209,10 +210,10 @@ function MarkAttendanceModal({ open, onClose, branchId, members, onSaved }: {
   return (
     <Modal open={open} onClose={onClose} title="Mark Attendance" width={480}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <FormField label="Member" required>
+        <FormField label="Client" required>
           <select style={inputStyle} value={form.userId} onChange={e => setForm(p => ({ ...p, userId: e.target.value }))}>
-            <option value="">Select member...</option>
-            {members.map(m => (
+            <option value="">Select client...</option>
+            {clients.map(m => (
               <option key={m.userId} value={m.userId}>{m.firstName} {m.lastName}</option>
             ))}
           </select>
@@ -255,8 +256,8 @@ function BranchBrandingEditor({ branchId }: { branchId: string }) {
   return <AdvancedBrandingEditor branchId={branchId} isOrg={false} />;
 }
 
-// ─── Users Tab (Members or Trainers) ─────────────────────
-function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAINER' }) {
+// ─── Users Tab (Clients or Resources) ─────────────────────
+function UsersTab({ branchId, type }: { branchId: string; type: 'CLIENT' | 'RESOURCE' }) {
   const [users, setUsers] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -295,18 +296,18 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>{type === 'MEMBER' ? 'Members' : 'Trainers'}</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>{type === 'CLIENT' ? 'Clients' : 'Resources'}</h2>
           <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{total} total</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ position: 'relative' }}>
             <Search size={14} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${type === 'MEMBER' ? 'members' : 'trainers'}...`}
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${type === 'CLIENT' ? 'clients' : 'resources'}...`}
               style={{ ...inputStyle, paddingLeft: 32, width: 200 }} />
           </div>
           <OutlineBtn onClick={load}><RefreshCw size={13} /></OutlineBtn>
           <PrimaryBtn onClick={() => setModalOpen(true)}>
-            <UserPlus size={14} /> Onboard {type === 'MEMBER' ? 'Member' : 'Trainer'}
+            <UserPlus size={14} /> Onboard {type === 'CLIENT' ? 'Client' : 'Resource'}
           </PrimaryBtn>
         </div>
       </div>
@@ -325,7 +326,7 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
             const name = displayName(u);
             return (
             <div key={userId} style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 18, border: '1px solid var(--border)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-              <BranchAvatar src={avatarUrl} name={name} tone={type === 'TRAINER' ? 'trainer' : 'member'} />
+              <BranchAvatar src={avatarUrl} name={name} tone={type === 'RESOURCE' ? 'resource' : 'client'} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
                   <div style={{ minWidth: 0 }}>
@@ -348,9 +349,9 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
                   ))}
                 </div>
                 <div style={{ marginTop: 10, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  {u.assignedTrainer && (
+                  {u.assignedResource && (
                     <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--metric-bg)', padding: '2px 8px', borderRadius: 20 }}>
-                      Trainer: {rowField(u.assignedTrainer, 'firstName', 'first_name') || u.assignedTrainer.firstName || 'Assigned'}
+                      Resource: {rowField(u.assignedResource, 'firstName', 'first_name') || u.assignedResource.firstName || 'Assigned'}
                     </span>
                   )}
                   <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--metric-bg)', padding: '2px 8px', borderRadius: 20 }}>
@@ -367,7 +368,7 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
           {users.length === 0 && (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
               <Users size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
-              <p>No {type === 'MEMBER' ? 'members' : 'trainers'} found. Onboard one to get started.</p>
+              <p>No {type === 'CLIENT' ? 'clients' : 'resources'} found. Onboard one to get started.</p>
             </div>
           )}
         </div>
@@ -381,7 +382,7 @@ function UsersTab({ branchId, type }: { branchId: string; type: 'MEMBER' | 'TRAI
   );
 }
 
-// ─── Member Join Requests ────────────────────────────────
+// ─── Client Join Requests ────────────────────────────────
 function MemberRequestsTab({ branchId, onAccepted }: { branchId: string; onAccepted?: () => void }) {
   const [requests, setRequests] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
@@ -395,7 +396,7 @@ function MemberRequestsTab({ branchId, onAccepted }: { branchId: string; onAccep
     setError('');
     api.branch.listMemberRequests(branchId, { status, pageSize: 100 })
       .then(d => { setRequests(d.requests || []); setTotal(d.total || 0); })
-      .catch((e: any) => setError(e.message || 'Failed to load member requests.'))
+      .catch((e: any) => setError(e.message || 'Failed to load client requests.'))
       .finally(() => setLoading(false));
   }, [branchId, status]);
 
@@ -404,7 +405,7 @@ function MemberRequestsTab({ branchId, onAccepted }: { branchId: string; onAccep
   const displayName = (r: any) => {
     const firstName = rowField(r, 'firstName', 'first_name') || '';
     const lastName = rowField(r, 'lastName', 'last_name') || '';
-    return `${firstName} ${lastName}`.trim() || rowField(r, 'userName', 'user_name') || 'Unnamed member';
+    return `${firstName} ${lastName}`.trim() || rowField(r, 'userName', 'user_name') || 'Unnamed client';
   };
   const formatDate = (value: any) => {
     if (!value) return '-';
@@ -419,7 +420,7 @@ function MemberRequestsTab({ branchId, onAccepted }: { branchId: string; onAccep
       await load();
       onAccepted?.();
     } catch (e: any) {
-      setError(e.message || 'Failed to accept member request.');
+      setError(e.message || 'Failed to accept client request.');
     } finally {
       setAcceptingId('');
     }
@@ -429,7 +430,7 @@ function MemberRequestsTab({ branchId, onAccepted }: { branchId: string; onAccep
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Onboard Member</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Onboard Client</h2>
           <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{total} {status.toLowerCase()} request{total === 1 ? '' : 's'}</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -494,7 +495,7 @@ function MemberRequestsTab({ branchId, onAccepted }: { branchId: string; onAccep
           {requests.length === 0 && (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
               <UserPlus size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
-              <p>No {status.toLowerCase()} member requests for this branch.</p>
+              <p>No {status.toLowerCase()} client requests for this branch.</p>
             </div>
           )}
         </div>
@@ -506,29 +507,29 @@ function MemberRequestsTab({ branchId, onAccepted }: { branchId: string; onAccep
 // ─── Assignments Tab ──────────────────────────────────────
 function AssignmentsTab({ branchId }: { branchId: string }) {
   const [assignments, setAssignments] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
-  const [trainers, setTrainers] = useState<any[]>([]);
-  const [trainerFilter, setTrainerFilter] = useState('');
+  const [clients, setMembers] = useState<any[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
+  const [resourceFilter, setResourceFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
     Promise.all([
-      api.branch.listAssignments(branchId, { pageSize: 100, ...(trainerFilter ? { trainerUserId: trainerFilter } : {}) }),
-      api.branch.listUsers(branchId, { type: 'MEMBER', pageSize: 100 }),
-      api.branch.listUsers(branchId, { type: 'TRAINER', pageSize: 100 }),
+      api.branch.listAssignments(branchId, { pageSize: 100, ...(resourceFilter ? { resourceUserId: resourceFilter } : {}) }),
+      api.branch.listUsers(branchId, { type: 'CLIENT', pageSize: 100 }),
+      api.branch.listUsers(branchId, { type: 'RESOURCE', pageSize: 100 }),
     ]).then(([a, m, t]) => {
       setAssignments(a.assignments || []);
       setMembers(m.users || []);
-      setTrainers(t.users || []);
+      setResources(t.users || []);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [branchId, trainerFilter]);
+  }, [branchId, resourceFilter]);
 
   useEffect(() => { load(); }, [load]);
 
   const remove = async (id: string) => {
-    if (!window.confirm('Remove this trainer assignment?')) return;
+    if (!window.confirm('Remove this resource assignment?')) return;
     await api.branch.deleteAssignment(branchId, id);
     load();
   };
@@ -537,37 +538,37 @@ function AssignmentsTab({ branchId }: { branchId: string }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Trainer Assignments</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Resource Assignments</h2>
           <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{assignments.length} active assignments</p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <select
-            value={trainerFilter}
-            onChange={e => setTrainerFilter(e.target.value)}
+            value={resourceFilter}
+            onChange={e => setResourceFilter(e.target.value)}
             style={{ ...inputStyle, width: 220 }}
-            aria-label="Filter assignments by trainer"
+            aria-label="Filter assignments by resource"
           >
-            <option value="">All trainers</option>
-            {trainers.map(t => {
-              const trainerId = rowField(t, 'userId', 'user_id');
+            <option value="">All resources</option>
+            {resources.map(t => {
+              const resourceId = rowField(t, 'userId', 'user_id');
               const firstName = rowField(t, 'firstName', 'first_name') || '';
               const lastName = rowField(t, 'lastName', 'last_name') || '';
               const userName = rowField(t, 'userName', 'user_name') || '';
               const name = `${firstName} ${lastName}`.trim();
-              return <option key={trainerId} value={trainerId}>{name || userName}</option>;
+              return <option key={resourceId} value={resourceId}>{name || userName}</option>;
             })}
           </select>
           <OutlineBtn onClick={load}><RefreshCw size={13} /></OutlineBtn>
           <PrimaryBtn onClick={() => setModalOpen(true)}>
-            <Link size={14} /> Assign Trainer
+            <Link size={14} /> Assign Resource
           </PrimaryBtn>
         </div>
       </div>
 
       <DataTable
         columns={[
-          { key: 'member', label: 'Member', render: r => <span style={{ fontWeight: 600 }}>{r.member?.firstName} {r.member?.lastName}</span> },
-          { key: 'trainer', label: 'Trainer', render: r => <span>{r.trainer?.firstName} {r.trainer?.lastName}</span> },
+          { key: 'client', label: 'Client', render: r => <span style={{ fontWeight: 600 }}>{r.client?.firstName} {r.client?.lastName}</span> },
+          { key: 'resource', label: 'Resource', render: r => <span>{r.resource?.firstName} {r.resource?.lastName}</span> },
           { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
           { key: 'assignedAt', label: 'Assigned', render: r => r.assignedAt ? new Date(r.assignedAt).toLocaleDateString() : '—' },
           { key: 'actions', label: '', render: r => (
@@ -578,12 +579,12 @@ function AssignmentsTab({ branchId }: { branchId: string }) {
           )},
         ]}
         rows={loading ? [] : assignments}
-        emptyMsg={loading ? 'Loading...' : 'No assignments yet. Assign a trainer to a member.'}
+        emptyMsg={loading ? 'Loading...' : 'No assignments yet. Assign a resource to a client.'}
       />
 
-      <AssignTrainerModal
+      <AssignResourceModal
         open={modalOpen} onClose={() => setModalOpen(false)}
-        branchId={branchId} members={members} trainers={trainers} onSaved={load}
+        branchId={branchId} clients={clients} resources={resources} onSaved={load}
       />
     </div>
   );
@@ -592,7 +593,7 @@ function AssignmentsTab({ branchId }: { branchId: string }) {
 // ─── Attendance Tab ───────────────────────────────────────
 function AttendanceTab({ branchId }: { branchId: string }) {
   const [attendance, setAttendance] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
+  const [clients, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterDate, setFilterDate] = useState(today());
   const [modalOpen, setModalOpen] = useState(false);
@@ -601,7 +602,7 @@ function AttendanceTab({ branchId }: { branchId: string }) {
     setLoading(true);
     Promise.all([
       api.branch.getAttendance(branchId, { date: filterDate, pageSize: 100 }),
-      api.branch.listUsers(branchId, { type: 'MEMBER', pageSize: 200 }),
+      api.branch.listUsers(branchId, { type: 'CLIENT', pageSize: 200 }),
     ]).then(([a, m]) => {
       setAttendance(a.attendance || []);
       setMembers(m.users || []);
@@ -665,7 +666,7 @@ function AttendanceTab({ branchId }: { branchId: string }) {
 
       <MarkAttendanceModal
         open={modalOpen} onClose={() => setModalOpen(false)}
-        branchId={branchId} members={members} onSaved={load}
+        branchId={branchId} clients={clients} onSaved={load}
       />
     </div>
   );
@@ -747,7 +748,10 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
   const [dashData, setDashData] = useState<any>(null);
   const [branchInfo, setBranchInfo] = useState<any>(null);
   const [loadingDash, setLoadingDash] = useState(false);
-  const navItems = NAV.map(item => ({ ...item, label: t(`branch.menu.${item.id}`, item.label) }));
+  const { isVisible } = useOrgAppFunctions(orgId);
+  const navItems = useMemo(() => NAV
+    .filter(item => isVisible(item.label))
+    .map(item => ({ ...item, label: t(`branch.menu.${item.id}`, item.label) })), [isVisible, t]);
 
   const loadDashboard = useCallback(() => {
     if (!branchId) return;
@@ -762,6 +766,11 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
   }, [branchId]);
 
   useEffect(() => { if (activeTab === 'dashboard') loadDashboard(); }, [activeTab, loadDashboard]);
+  useEffect(() => {
+    if (navItems.length && !navItems.some(item => item.id === activeTab)) {
+      setActiveTab(navItems[0].id);
+    }
+  }, [navItems, activeTab]);
 
   return (
     <PortalLayout
@@ -790,17 +799,17 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
           {loadingDash ? (
             <div style={{ textAlign:'center',padding:48 }}><Loader size={22} style={{ animation:'spin 1s linear infinite',color:'var(--text-muted)' }}/></div>
           ) : (() => {
-            const counts = dashData?.counts||{}; const todayAtt = dashData?.attendanceToday||{}; const revenue = dashData?.revenue||{}; const schedule:any[] = dashData?.todaySchedule||[]; const leads = dashData?.leads||{}; const payments = dashData?.payments||{}; const topTrainers:any[] = dashData?.topTrainers||[]; const expiring:any[] = dashData?.membershipExpiry||[]; const notifications:any[] = dashData?.recentNotifications||[]; const snapshot = dashData?.branchSnapshot||{};
+            const counts = dashData?.counts||{}; const todayAtt = dashData?.attendanceToday||{}; const revenue = dashData?.revenue||{}; const schedule:any[] = dashData?.todaySchedule||[]; const leads = dashData?.leads||{}; const payments = dashData?.payments||{}; const topResources:any[] = dashData?.topResources||[]; const expiring:any[] = dashData?.membershipExpiry||[]; const notifications:any[] = dashData?.recentNotifications||[]; const snapshot = dashData?.branchSnapshot||{};
             return (
               <>
                 {/* 6 top stat cards */}
                 <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12 }}>
                   {[
-                    { label:'Total Members', value:counts.members??0, sub:`+${counts.newMembersMonth??0} this month`, color:'#0ea5e9', icon:<Users size={18}/> },
-                    { label:'New Members', value:counts.newMembersMonth??0, sub:`+${counts.newMembersMonthChange??0} this month`, color:'var(--accent)', icon:<UserPlus size={18}/> },
+                    { label:'Total Clients', value:counts.clients??0, sub:`+${counts.newMembersMonth??0} this month`, color:'#0ea5e9', icon:<Users size={18}/> },
+                    { label:'New Clients', value:counts.newMembersMonth??0, sub:`+${counts.newMembersMonthChange??0} this month`, color:'var(--accent)', icon:<UserPlus size={18}/> },
                     { label:'Active Memberships', value:counts.activeMemberships??counts.activeMembers??0, sub:`${counts.activePct??'84.6'}% of total`, color:'#8b5cf6', icon:<CheckCircle2 size={18}/> },
                     { label:'Revenue (This Month)', value:revenue.thisMonth?`₹${Number(revenue.thisMonth).toLocaleString('en-IN')}`:'—', sub:revenue.revenueChange?`+${revenue.revenueChange}% vs last month`:undefined, color:'#f59e0b', icon:<CreditCard size={18}/> },
-                    { label:'Pending Payments', value:payments.pending?`₹${Number(payments.pending).toLocaleString('en-IN')}`:'—', sub:`${payments.pendingCount??0} members`, color:'var(--danger)', icon:<Bell size={18}/> },
+                    { label:'Pending Payments', value:payments.pending?`₹${Number(payments.pending).toLocaleString('en-IN')}`:'—', sub:`${payments.pendingCount??0} clients`, color:'var(--danger)', icon:<Bell size={18}/> },
                     { label:'Check-Ins Today', value:counts.checkInsToday??todayAtt.present??0, sub:'View details', color:'#22c55e', icon:<CalendarCheck size={18}/> },
                   ].map(s=>(
                     <div key={s.label} style={{ background:'var(--bg-card)',borderRadius:14,padding:'16px 18px',border:'1px solid var(--border)' }}>
@@ -821,7 +830,7 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
                     <div style={{ fontSize:32,fontWeight:900,marginBottom:4 }}>{counts.checkInsToday??todayAtt.present??0}</div>
                     <div style={{ fontSize:12,color:'var(--text-muted)',marginBottom:14 }}>Total Check-Ins</div>
                     <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8 }}>
-                      {[{label:'Member',value:todayAtt.memberCheckins??counts.memberCheckIns??'—',color:'#22c55e'},{label:'Staff',value:todayAtt.staffCheckins??counts.staffCheckIns??'—',color:'#0ea5e9'},{label:'Guest',value:todayAtt.guestCheckins??counts.guestCheckIns??'—',color:'#a78bfa'}].map(c=>(
+                      {[{label:'Client',value:todayAtt.memberCheckins??counts.memberCheckIns??'—',color:'#22c55e'},{label:'Staff',value:todayAtt.staffCheckins??counts.staffCheckIns??'—',color:'#0ea5e9'},{label:'Guest',value:todayAtt.guestCheckins??counts.guestCheckIns??'—',color:'#a78bfa'}].map(c=>(
                         <div key={c.label} style={{ textAlign:'center',padding:'10px 0',borderRadius:10,background:'var(--bg-base)',border:'1px solid var(--border)' }}>
                           <div style={{ fontSize:18,fontWeight:900,color:c.color }}>{c.value}</div>
                           <div style={{ fontSize:10,color:'var(--text-muted)',marginTop:2 }}>{c.label}</div>
@@ -838,7 +847,7 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
                           <circle cx="40" cy="40" r="30" fill="none" stroke="var(--border)" strokeWidth="8"/>
                           <circle cx="40" cy="40" r="30" fill="none" stroke="#22c55e" strokeWidth="8" strokeDasharray={`${2*Math.PI*30*0.846} ${2*Math.PI*30}`} strokeLinecap="round"/>
                         </svg>
-                        <div style={{ position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:900 }}>{counts.members??0}</div>
+                        <div style={{ position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:900 }}>{counts.clients??0}</div>
                       </div>
                       <div style={{ flex:1,fontSize:12 }}>
                         {[{label:'Active',value:counts.activeMembers??counts.activeMemberships??0,color:'#22c55e'},{label:'Expiring Soon',value:counts.expiringSoon??0,color:'#f59e0b'},{label:'On Hold',value:counts.onHold??0,color:'#0ea5e9'},{label:'Expired',value:counts.expired??0,color:'var(--danger)'}].map(r=>(
@@ -867,7 +876,7 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
                   </div>
                 </div>
 
-                {/* Today's Schedule + Leads + Payments + Top Trainers */}
+                {/* Today's Schedule + Leads + Payments + Top Resources */}
                 <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:14 }}>
                   <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
                     <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Today's Schedule</div>
@@ -878,7 +887,7 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
                         </div>
                         <div style={{ flex:1,minWidth:0 }}>
                           <div style={{ fontWeight:700,fontSize:12,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{s.className||s.name||'Session'}</div>
-                          <div style={{ fontSize:10,color:'var(--text-muted)' }}>{s.trainerName||'—'}</div>
+                          <div style={{ fontSize:10,color:'var(--text-muted)' }}>{s.resourceName||'—'}</div>
                         </div>
                         <span style={{ fontSize:9,padding:'2px 6px',borderRadius:20,background:s.status==='Completed'?'rgba(34,197,94,0.1)':s.status==='Ongoing'?'rgba(245,158,11,0.1)':'rgba(99,102,241,0.1)',color:s.status==='Completed'?'#22c55e':s.status==='Ongoing'?'#f59e0b':'#6366f1',fontWeight:700 }}>{s.status||'Upcoming'}</span>
                       </div>
@@ -907,20 +916,20 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
                   </div>
 
                   <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)' }}>
-                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Top Performing Trainers</div>
-                    {topTrainers.length>0?topTrainers.slice(0,4).map((t:any,i:number)=>(
+                    <div style={{ fontWeight:800,fontSize:14,marginBottom:12 }}>Top Performing Resources</div>
+                    {topResources.length>0?topResources.slice(0,4).map((t:any,i:number)=>(
                       <div key={i} style={{ display:'flex',alignItems:'center',gap:10,padding:'7px 0',borderBottom:i<3?'1px solid var(--border)':'none',fontSize:12 }}>
                         <div style={{ width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,#0ea5e933,#0ea5e966)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:900,color:'#0ea5e9',flexShrink:0 }}>{(t.name||t.firstName||'T')[0].toUpperCase()}</div>
                         <div style={{ flex:1,minWidth:0 }}>
                           <div style={{ fontWeight:700,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{t.name||`${t.firstName||''} ${t.lastName||''}`.trim()}</div>
-                          <div style={{ fontSize:10,color:'var(--text-muted)' }}>{t.specialty||t.type||'Trainer'}</div>
+                          <div style={{ fontSize:10,color:'var(--text-muted)' }}>{t.specialty||t.type||'Resource'}</div>
                         </div>
                         <div style={{ textAlign:'right',flexShrink:0 }}>
                           <div style={{ fontSize:11,fontWeight:800 }}>{t.sessions} Sessions</div>
                           <div style={{ display:'flex',alignItems:'center',gap:2,justifyContent:'flex-end' }}><Star size={10} color="#f59e0b" fill="#f59e0b"/><span style={{ fontSize:10,color:'#f59e0b',fontWeight:700 }}>{t.rating}</span></div>
                         </div>
                       </div>
-                    )):<div style={{ textAlign:'center',padding:24,color:'var(--text-muted)',fontSize:12 }}>No trainer data yet.</div>}
+                    )):<div style={{ textAlign:'center',padding:24,color:'var(--text-muted)',fontSize:12 }}>No resource data yet.</div>}
                   </div>
                 </div>
 
@@ -935,7 +944,7 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
                       <div key={i} style={{ display:'flex',alignItems:'center',gap:12,padding:'8px 0',borderBottom:i<Math.min(expiring.length,5)-1?'1px solid var(--border)':'none',fontSize:12 }}>
                         <div style={{ width:32,height:32,borderRadius:9,background:'rgba(239,68,68,0.1)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--danger)',flexShrink:0 }}><Clock size={14}/></div>
                         <div style={{ flex:1 }}>
-                          <div style={{ fontWeight:700 }}>{m.name||m.memberName||'Member'}</div>
+                          <div style={{ fontWeight:700 }}>{m.name||m.memberName||'Client'}</div>
                           <div style={{ fontSize:10,color:'var(--text-muted)' }}>Expires {m.expiresIn||m.expiryDate||'soon'}</div>
                         </div>
                         <span style={{ fontSize:10,padding:'2px 8px',borderRadius:20,background:'rgba(239,68,68,0.1)',color:'var(--danger)',fontWeight:700 }}>Expiring</span>
@@ -965,9 +974,9 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
                   <div style={{ fontWeight:800,fontSize:14,marginBottom:14 }}>Branch Snapshot</div>
                   <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:12 }}>
                     {[
-                      { label:'Total Members', value:snapshot.totalMembers??counts.members??0, change:snapshot.totalMembersChange, color:'#0ea5e9', icon:<Users size={14}/> },
-                      { label:'Active Members', value:snapshot.activeMembers??counts.activeMembers??0, change:snapshot.activeMembersChange, color:'var(--accent)', icon:<CheckCircle2 size={14}/> },
-                      { label:'New Members', value:snapshot.newMembers??counts.newMembersMonth??0, change:snapshot.newMembersChange, color:'#22c55e', icon:<UserPlus size={14}/> },
+                      { label:'Total Clients', value:snapshot.totalMembers??counts.clients??0, change:snapshot.totalMembersChange, color:'#0ea5e9', icon:<Users size={14}/> },
+                      { label:'Active Clients', value:snapshot.activeMembers??counts.activeMembers??0, change:snapshot.activeMembersChange, color:'var(--accent)', icon:<CheckCircle2 size={14}/> },
+                      { label:'New Clients', value:snapshot.newMembers??counts.newMembersMonth??0, change:snapshot.newMembersChange, color:'#22c55e', icon:<UserPlus size={14}/> },
                       { label:'Avg Daily Check-Ins', value:snapshot.avgDailyCheckins??counts.avgDailyCheckins??0, change:snapshot.checkinChange, color:'#8b5cf6', icon:<CalendarCheck size={14}/> },
                       { label:'Gross Revenue', value:snapshot.grossRevenue?`₹${Number(snapshot.grossRevenue).toLocaleString('en-IN')}`:revenue.thisMonth?`₹${Number(revenue.thisMonth).toLocaleString('en-IN')}`:'—', change:snapshot.revenueChange, color:'#f59e0b', icon:<CreditCard size={14}/> },
                       { label:'Retention Rate', value:snapshot.retentionRate?`${snapshot.retentionRate}%`:counts.retentionRate?`${counts.retentionRate}%`:'—', change:snapshot.retentionChange, color:'#06b6d4', icon:<TrendingUp size={14}/> },
@@ -991,8 +1000,8 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
       )}
 
       {activeTab === 'onboard'     && branchId && <MemberRequestsTab branchId={branchId} onAccepted={loadDashboard} />}
-      {activeTab === 'members'     && branchId && <UsersTab branchId={branchId} type="MEMBER" />}
-      {activeTab === 'trainers'    && branchId && <UsersTab branchId={branchId} type="TRAINER" />}
+      {activeTab === 'clients'     && branchId && <UsersTab branchId={branchId} type="CLIENT" />}
+      {activeTab === 'resources'    && branchId && <UsersTab branchId={branchId} type="RESOURCE" />}
       {activeTab === 'assignments' && branchId && <AssignmentsTab branchId={branchId} />}
       {activeTab === 'attendance'  && branchId && <AttendanceTab branchId={branchId} />}
       {activeTab === 'support'     && branchId && <SupportTab branchId={branchId} />}
@@ -1001,7 +1010,7 @@ function BranchDashboardInner({ branchId, orgId }: { branchId: string; orgId: st
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Branch Branding</h2>
-            <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>Customize how your branch appears to members</p>
+            <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>Customize how your branch appears to clients</p>
           </div>
           <BranchBrandingEditor branchId={branchId} />
         </div>

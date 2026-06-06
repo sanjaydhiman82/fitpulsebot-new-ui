@@ -37,19 +37,19 @@ const ADMIN_REPORT_FILES: Record<string, string> = {
   workout_performance: 'workout_performance',
   biomarker_blood_health: 'biomarker_blood_health',
   ai_health_insights: 'ai_health_insights',
-  member_progress_overview: 'member_progress_overview',
+  client_progress_overview: 'client_progress_overview',
   attendance_engagement: 'attendance_engagement',
   workout_plan_effectiveness: 'workout_plan_effectiveness',
-  member_health_risk_alert: 'member_health_risk_alert',
+  client_health_risk_alert: 'client_health_risk_alert',
   plateau_ai_analysis: 'plateau_ai_analysis',
-  membership_growth: 'membership_growth',
+  clientship_growth: 'clientship_growth',
   attendance_capacity_utilization: 'attendance_capacity_utilization',
-  trainer_productivity: 'trainer_productivity',
+  resource_productivity: 'resource_productivity',
   lead_conversion: 'lead_conversion',
   executive_business_dashboard: 'executive_business_dashboard',
   revenue_analytics: 'revenue_analytics',
   branch_performance_analytics: 'branch_performance_analytics',
-  member_retention_churn: 'member_retention_churn',
+  client_retention_churn: 'client_retention_churn',
   organization_health_risk: 'organization_health_risk',
 };
 
@@ -220,7 +220,7 @@ export default function MyReportsPage({ audience = 'user' }: { audience?: 'user'
   }, {}));
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${styles.reportsMobilePage}`}>
       <div className={styles.header}>
         <div>
           <h2 className={styles.pageTitle}>My Reports</h2>
@@ -250,7 +250,7 @@ export default function MyReportsPage({ audience = 'user' }: { audience?: 'user'
       </div>
 
       <div className={styles.chartCard} style={{ marginBottom: 18 }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 18 }}>
+        <div className={styles.responsiveReportHeader} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 18 }}>
           <div style={{ width: 42, height: 42, borderRadius: 8, background: 'rgba(34,197,94,.14)', display: 'grid', placeItems: 'center', color: '#22c55e' }}><FileText size={21} /></div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 16 }}>Generate New Report</div>
@@ -298,14 +298,14 @@ export default function MyReportsPage({ audience = 'user' }: { audience?: 'user'
           <button className={styles.secondaryBtn}>View All</button>
         </div>
         <div className={styles.scrollTable}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+          <table className={styles.mobileCardTable} style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
             <thead>
               <tr>{['Report Name', 'Date Range', 'Generated On', 'Size', 'Status', 'Actions'].map(h => <th key={h} style={{ textAlign: 'left', padding: '12px 10px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: 12 }}>{h}</th>)}</tr>
             </thead>
             <tbody>
               {reports.map((r, i) => (
                 <tr key={r.id}>
-                  <td style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)', fontWeight: 700 }}>
+                  <td data-label="Report Name" style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)', fontWeight: 700 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span style={{ display: 'inline-grid', placeItems: 'center', width: 38, height: 38, borderRadius: '50%', background: reportIconColor(i), color: '#fff', flexShrink: 0 }}><FileText size={16} /></span>
                       <button onClick={() => {
@@ -319,16 +319,16 @@ export default function MyReportsPage({ audience = 'user' }: { audience?: 'user'
                       </button>
                     </div>
                   </td>
-                  <td style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{fmtDate(r.date_from)} - {fmtDate(r.date_to)}<div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{daysBetween(r.date_from, r.date_to)}</div></td>
-                  <td style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{fmtDate(r.created_at)}<div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div></td>
-                  <td style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{fmtSize(r)}<div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{r.page_count ? `${r.page_count} pages` : '-'}</div></td>
-                  <td style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)' }}>
+                  <td data-label="Date Range" style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{fmtDate(r.date_from)} - {fmtDate(r.date_to)}<div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{daysBetween(r.date_from, r.date_to)}</div></td>
+                  <td data-label="Generated On" style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{fmtDate(r.created_at)}<div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div></td>
+                  <td data-label="Size" style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{fmtSize(r)}<div style={{ color: 'var(--text-muted)', fontSize: 11 }}>{r.page_count ? `${r.page_count} pages` : '-'}</div></td>
+                  <td data-label="Status" style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)' }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', padding: '5px 9px', borderRadius: 999, border: '1px solid rgba(34,197,94,.3)', background: 'rgba(34,197,94,.1)', color: '#22c55e', fontSize: 12, fontWeight: 800 }}>
                       {r.status || 'Initiated'}
                     </span>
                   </td>
-                  <td style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', gap: 7 }}>
+                  <td data-label="Actions" style={{ padding: '13px 10px', borderBottom: '1px solid var(--border)' }}>
+                    <div className={styles.mobileTableActions} style={{ display: 'flex', gap: 7 }}>
                       <button className={styles.iconBtn || styles.secondaryBtn} onClick={() => setSelected(r)} title="View"><Eye size={14} /></button>
                       <button className={styles.iconBtn || styles.secondaryBtn} onClick={() => downloadPdf(r)} title="Download"><Download size={14} /></button>
                       <button className={styles.iconBtn || styles.secondaryBtn} onClick={() => sendEmail(r)} title="Email"><Mail size={14} /></button>
@@ -371,16 +371,16 @@ export default function MyReportsPage({ audience = 'user' }: { audience?: 'user'
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', fontSize: 12 }}><input type="checkbox" checked={scheduleEmail} onChange={e => setScheduleEmail(e.target.checked)} /> Email</label>
           </div>
           <div className={styles.scrollTable}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+          <table className={styles.mobileCardTable} style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead><tr>{['Report Name','Frequency','Window','Next Run','Email','Status',''].map(h => <th key={h} style={{ textAlign: 'left', padding: '9px 6px', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>{h}</th>)}</tr></thead>
             <tbody>{schedules.slice(0, 4).map((s: any) => <tr key={s.id}>
-              <td style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)', fontWeight: 800 }}>{s.title}</td>
-              <td style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}>{s.recurrence_days ? `Every ${s.recurrence_days}d` : '-'}</td>
-              <td style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}>{s.date_range_days ? `${s.date_range_days} Days` : '-'}</td>
-              <td style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}>{fmtDate(s.next_run_at)}<div style={{ color: 'var(--text-muted)' }}>{String(s.run_time || '').slice(0, 5)}</div></td>
-              <td style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}><CheckCircle2 size={18} color={(s.delivery_channels || {}).email ? '#22c55e' : 'var(--text-muted)'} /></td>
-              <td style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)', color: '#22c55e', fontWeight: 800 }}>{s.status}</td>
-              <td style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}><button className={styles.iconBtn || styles.secondaryBtn} onClick={() => updateScheduleStatus(s.id, s.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE')}><MoreVertical size={14} /></button></td>
+              <td data-label="Report Name" style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)', fontWeight: 800 }}>{s.title}</td>
+              <td data-label="Frequency" style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}>{s.recurrence_days ? `Every ${s.recurrence_days}d` : '-'}</td>
+              <td data-label="Window" style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}>{s.date_range_days ? `${s.date_range_days} Days` : '-'}</td>
+              <td data-label="Next Run" style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}>{fmtDate(s.next_run_at)}<div style={{ color: 'var(--text-muted)' }}>{String(s.run_time || '').slice(0, 5)}</div></td>
+              <td data-label="Email" style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}><CheckCircle2 size={18} color={(s.delivery_channels || {}).email ? '#22c55e' : 'var(--text-muted)'} /></td>
+              <td data-label="Status" style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)', color: '#22c55e', fontWeight: 800 }}>{s.status}</td>
+              <td data-label="Action" style={{ padding: '10px 6px', borderBottom: '1px solid var(--border)' }}><button className={styles.iconBtn || styles.secondaryBtn} onClick={() => updateScheduleStatus(s.id, s.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE')}><MoreVertical size={14} /></button></td>
             </tr>)}
             {!schedules.length && <tr><td colSpan={7} className={styles.emptyRow}>No scheduled reports yet.</td></tr>}</tbody>
           </table>
@@ -402,7 +402,7 @@ export default function MyReportsPage({ audience = 'user' }: { audience?: 'user'
       </div>
 
       {selected && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(5px)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setSelected(null)}>
+        <div className={styles.reportModalOverlay} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(5px)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setSelected(null)}>
           <div className={styles.chartCard} style={{ width: 'min(760px, 96vw)', maxHeight: '88vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
             <div className={styles.chartHeader}>
               <div>
@@ -427,7 +427,7 @@ export default function MyReportsPage({ audience = 'user' }: { audience?: 'user'
                 </ul>
               </div>
             ))}
-            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+            <div className={styles.reportModalActions} style={{ display: 'flex', gap: 10, marginTop: 18 }}>
               <button className={styles.secondaryBtn} style={{ color: '#f87171' }} onClick={() => downloadPdf(selected)}><Download size={15} /> Download PDF</button>
               <button className={styles.secondaryBtn} style={{ color: '#38bdf8' }} onClick={() => sendEmail(selected)}><Mail size={15} /> Send as Email</button>
             </div>

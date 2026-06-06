@@ -125,7 +125,7 @@ export default function ActivityLog() {
             <div style={{ marginTop: 16 }}>
               <ImageUploadLogger
                 endpoint="activity-log"
-                hint="Photo of your workout, gym session, run tracker or sport activity"
+                hint="Photo of your workout, organization session, run tracker or sport activity"
                 onSuccess={onAiSuccess}
                 onError={setError}
               />

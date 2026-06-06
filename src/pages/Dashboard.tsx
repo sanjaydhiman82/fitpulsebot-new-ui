@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../App';
 import {
   LayoutDashboard, Activity, Droplets, UtensilsCrossed, Moon, Scale,
@@ -24,6 +24,7 @@ import SettingsPage from '../components/SettingsPageFull';
 import JoinGymPage from '../components/JoinGymPage';
 import PartnerBranchProfile from '../components/PartnerBranchProfile';
 import BioMarkersPage from '../components/BioMarkersPage';
+import { useOrgAppFunctions } from '../utils/useOrgAppFunctions';
 
 export type DashTab = string;
 
@@ -73,13 +74,14 @@ export default function Dashboard() {
     }
   }, [user?.userId]);
 
-  const partnerItems = partnerBranches.map(b => ({
+  const { isVisible } = useOrgAppFunctions(user?.organizationId);
+  const partnerItems = useMemo(() => isVisible('Programs') ? partnerBranches.map(b => ({
     id: `partner:${b.branch_id || b.branchId}`,
     icon: Dumbbell,
     label: b.branch_name || b.branchName || 'Branch',
     group: 'Our Partners',
-  }));
-  const navItems = [...NAV_ITEMS, ...partnerItems];
+  })) : [], [isVisible, partnerBranches]);
+  const navItems = useMemo(() => [...NAV_ITEMS.filter(item => isVisible(item.label)), ...partnerItems], [isVisible, partnerItems]);
   const currentLabel = navItems.find(n => n.id === tab)?.label || '';
   const avatarUrl = typeof user?.avatarUrl === 'string' ? normalizeProfileImageUrl(user.avatarUrl) : '';
   const avatarFallback = (user?.firstName || user?.userName || 'U').charAt(0).toUpperCase();
@@ -100,6 +102,12 @@ export default function Dashboard() {
       api.partner.branches().then(d => setPartnerBranches(d.branches || [])).catch(() => setPartnerBranches([]));
     }
   }, [user?.userId, refreshUnreadCount]);
+
+  useEffect(() => {
+    if (navItems.length && !navItems.some(item => item.id === tab)) {
+      setTab(navItems[0].id);
+    }
+  }, [navItems, tab]);
 
   return (
     <div className={styles.layout} data-testid="dashboard" aria-label="Dashboard">

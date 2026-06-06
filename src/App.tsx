@@ -8,20 +8,21 @@ import AuthPage from './pages/AuthPage';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import SessionGuard from './components/SessionGuard';
+import GlobalApiSpinner from './components/GlobalApiSpinner';
 import { LogOut, X } from 'lucide-react';
 import { normalizeProfileImageUrl } from './profileImageUrl';
 import OrgAuthPage from './pages/OrgAuthPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import OrgDashboard from './pages/OrgDashboard';
 import BranchDashboard from './pages/BranchDashboard';
-import TrainerDashboard from './pages/TrainerDashboard';
+import ResourceDashboard from './pages/ResourceDashboard';
 
 export type Theme = 'light' | 'dark';
 export type Page =
   | 'landing' | 'onboarding' | 'dashboard' | 'admin' | 'auth' | 'privacy' | 'terms'
-  | 'org-auth' | 'super-admin' | 'org-dashboard' | 'branch-dashboard' | 'trainer-dashboard';
+  | 'org-auth' | 'super-admin' | 'org-dashboard' | 'branch-dashboard' | 'resource-dashboard';
 
-export type UserRole = 'user' | 'admin' | 'SUPER_ADMIN' | 'ORGANIZATION_ADMIN' | 'BRANCH_MANAGER' | 'TRAINER' | 'MEMBER';
+export type UserRole = 'user' | 'admin' | 'SUPER_ADMIN' | 'ORGANIZATION_ADMIN' | 'BRANCH_MANAGER' | 'RESOURCE' | 'CLIENT';
 
 export interface AuthUser {
   userId: string;
@@ -113,7 +114,7 @@ export default function App() {
       else if (role === 'SUPER_ADMIN') setPage('super-admin');
       else if (role === 'ORGANIZATION_ADMIN') setPage('org-dashboard');
       else if (role === 'BRANCH_MANAGER') setPage('branch-dashboard');
-      else if (role === 'TRAINER') setPage('trainer-dashboard');
+      else if (role === 'RESOURCE') setPage('resource-dashboard');
       else setPage('dashboard');
     }
   }, []);
@@ -155,10 +156,11 @@ export default function App() {
         {page === 'super-admin'       && <SuperAdminDashboard />}
         {page === 'org-dashboard'     && <OrgDashboard />}
         {page === 'branch-dashboard'  && <BranchDashboard />}
-        {page === 'trainer-dashboard' && <TrainerDashboard />}
+        {page === 'resource-dashboard' && <ResourceDashboard />}
         {page === 'privacy'           && <PrivacyPolicy />}
         {page === 'terms'             && <TermsOfService />}
         <SessionGuard />
+        <GlobalApiSpinner />
         {logoutConfirmOpen && (
           <div
             role="presentation"

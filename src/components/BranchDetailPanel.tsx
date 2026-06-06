@@ -49,8 +49,8 @@ export default function BranchDetailPanel({
   title?: string;
 }) {
   const [branch, setBranch] = useState<any>(initialBranch || null);
-  const [members, setMembers] = useState<any[]>([]);
-  const [trainers, setTrainers] = useState<any[]>([]);
+  const [clients, setMembers] = useState<any[]>([]);
+  const [resources, setResources] = useState<any[]>([]);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [attendance, setAttendance] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
@@ -63,16 +63,16 @@ export default function BranchDetailPanel({
     setError('');
     Promise.all([
       api.branch.get(branchId).catch(() => initialBranch || null),
-      api.branch.listUsers(branchId, { type: 'MEMBER', pageSize: 100 }).catch(() => ({ users: [] })),
-      api.branch.listUsers(branchId, { type: 'TRAINER', pageSize: 100 }).catch(() => ({ users: [] })),
+      api.branch.listUsers(branchId, { type: 'CLIENT', pageSize: 100 }).catch(() => ({ users: [] })),
+      api.branch.listUsers(branchId, { type: 'RESOURCE', pageSize: 100 }).catch(() => ({ users: [] })),
       api.branch.listAssignments(branchId, { pageSize: 100 }).catch(() => ({ assignments: [] })),
       api.branch.getAttendance(branchId, { pageSize: 20 }).catch(() => ({ attendance: [] })),
       api.branch.getSupportTickets(branchId).catch(() => ({ tickets: [] })),
     ])
-      .then(([branchData, memberData, trainerData, assignmentData, attendanceData, ticketData]) => {
+      .then(([branchData, memberData, resourceData, assignmentData, attendanceData, ticketData]) => {
         setBranch(branchData || initialBranch || null);
         setMembers(userSummary(memberData.users || []));
-        setTrainers(userSummary(trainerData.users || []));
+        setResources(userSummary(resourceData.users || []));
         setAssignments(assignmentData.assignments || []);
         setAttendance(attendanceData.attendance || []);
         setTickets(ticketData.tickets || []);
@@ -83,8 +83,8 @@ export default function BranchDetailPanel({
 
   useEffect(() => { load(); }, [load]);
 
-  const activeMembers = members.filter(m => m.status === 'active').length;
-  const activeTrainers = trainers.filter(t => t.status === 'active').length;
+  const activeMembers = clients.filter(m => m.status === 'active').length;
+  const activeResources = resources.filter(t => t.status === 'active').length;
   const openTickets = tickets.filter(t => ['open', 'pending', 'new'].includes(String(t.status || '').toLowerCase())).length;
 
   return (
@@ -121,8 +121,8 @@ export default function BranchDetailPanel({
       ) : (
         <>
           <div style={GRID4}>
-            <StatCard label="Members" value={members.length} sub={`${activeMembers} active`} icon={<Users size={18} />} color="#0ea5e9" />
-            <StatCard label="Trainers" value={trainers.length} sub={`${activeTrainers} active`} icon={<UserCheck size={18} />} color="#f59e0b" />
+            <StatCard label="Clients" value={clients.length} sub={`${activeMembers} active`} icon={<Users size={18} />} color="#0ea5e9" />
+            <StatCard label="Resources" value={resources.length} sub={`${activeResources} active`} icon={<UserCheck size={18} />} color="#f59e0b" />
             <StatCard label="Assignments" value={assignments.length} icon={<Link size={18} />} color="var(--accent)" />
             <StatCard label="Open Tickets" value={openTickets} icon={<TicketCheck size={18} />} color="var(--danger)" />
           </div>
@@ -150,12 +150,12 @@ export default function BranchDetailPanel({
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 18 }}>
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-              <SectionHeader title="Trainers" />
+              <SectionHeader title="Resources" />
               <DataTable
-                rows={trainers}
-                emptyMsg="No trainers found for this branch."
+                rows={resources}
+                emptyMsg="No resources found for this branch."
                 columns={[
-                  { key: 'displayName', label: 'Trainer' },
+                  { key: 'displayName', label: 'Resource' },
                   { key: 'userName', label: 'Username' },
                   { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
                 ]}
@@ -163,12 +163,12 @@ export default function BranchDetailPanel({
             </div>
 
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-              <SectionHeader title="Members" />
+              <SectionHeader title="Clients" />
               <DataTable
-                rows={members.slice(0, 10)}
-                emptyMsg="No members found for this branch."
+                rows={clients.slice(0, 10)}
+                emptyMsg="No clients found for this branch."
                 columns={[
-                  { key: 'displayName', label: 'Member' },
+                  { key: 'displayName', label: 'Client' },
                   { key: 'userName', label: 'Username' },
                   { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
                 ]}
@@ -177,13 +177,13 @@ export default function BranchDetailPanel({
           </div>
 
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-            <SectionHeader title="Trainer Assignments" />
+            <SectionHeader title="Resource Assignments" />
             <DataTable
               rows={assignments}
-              emptyMsg="No trainer assignments found."
+              emptyMsg="No resource assignments found."
               columns={[
-                { key: 'member', label: 'Member', render: r => displayName(r.member || {}) },
-                { key: 'trainer', label: 'Trainer', render: r => displayName(r.trainer || {}) },
+                { key: 'client', label: 'Client', render: r => displayName(r.client || {}) },
+                { key: 'resource', label: 'Resource', render: r => displayName(r.resource || {}) },
                 { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
                 { key: 'assignedAt', label: 'Assigned', render: r => formatDate(rowField(r, 'assignedAt', 'assigned_at')) },
               ]}

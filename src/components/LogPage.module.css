@@ -237,6 +237,22 @@
 .responsiveActions { min-width: 0; }
 .scrollTable { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .scrollTable table { min-width: 760px; }
+.biomarkerShell { width: 100%; min-width: 0; }
+.biomarkerPanel { min-width: 0; }
+.biomarkerUploadButton { justify-content: center; white-space: nowrap; }
+.biomarkerSummaryGrid { min-width: 0; }
+.biomarkerScoreRing { max-width: 100%; }
+.biomarkerComparisonRow { min-width: 0; }
+.biomarkerComparisonRow > * { min-width: 0; }
+.biomarkerTable { min-width: 760px; }
+.biomarkerTable td,
+.biomarkerTable th { vertical-align: top; }
+.reportsMobilePage { min-width: 0; }
+.mobileCardTable td,
+.mobileCardTable th { vertical-align: top; }
+.mobileTableActions { flex-wrap: wrap; }
+.reportModalOverlay { overflow-y: auto; }
+.reportModalActions { flex-wrap: wrap; }
 
 @media (max-width: 1100px) {
   .responsiveStatsGrid,
@@ -264,4 +280,107 @@
   .primaryBtn,
   .secondaryBtn { width: 100%; }
   .scrollTable table { min-width: 680px; }
+  .reportsMobilePage .header { align-items: stretch; }
+  .reportsMobilePage .header > div { min-width: 0; }
+  .reportsMobilePage .chartCard { padding: 14px !important; border-radius: var(--radius-lg); }
+  .reportsMobilePage .chartHeader { align-items: stretch; }
+  .reportsMobilePage .chartHeader > * { min-width: 0; }
+  .reportsMobilePage .chartTitle,
+  .reportsMobilePage .pageTitle,
+  .reportsMobilePage .pageDesc { overflow-wrap: anywhere; }
+  .reportsMobilePage .secondaryBtn,
+  .reportsMobilePage .primaryBtn,
+  .reportsMobilePage .refreshBtn { min-width: 0; }
+  .reportsMobilePage .responsiveReportShell { gap: 12px !important; }
+  .reportsMobilePage .responsiveFourCol { grid-template-columns: 1fr !important; }
+  .reportsMobilePage .scrollTable:has(.mobileCardTable) { overflow-x: visible; }
+  .mobileCardTable {
+    min-width: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+  }
+  .mobileCardTable thead { display: none; }
+  .mobileCardTable tbody,
+  .mobileCardTable tr,
+  .mobileCardTable td { display: block; width: 100%; }
+  .mobileCardTable tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--metric-bg);
+    padding: 10px 12px;
+  }
+  .mobileCardTable td {
+    display: grid;
+    grid-template-columns: minmax(92px, 36%) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .mobileCardTable td:last-child { border-bottom: none !important; }
+  .mobileCardTable td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .mobileTableActions { justify-content: flex-start; }
+  .mobileTableActions > button { min-width: 38px; }
+  .reportModalOverlay {
+    align-items: flex-start !important;
+    padding: 10px !important;
+  }
+  .reportModalActions { flex-direction: column; }
+  .reportModalActions > button { width: 100%; }
+  .biomarkerShell { gap: 12px !important; }
+  .biomarkerPanel { padding: 14px !important; border-radius: var(--radius-lg) !important; }
+  .biomarkerUploadButton { width: 100%; min-height: 44px !important; }
+  .biomarkerSummaryGrid { grid-template-columns: 1fr !important; }
+  .biomarkerScoreRing { width: 132px !important; height: 132px !important; }
+  .biomarkerComparisonRow {
+    grid-template-columns: 1fr !important;
+    gap: 7px !important;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .biomarkerComparisonRow > span:last-child { text-align: left !important; }
+  .scrollTable:has(.biomarkerTable) { overflow-x: visible; }
+  .biomarkerTable {
+    min-width: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+  }
+  .biomarkerTable thead { display: none; }
+  .biomarkerTable tbody,
+  .biomarkerTable tr,
+  .biomarkerTable td { display: block; width: 100%; }
+  .biomarkerTable tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--metric-bg);
+    padding: 10px 12px;
+  }
+  .biomarkerTable td {
+    display: grid;
+    grid-template-columns: minmax(96px, 38%) minmax(0, 1fr);
+    gap: 10px;
+    align-items: start;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .biomarkerTable td:last-child { border-bottom: none !important; }
+  .biomarkerTable td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
 }

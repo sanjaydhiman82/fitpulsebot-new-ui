@@ -165,7 +165,7 @@ function BranchModal({ open, onClose, orgId, branch, onSaved }: {
 }
 
 function QuickUserModal({ open, onClose, orgId, branches, type, onSaved }: {
-  open: boolean; onClose: () => void; orgId: string; branches: any[]; type: 'MEMBER' | 'TRAINER'; onSaved: () => void;
+  open: boolean; onClose: () => void; orgId: string; branches: any[]; type: 'CLIENT' | 'RESOURCE'; onSaved: () => void;
 }) {
   const [form, setForm] = useState({ branchId: '', userName: '', firstName: '', lastName: '', phone: '', temporaryPassword: 'TempPassword@123' });
   const [loading, setLoading] = useState(false);
@@ -202,7 +202,7 @@ function QuickUserModal({ open, onClose, orgId, branches, type, onSaved }: {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={`Add ${type === 'MEMBER' ? 'Member' : 'Trainer'}`} width={540}>
+    <Modal open={open} onClose={onClose} title={`Add ${type === 'CLIENT' ? 'Client' : 'Resource'}`} width={540}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <FormField label="Branch" required>
           <select style={inputStyle} value={form.branchId} onChange={f('branchId')}>
@@ -219,7 +219,7 @@ function QuickUserModal({ open, onClose, orgId, branches, type, onSaved }: {
       {err && <p style={{ color: 'var(--danger)', fontSize: 12 }}>{err}</p>}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
         <OutlineBtn onClick={onClose}>Cancel</OutlineBtn>
-        <PrimaryBtn onClick={submit} loading={loading}>Add {type === 'MEMBER' ? 'Member' : 'Trainer'}</PrimaryBtn>
+        <PrimaryBtn onClick={submit} loading={loading}>Add {type === 'CLIENT' ? 'Client' : 'Resource'}</PrimaryBtn>
       </div>
     </Modal>
   );
@@ -249,8 +249,8 @@ function QuickMessageModal({ open, onClose, branches, currentUserId }: {
     if (!open || !branchId) { setUsers([]); return; }
     setLoadingUsers(true);
     Promise.all([
-      api.branch.listUsers(branchId, { type: 'MEMBER', pageSize: 100 }),
-      api.branch.listUsers(branchId, { type: 'TRAINER', pageSize: 100 }),
+      api.branch.listUsers(branchId, { type: 'CLIENT', pageSize: 100 }),
+      api.branch.listUsers(branchId, { type: 'RESOURCE', pageSize: 100 }),
     ]).then(([m, t]) => setUsers([...(m.users || []), ...(t.users || [])]))
       .catch((e: any) => setErr(e.message || 'Failed to load branch users.'))
       .finally(() => setLoadingUsers(false));
@@ -323,7 +323,7 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editBranch, setEditBranch] = useState<any>(null);
   const [detailBranch, setDetailBranch] = useState<any>(null);
-  const [quickUserType, setQuickUserType] = useState<'MEMBER' | 'TRAINER' | null>(null);
+  const [quickUserType, setQuickUserType] = useState<'CLIENT' | 'RESOURCE' | null>(null);
   const [messageOpen, setMessageOpen] = useState(false);
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
@@ -358,13 +358,13 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
       setModalOpen(true);
       return;
     }
-    if (label === 'Add Trainer' || label === 'Add Member') {
+    if (label === 'Add Resource' || label === 'Add Client') {
       const next = await ensureBranches();
       if (!next.length) {
-        setNotice('Create a branch before adding members or trainers.');
+        setNotice('Create a branch before adding clients or resources.');
         return;
       }
-      setQuickUserType(label === 'Add Trainer' ? 'TRAINER' : 'MEMBER');
+      setQuickUserType(label === 'Add Resource' ? 'RESOURCE' : 'CLIENT');
       return;
     }
     if (label === 'Reports') {
@@ -394,7 +394,7 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
   const counts = dash?.counts || {};
   const kpis = dash?.kpis || {};
   const membershipStatuses: any[] = dash?.membershipOverview?.statuses || [];
-  const memberTotal = num(kpis.totalMembers ?? counts.members);
+  const memberTotal = num(kpis.totalMembers ?? counts.clients);
   const activeMembers = num(kpis.activeMembers ?? counts.activeMembers);
   const membershipPct = memberTotal ? Math.round((activeMembers / memberTotal) * 100) : 0;
   const ticketStatuses = dash?.supportTickets?.statuses || {};
@@ -424,9 +424,9 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,minmax(0,1fr))', gap: 10 }}>
             {[
               { label: 'Total Revenue (This Month)', value: money(kpis.totalRevenueMonth), icon: <IndianRupee size={20} />, color: '#8b5cf6', sub: `${kpis.revenueGrowthPercent || 0}% vs last month` },
-              { label: 'Total Members', value: kpis.totalMembers ?? counts.members ?? 0, icon: <Users size={20} />, color: '#3b82f6', sub: 'All active records' },
-              { label: 'Active Members', value: kpis.activeMembers ?? counts.activeMembers ?? 0, icon: <UserCheck size={20} />, color: '#65a30d', sub: `${membershipPct}% engaged` },
-              { label: 'Total Trainers', value: kpis.totalTrainers ?? counts.trainers ?? 0, icon: <Dumbbell size={20} />, color: '#f97316', sub: 'Active trainers' },
+              { label: 'Total Clients', value: kpis.totalMembers ?? counts.clients ?? 0, icon: <Users size={20} />, color: '#3b82f6', sub: 'All active records' },
+              { label: 'Active Clients', value: kpis.activeMembers ?? counts.activeMembers ?? 0, icon: <UserCheck size={20} />, color: '#65a30d', sub: `${membershipPct}% engaged` },
+              { label: 'Total Resources', value: kpis.totalResources ?? counts.resources ?? 0, icon: <Dumbbell size={20} />, color: '#f97316', sub: 'Active resources' },
               { label: 'Total Branches', value: kpis.totalBranches ?? counts.branches ?? 0, icon: <Building2 size={20} />, color: '#0ea5e9', sub: 'No change' },
               { label: 'Check-ins Today', value: kpis.checkinsToday ?? counts.checkinsToday ?? 0, icon: <CalendarCheck size={20} />, color: '#14b8a6', sub: 'Across branches' },
             ].map(card => (
@@ -454,20 +454,20 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 18 }}>
               <SectionHeader title="Membership Overview" />
               <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
-                <Donut pct={membershipPct} label={String(memberTotal)} sub="Total Members" />
+                <Donut pct={membershipPct} label={String(memberTotal)} sub="Total Clients" />
                 <div style={{ flex: 1 }}>
                   {membershipStatuses.map((s, i) => <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '7px 0' }}><span style={{ color: 'var(--text-secondary)' }}>{s.status}</span><strong>{s.count}</strong></div>)}
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12, textAlign: 'center' }}>
-                <div><div style={{ fontSize: 18, fontWeight: 900 }}>{dash?.membershipOverview?.newMembers || 0}</div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>New Members</div></div>
-                <div><div style={{ fontSize: 18, fontWeight: 900 }}>{dash?.membershipOverview?.cancelledMembers || 0}</div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cancelled Members</div></div>
+                <div><div style={{ fontSize: 18, fontWeight: 900 }}>{dash?.membershipOverview?.newMembers || 0}</div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>New Clients</div></div>
+                <div><div style={{ fontSize: 18, fontWeight: 900 }}>{dash?.membershipOverview?.cancelledMembers || 0}</div><div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Cancelled Clients</div></div>
               </div>
             </div>
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 18 }}>
               <SectionHeader title="Membership Status" />
               {membershipStatuses.map((s, i) => <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '11px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}><span>{s.status}</span><strong>{s.count}</strong></div>)}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}><span>Total Members</span><strong style={{ fontSize: 20 }}>{memberTotal}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14 }}><span>Total Clients</span><strong style={{ fontSize: 20 }}>{memberTotal}</strong></div>
             </div>
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 18 }}>
               <SectionHeader title="Top Performing Branches" />
@@ -487,7 +487,7 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 18 }}>
               <SectionHeader title="New Registrations" />
               <div style={{ fontSize: 28, fontWeight: 900 }}>{dash?.membershipOverview?.newMembers || 0}</div>
-              <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, marginBottom: 10 }}>New members this month</div>
+              <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, marginBottom: 10 }}>New clients this month</div>
               <MiniBars data={dash?.newRegistrations || []} color="#8b5cf6" height={120} />
             </div>
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 18 }}>
@@ -502,13 +502,13 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 0.85fr 0.85fr 0.85fr', gap: 12 }}>
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 18 }}>
-              <SectionHeader title="Top Performing Trainers" />
-              {(dash?.topTrainers || []).map((t: any, i: number) => <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 100px 50px', padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}><span>{t.trainerName}</span><span>{t.sessions}</span><span>{money(t.revenue)}</span><strong>{t.rating} ★</strong></div>)}
+              <SectionHeader title="Top Performing Resources" />
+              {(dash?.topResources || []).map((t: any, i: number) => <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 70px 100px 50px', padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: 12 }}><span>{t.resourceName}</span><span>{t.sessions}</span><span>{money(t.revenue)}</span><strong>{t.rating} ★</strong></div>)}
             </div>
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: 18 }}>
               <SectionHeader title="Pending Tasks" />
               {[
-                ['Trainer Approvals', pending.trainerApprovals, <Users size={14} />],
+                ['Resource Approvals', pending.resourceApprovals, <Users size={14} />],
                 ['Membership Approvals', pending.membershipApprovals, <CreditCard size={14} />],
                 ['Diet Plan Reviews', pending.dietPlanReviews, <Salad size={14} />],
                 ['Measurement Reviews', pending.measurementReviews, <Ruler size={14} />],
@@ -523,7 +523,7 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
               <SectionHeader title="Quick Actions" />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                 {[
-                  [<Building2 size={18} />, 'Add Branch'], [<Users size={18} />, 'Add Trainer'], [<UserCheck size={18} />, 'Add Member'],
+                  [<Building2 size={18} />, 'Add Branch'], [<Users size={18} />, 'Add Resource'], [<UserCheck size={18} />, 'Add Client'],
                   [<CreditCard size={18} />, 'Create Plan'], [<FileText size={18} />, 'Reports'], [<MessageSquare size={18} />, 'Message'],
                 ].map(([icon, label]: any) => (
                   <button
@@ -543,7 +543,7 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 16 }}>
               {[
                 [<TrendingUp size={18} />, 'Revenue Growth', `${dash?.keyInsights?.revenueGrowthPercent || 0}% compared to last month.`],
-                [<Users size={18} />, 'Member Engagement', `${dash?.keyInsights?.memberEngagementPercent || 0}% members are active.`],
+                [<Users size={18} />, 'Client Engagement', `${dash?.keyInsights?.memberEngagementPercent || 0}% clients are active.`],
                 [<AlertTriangle size={18} />, 'Attendance Alert', `${Math.round(num(dash?.attendanceOverview?.percent))}% attendance this week.`],
                 [<Bell size={18} />, 'Pending Reviews', `${dash?.keyInsights?.pendingReviews || 0} reviews are pending.`],
                 [<Trophy size={18} />, 'Top Branch', dash?.keyInsights?.topBranch?.name ? `${dash.keyInsights.topBranch.name} is top branch.` : 'No branch revenue yet.'],
@@ -599,8 +599,8 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
                 },
                 { key: 'address', label: 'Address', render: r => <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{addressText(r.address) || '-'}</span> },
                 { key: 'managerUserName', label: 'Manager', render: r => field(r, 'managerUserName', 'manager_user_name') || '-' },
-                { key: 'memberCount', label: 'Members', render: r => field(r, 'memberCount', 'member_count') || 0 },
-                { key: 'trainerCount', label: 'Trainers', render: r => field(r, 'trainerCount', 'trainer_count') || 0 },
+                { key: 'memberCount', label: 'Clients', render: r => field(r, 'memberCount', 'member_count') || 0 },
+                { key: 'resourceCount', label: 'Resources', render: r => field(r, 'resourceCount', 'resource_count') || 0 },
                 { key: 'status', label: 'Status', render: r => <StatusBadge status={r.status} /> },
                 {
                   key: 'actions', label: 'Actions', render: r => (
@@ -637,7 +637,7 @@ function OrgDashboardInner({ orgId }: { orgId: string }) {
         onClose={() => setQuickUserType(null)}
         orgId={orgId}
         branches={branches}
-        type={quickUserType || 'MEMBER'}
+        type={quickUserType || 'CLIENT'}
         onSaved={() => { loadBranches(); loadDash(); }}
       />
       <QuickMessageModal

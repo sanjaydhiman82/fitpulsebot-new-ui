@@ -10,7 +10,7 @@ interface Props { range: RangeId; }
 const CustomTip = ({ active, payload, label }: any) =>
   active && payload?.length ? <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 14px', fontSize:12 }}><p style={{ color:'var(--text-muted)', marginBottom:4 }}>{label}</p>{payload.map((p: any) => <p key={p.name} style={{ color:p.color, fontWeight:700 }}>{p.name}: {p.value}</p>)}</div> : null;
 
-const ACTIVITY_ICONS: Record<string, string> = { running:'🏃', walking:'🚶', cycling:'🚴', gym:'💪', yoga:'🧘', swimming:'🏊', default:'⚡' };
+const ACTIVITY_ICONS: Record<string, string> = { running:'🏃', walking:'🚶', cycling:'🚴', organization:'💪', yoga:'🧘', swimming:'🏊', default:'⚡' };
 const ACT_COLORS = ['#e53e3e','#3dbf96','#2d6fd6','#d97706','#9f7aea','#5bc8e0'];
 
 function AnimNum({ val, dec = 0 }: { val: number; dec?: number }) {

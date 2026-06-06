@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useApp } from '../App';
 import PortalLayout, {
   SectionHeader, PrimaryBtn, OutlineBtn, StatusBadge,
@@ -20,11 +20,12 @@ import { BrandingProvider, useBranding } from '../contexts/BrandingContext';
 import { LabelProvider, useLabels } from '../contexts/LabelContext';
 import BioMarkersPage from '../components/BioMarkersPage';
 import MyReportsPage from '../components/MyReportsPage';
+import { useOrgAppFunctions } from '../utils/useOrgAppFunctions';
 
 // ─── NAV ─────────────────────────────────────────────────
 const NAV = [
   { id: 'dashboard',  label: 'Dashboard',         icon: <LayoutDashboard size={16} /> },
-  { id: 'members',    label: 'My Members',         icon: <Users size={16} /> },
+  { id: 'clients',    label: 'My Clients',         icon: <Users size={16} /> },
   { id: 'workouts',   label: 'Workouts',           icon: <Dumbbell size={16} /> },
   { id: 'diets',      label: 'Diet Plans',         icon: <Salad size={16} /> },
   { id: 'plateau',    label: 'Plateau AI',         icon: <Brain size={16} /> },
@@ -44,7 +45,7 @@ const normalizeMember = (m: any) => ({
   activeWorkoutPlanId: field(m, 'activeWorkoutPlanId', 'active_workout_plan_id'),
   activeDietPlanId: field(m, 'activeDietPlanId', 'active_diet_plan_id'),
 });
-const memberName = (m: any) => `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.userName || 'Unnamed member';
+const memberName = (m: any) => `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.userName || 'Unnamed client';
 const isNum = (v: any) => typeof v === 'number' && Number.isFinite(v);
 const asNum = (v: any): number | undefined => {
   if (isNum(v)) return v;
@@ -126,7 +127,7 @@ function AIWorkoutGeneratorModal({ open, onClose, memberId, orgId, branchId, onS
     if (!generated?.workout) return;
     setLoading(true); setStep('saving');
     try {
-      await api.trainer.createWorkout(memberId, {
+      await api.resource.createWorkout(memberId, {
         organizationId: orgId, branchId,
         createdByType: 'AI',
         ...generated.workout,
@@ -153,7 +154,7 @@ function AIWorkoutGeneratorModal({ open, onClose, memberId, orgId, branchId, onS
           <div style={{ fontSize: 17, fontWeight: 900 }}>AI Workout Generator</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
             {step === 'config' ? 'Configure preferences and let AI build the perfect plan' :
-             step === 'generated' ? 'Review your AI-generated workout plan' : 'Saving to member profile…'}
+             step === 'generated' ? 'Review your AI-generated workout plan' : 'Saving to client profile…'}
           </div>
         </div>
         {step === 'generated' && <AIBadge />}
@@ -288,7 +289,7 @@ function AIWorkoutGeneratorModal({ open, onClose, memberId, orgId, branchId, onS
             <div style={{ display: 'flex', gap: 10 }}>
               <OutlineBtn onClick={onClose}>Discard</OutlineBtn>
               <PrimaryBtn onClick={saveWorkout} loading={loading} style={{ background: 'linear-gradient(135deg,#7c3aed,#3b82f6)', minWidth: 140 }}>
-                {loading ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</> : <><CheckCircle size={14} /> Assign to Member</>}
+                {loading ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</> : <><CheckCircle size={14} /> Assign to Client</>}
               </PrimaryBtn>
             </div>
           </div>
@@ -430,7 +431,7 @@ function AIDietGeneratorModal({ open, onClose, memberId, orgId, branchId, onSave
     if (!generated?.dietPlan) return;
     setLoading(true); setStep('saving');
     try {
-      await api.trainer.createDietPlan(memberId, {
+      await api.resource.createDietPlan(memberId, {
         organizationId: orgId, branchId, createdByType: 'AI',
         ...generated.dietPlan,
       });
@@ -580,7 +581,7 @@ function AIDietGeneratorModal({ open, onClose, memberId, orgId, branchId, onSave
             <div style={{ display: 'flex', gap: 10 }}>
               <OutlineBtn onClick={onClose}>Discard</OutlineBtn>
               <PrimaryBtn onClick={saveDiet} loading={loading} style={{ background: 'linear-gradient(135deg,#059669,#10b981)', minWidth: 140 }}>
-                {loading ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</> : <><CheckCircle size={14} /> Assign to Member</>}
+                {loading ? <><Loader size={13} style={{ animation: 'spin 1s linear infinite' }} /> Saving…</> : <><CheckCircle size={14} /> Assign to Client</>}
               </PrimaryBtn>
             </div>
           </div>
@@ -591,8 +592,8 @@ function AIDietGeneratorModal({ open, onClose, memberId, orgId, branchId, onSave
 }
 
 // ─── Plateau Detection Dashboard ────────────────────────
-function PlateauDashboard({ members, orgId, branchId }: {
-  members: any[]; orgId: string; branchId: string;
+function PlateauDashboard({ clients, orgId, branchId }: {
+  clients: any[]; orgId: string; branchId: string;
 }) {
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [days, setDays] = useState(30);
@@ -679,20 +680,20 @@ function PlateauDashboard({ members, orgId, branchId }: {
             </div>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Plateau Detection AI</h2>
-              <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 12 }}>Identify why members stall and get AI-powered corrective actions</p>
+              <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 12 }}>Identify why clients stall and get AI-powered corrective actions</p>
             </div>
           </div>
         </div>
         <AIBadge label="AI Analysis" />
       </div>
 
-      {/* Member Selector */}
+      {/* Client Selector */}
       <div style={{ background: 'var(--bg-card)', borderRadius: 14, padding: 18, border: '1px solid var(--border)', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div style={{ flex: '1 1 220px' }}>
-          <FormField label="Select Member">
+          <FormField label="Select Client">
             <select style={inputStyle} value={selectedMemberId} onChange={e => setSelectedMemberId(e.target.value)}>
-              <option value="">— Choose a member —</option>
-              {members.map(m => <option key={m.userId} value={m.userId}>{memberName(m)}</option>)}
+              <option value="">— Choose a client —</option>
+              {clients.map(m => <option key={m.userId} value={m.userId}>{memberName(m)}</option>)}
             </select>
           </FormField>
         </div>
@@ -735,7 +736,7 @@ function PlateauDashboard({ members, orgId, branchId }: {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {(data.alerts || []).length === 0 && (
                 <div style={{ textAlign: 'center', padding: 20, color: 'var(--text-muted)', fontSize: 13 }}>
-                  <CheckCircle size={24} style={{ color: '#22c55e', marginBottom: 8 }} /><br/>No plateau alerts — member is progressing well!
+                  <CheckCircle size={24} style={{ color: '#22c55e', marginBottom: 8 }} /><br/>No plateau alerts — client is progressing well!
                 </div>
               )}
               {(data.alerts || []).map((alert: any, i: number) => (
@@ -820,9 +821,9 @@ function PlateauDashboard({ members, orgId, branchId }: {
       {!data && !loading && (
         <div style={{ textAlign: 'center', padding: 64, background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)' }}>
           <Brain size={48} style={{ color: '#6366f1', opacity: 0.4, marginBottom: 14 }} />
-          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>Select a Member to Analyze</div>
+          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>Select a Client to Analyze</div>
           <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 380, margin: '0 auto' }}>
-            Choose a member and click Run Analysis to detect plateaus, stagnation patterns, and get AI-powered corrective suggestions.
+            Choose a client and click Run Analysis to detect plateaus, stagnation patterns, and get AI-powered corrective suggestions.
           </p>
         </div>
       )}
@@ -853,8 +854,8 @@ function WorkoutFormModal({ open, onClose, memberId, orgId, branchId, onSaved }:
     if (!form.title) { setError('Title is required.'); return; }
     setError(''); setLoading(true);
     try {
-      await api.trainer.createWorkout(memberId, {
-        organizationId: orgId, branchId, createdByType: 'TRAINER', ...form,
+      await api.resource.createWorkout(memberId, {
+        organizationId: orgId, branchId, createdByType: 'RESOURCE', ...form,
         exercises: form.exercises.map((e, i) => ({ ...e, sequenceNo: i + 1, sets: Number(e.sets), reps: Number(e.reps), durationMin: Number(e.durationMin), restSeconds: Number(e.restSeconds) })),
       });
       onSaved(); onClose();
@@ -934,8 +935,8 @@ function DietPlanModal({ open, onClose, memberId, orgId, branchId, onSaved }: {
     if (!form.title) { setError('Title is required.'); return; }
     setError(''); setLoading(true);
     try {
-      await api.trainer.createDietPlan(memberId, {
-        organizationId: orgId, branchId, createdByType: 'TRAINER', ...form,
+      await api.resource.createDietPlan(memberId, {
+        organizationId: orgId, branchId, createdByType: 'RESOURCE', ...form,
         calorieTarget: Number(form.calorieTarget), proteinTargetG: Number(form.proteinTargetG),
         items: form.items.map((item, i) => ({ ...item, sequenceNo: i + 1, quantity: Number(item.quantity), calories: Number(item.calories), proteinG: Number(item.proteinG), carbsG: Number(item.carbsG), fatG: Number(item.fatG) })),
       });
@@ -1014,7 +1015,7 @@ function MeasurementModal({ open, onClose, memberId, onSaved }: {
       if (form.armCm) payload.armCm = Number(form.armCm);
       if (form.thighCm) payload.thighCm = Number(form.thighCm);
       if (form.bodyFatPercent) payload.bodyFatPercent = Number(form.bodyFatPercent);
-      await api.trainer.addMeasurement(memberId, payload);
+      await api.resource.addMeasurement(memberId, payload);
       onSaved(); onClose();
     } catch (e: any) { setError(e.message); }
     finally { setLoading(false); }
@@ -1166,8 +1167,8 @@ function ProgressLineChart({ data }: { data: { labels: string[]; weight: number[
   );
 }
 
-// ─── Trainer Dashboard Home ───────────────────────────────
-function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelectMember, onTabChange, onRefresh }: {
+// ─── Resource Dashboard Home ───────────────────────────────
+function ResourceDashboardHome({ user, dashData, loadingDash, allMembers, onSelectMember, onTabChange, onRefresh }: {
   user: any; dashData: any; loadingDash: boolean; allMembers: any[];
   onSelectMember: (m: any) => void; onTabChange: (t: string) => void; onRefresh: () => void;
 }) {
@@ -1213,10 +1214,10 @@ function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelec
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 900, margin: '0 0 4px' }}>
-            Good Morning, {user?.firstName || 'Trainer'}!
+            Good Morning, {user?.firstName || 'Resource'}!
           </h2>
           <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 13 }}>
-            Here's what's happening with your members today.
+            Here's what's happening with your clients today.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -1230,11 +1231,11 @@ function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelec
       {/* ── Top KPI cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12 }}>
         {[
-          { label: 'Total Members',      value: totalMembers || '—', sub: formatChange(ps.newThisMonth, ' this month'), color: '#8b5cf6', icon: <Users size={20} />, sparkData: dashData?.memberSparkline || [] },
-          { label: 'Active Members',     value: dashData?.activeMembers ?? '—', sub: 'last 30 days', color: '#65a30d', icon: <Activity size={20} />, sparkData: dashData?.attendanceSparkline || [] },
+          { label: 'Total Clients',      value: totalMembers || '—', sub: formatChange(ps.newThisMonth, ' this month'), color: '#8b5cf6', icon: <Users size={20} />, sparkData: dashData?.memberSparkline || [] },
+          { label: 'Active Clients',     value: dashData?.activeMembers ?? '—', sub: 'last 30 days', color: '#65a30d', icon: <Activity size={20} />, sparkData: dashData?.attendanceSparkline || [] },
           { label: "Today's Sessions",   value: dashData?.todaySessions ?? schedToday.length ?? '—', sub: formatChange(dashData?.sessionChange, ' vs yesterday'), color: '#3b82f6', icon: <CalendarCheck size={20} />, sparkData: dashData?.sessionSparkline || [] },
           { label: 'Calories Burned',    value: formatMetric(dashData?.totalCaloriesBurned), sub: 'last 7 days', color: '#f97316', icon: <Flame size={20} />, sparkData: dashData?.caloriesSparkline || [] },
-          { label: 'Goal Completion',    value: dashData?.goalCompletionPct != null ? `${Math.round(asNum(dashData.goalCompletionPct) ?? 0)}%` : '—', sub: 'members near target', color: '#06b6d4', icon: <Target size={20} />, sparkData: dashData?.workoutSparkline || [] },
+          { label: 'Goal Completion',    value: dashData?.goalCompletionPct != null ? `${Math.round(asNum(dashData.goalCompletionPct) ?? 0)}%` : '—', sub: 'clients near target', color: '#06b6d4', icon: <Target size={20} />, sparkData: dashData?.workoutSparkline || [] },
         ].map(s => (
           <div key={s.label} style={{ background: 'var(--bg-card)', borderRadius: 14, padding: '16px 18px', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
@@ -1248,13 +1249,13 @@ function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelec
         ))}
       </div>
 
-      {/* ── Row 2: Members Overview + Progress Chart + Alerts ── */}
+      {/* ── Row 2: Clients Overview + Progress Chart + Alerts ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.1fr 0.75fr', gap: 14 }}>
-        {/* Member Status Overview */}
+        {/* Client Status Overview */}
         <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
-            <span style={{ fontWeight: 800, fontSize: 14 }}>Member Status Overview</span>
-            <button onClick={() => onTabChange('members')} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>View All</button>
+            <span style={{ fontWeight: 800, fontSize: 14 }}>Client Status Overview</span>
+            <button onClick={() => onTabChange('clients')} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>View All</button>
           </div>
           <div style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 20, minHeight: 255 }}>
             <AnimatedDonut
@@ -1263,7 +1264,7 @@ function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelec
               strokeWidth={18}
               color="#4ade80"
               label={String(totalMembers || 0)}
-              sublabel="Total Members"
+              sublabel="Total Clients"
             />
             <div style={{ flex: 1 }}>
               {(statusRows.length ? statusRows : [{ label: 'Active', value: dashData?.activeMembers || 0, pct: safePct(dashData?.activeMembers && totalMembers ? (dashData.activeMembers / totalMembers) * 100 : 0), color: '#4ade80' }]).map((r: any) => (
@@ -1388,7 +1389,7 @@ function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelec
         <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
           <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
             <span style={{ fontWeight: 800, fontSize: 14 }}>Upcoming Sessions</span>
-            <button onClick={() => onTabChange('members')} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>View Calendar</button>
+            <button onClick={() => onTabChange('clients')} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>View Calendar</button>
           </div>
           {schedToday.length > 0 ? schedToday.slice(0,5).map((s: any, i: number) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
@@ -1408,15 +1409,15 @@ function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelec
             </div>
           )) : <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>No upcoming sessions from the database.</div>}
           <div style={{ padding: '10px 14px' }}>
-            <button onClick={() => onTabChange('members')} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>View All Sessions</button>
+            <button onClick={() => onTabChange('clients')} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>View All Sessions</button>
           </div>
         </div>
 
-        {/* Top Performing Members */}
+        {/* Top Performing Clients */}
         <div style={{ background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border)', padding: 18 }}>
-          <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 14 }}>Top Performing Members</div>
+          <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 14 }}>Top Performing Clients</div>
           {topPerformers.length > 0 ? topPerformers.slice(0, 5).map((m: any, i: number) => {
-            const name = `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.userName || 'Member';
+            const name = `${m.firstName || ''} ${m.lastName || ''}`.trim() || m.userName || 'Client';
             return (
               <div key={m.userId || i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', borderBottom: i < Math.min(topPerformers.length, 5) - 1 ? '1px solid var(--border)' : 'none' }}>
                 <span style={{ width: 22, height: 22, borderRadius: '50%', background: i < 3 ? '#f59e0b' : 'var(--metric-bg)', color: i < 3 ? '#111827' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 900 }}>{i + 1}</span>
@@ -1467,7 +1468,7 @@ function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelec
               }
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <strong>{act.memberName || act.member}</strong> {act.action || act.text}
+                  <strong>{act.memberName || act.client}</strong> {act.action || act.text}
                 </div>
               </div>
               <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{act.time || act.timeAgo}</span>
@@ -1481,7 +1482,7 @@ function TrainerDashboardHome({ user, dashData, loadingDash, allMembers, onSelec
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
               { icon: <CheckCircle size={15} />, label: 'Sessions Completed', value: todaySummary.sessionsCompleted ?? 0, color: '#3b82f6' },
-              { icon: <Users size={15} />, label: 'New Members', value: todaySummary.newMembers ?? 0, color: '#65a30d' },
+              { icon: <Users size={15} />, label: 'New Clients', value: todaySummary.newMembers ?? 0, color: '#65a30d' },
               { icon: <Salad size={15} />, label: 'Diet Plans Assigned', value: todaySummary.dietPlansAssigned ?? 0, color: '#f59e0b' },
               { icon: <Ruler size={15} />, label: 'Measurements Taken', value: todaySummary.measurementsTaken ?? 0, color: '#06b6d4' },
               { icon: <Camera size={15} />, label: 'Progress Photos Added', value: todaySummary.progressPhotosAdded ?? 0, color: '#a855f7' },
@@ -1544,7 +1545,7 @@ function AddNoteModal({ open, onClose, memberId, onSaved }: {
   const submit = async () => {
     if (!form.title || !form.body) { setError('Title and note body are required.'); return; }
     setError(''); setLoading(true);
-    try { await api.trainer.createNote(memberId, form); onSaved(); onClose(); }
+    try { await api.resource.createNote(memberId, form); onSaved(); onClose(); }
     catch (e: any) { setError(e.message); } finally { setLoading(false); }
   };
   return (
@@ -1579,11 +1580,11 @@ function AddNoteModal({ open, onClose, memberId, onSaved }: {
 }
 
 
-// ─── Member Progress Panel (9 tabs) ──────────────────────
+// ─── Client Progress Panel (9 tabs) ──────────────────────
 type ProgressTab = 'overview'|'workouts'|'biomarkers'|'diet'|'measurements'|'body-composition'|'health'|'attendance'|'photos'|'notes';
 
-function MemberProgressPanel({ member, orgId, branchId, onBack }: {
-  member: any; orgId: string; branchId: string; onBack: () => void;
+function MemberProgressPanel({ client, orgId, branchId, onBack }: {
+  client: any; orgId: string; branchId: string; onBack: () => void;
 }) {
   const [activeTab, setActiveTab] = useState<ProgressTab>('overview');
   const [tabData, setTabData] = useState<Record<string, any>>({});
@@ -1617,20 +1618,20 @@ function MemberProgressPanel({ member, orgId, branchId, onBack }: {
     setTabLoading(p => ({ ...p, [tab]: true }));
     try {
       let data: any = {};
-      if (tab === 'overview') data = await api.trainer.getProgressOverview(member.userId).catch(() => api.trainer.getMemberProgress(member.userId).catch(() => ({})));
-      else if (tab === 'workouts') data = await api.trainer.getProgressWorkouts(member.userId).catch(() => api.trainer.listWorkouts(member.userId).catch(() => ({})));
+      if (tab === 'overview') data = await api.resource.getProgressOverview(client.userId).catch(() => api.resource.getMemberProgress(client.userId).catch(() => ({})));
+      else if (tab === 'workouts') data = await api.resource.getProgressWorkouts(client.userId).catch(() => api.resource.listWorkouts(client.userId).catch(() => ({})));
       else if (tab === 'biomarkers') data = {};
-      else if (tab === 'diet') data = await api.trainer.getProgressDiet(member.userId).catch(() => api.trainer.listDietPlans(member.userId).catch(() => ({})));
-      else if (tab === 'measurements') data = await api.trainer.getProgressMeasurements(member.userId).catch(() => api.trainer.getMeasurements(member.userId).catch(() => ({})));
-      else if (tab === 'body-composition') data = await api.trainer.getProgressBodyComposition(member.userId).catch(() => ({}));
-      else if (tab === 'health') data = await api.trainer.getProgressHealth(member.userId).catch(() => ({}));
-      else if (tab === 'attendance') data = await api.trainer.getProgressAttendance(member.userId).catch(() => ({}));
-      else if (tab === 'photos') data = await api.trainer.getProgressPhotos(member.userId).catch(() => ({}));
-      else if (tab === 'notes') data = await api.trainer.getProgressNotes(member.userId).catch(() => ({}));
+      else if (tab === 'diet') data = await api.resource.getProgressDiet(client.userId).catch(() => api.resource.listDietPlans(client.userId).catch(() => ({})));
+      else if (tab === 'measurements') data = await api.resource.getProgressMeasurements(client.userId).catch(() => api.resource.getMeasurements(client.userId).catch(() => ({})));
+      else if (tab === 'body-composition') data = await api.resource.getProgressBodyComposition(client.userId).catch(() => ({}));
+      else if (tab === 'health') data = await api.resource.getProgressHealth(client.userId).catch(() => ({}));
+      else if (tab === 'attendance') data = await api.resource.getProgressAttendance(client.userId).catch(() => ({}));
+      else if (tab === 'photos') data = await api.resource.getProgressPhotos(client.userId).catch(() => ({}));
+      else if (tab === 'notes') data = await api.resource.getProgressNotes(client.userId).catch(() => ({}));
       setTabData(p => ({ ...p, [tab]: data || {} }));
     } catch { setTabData(p => ({ ...p, [tab]: {} })); }
     finally { setTabLoading(p => ({ ...p, [tab]: false })); }
-  }, [member.userId, tabData, tabLoading]);
+  }, [client.userId, tabData, tabLoading]);
 
   const reloadTab = useCallback((tab: ProgressTab) => {
     setTabData(p => { const n = { ...p }; delete n[tab]; return n; });
@@ -1647,25 +1648,25 @@ function MemberProgressPanel({ member, orgId, branchId, onBack }: {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 
-      {/* Member header */}
+      {/* Client header */}
       <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: '16px 20px', border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <button onClick={onBack} style={{ display:'flex',alignItems:'center',gap:6,fontSize:12,fontWeight:700,color:'var(--text-muted)',background:'var(--metric-bg)',border:'1px solid var(--border)',borderRadius:8,padding:'6px 12px',cursor:'pointer' }}>
             <ArrowLeft size={13} /> Back
           </button>
-          {member.avatarUrl
-            ? <img src={member.avatarUrl} alt="" style={{ width:52,height:52,borderRadius:14,objectFit:'cover',border:'1px solid var(--border)' }} onError={e=>(e.currentTarget.style.display='none')} />
-            : <div style={{ width:52,height:52,borderRadius:14,background:'linear-gradient(135deg,#0ea5e933,#0ea5e966)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:900,color:'#0ea5e9',flexShrink:0 }}>{(memberName(member)[0]||'M').toUpperCase()}</div>
+          {client.avatarUrl
+            ? <img src={client.avatarUrl} alt="" style={{ width:52,height:52,borderRadius:14,objectFit:'cover',border:'1px solid var(--border)' }} onError={e=>(e.currentTarget.style.display='none')} />
+            : <div style={{ width:52,height:52,borderRadius:14,background:'linear-gradient(135deg,#0ea5e933,#0ea5e966)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:900,color:'#0ea5e9',flexShrink:0 }}>{(memberName(client)[0]||'M').toUpperCase()}</div>
           }
           <div style={{ flex:1 }}>
             <div style={{ display:'flex',alignItems:'center',gap:10,flexWrap:'wrap' }}>
-              <span style={{ fontSize:18,fontWeight:900 }}>{memberName(member)}</span>
-              <span style={{ fontSize:10,padding:'2px 8px',borderRadius:20,background:'rgba(245,158,11,0.15)',color:'#f59e0b',fontWeight:700,border:'1px solid rgba(245,158,11,0.3)' }}>Premium Member</span>
+              <span style={{ fontSize:18,fontWeight:900 }}>{memberName(client)}</span>
+              <span style={{ fontSize:10,padding:'2px 8px',borderRadius:20,background:'rgba(245,158,11,0.15)',color:'#f59e0b',fontWeight:700,border:'1px solid rgba(245,158,11,0.3)' }}>Premium Client</span>
             </div>
-            <div style={{ fontSize:12,color:'var(--text-muted)',marginTop:2 }}>{member.userName}{member.email?` · ${member.email}`:''}</div>
+            <div style={{ fontSize:12,color:'var(--text-muted)',marginTop:2 }}>{client.userName}{client.email?` · ${client.email}`:''}</div>
           </div>
           <div style={{ display:'flex',gap:20,flexWrap:'wrap' }}>
-            {[{label:'Goal',value:member.goal||'Fat Loss'},{label:'Trainer',value:member.trainerName||'—'},{label:'Package',value:member.package||'—'}].map(info=>(
+            {[{label:'Goal',value:client.goal||'Fat Loss'},{label:'Resource',value:client.resourceName||'—'},{label:'Package',value:client.package||'—'}].map(info=>(
               <div key={info.label} style={{ textAlign:'center' }}>
                 <div style={{ fontSize:10,color:'var(--text-muted)',marginBottom:2 }}>{info.label}</div>
                 <div style={{ fontSize:13,fontWeight:700 }}>{info.value}</div>
@@ -1695,14 +1696,14 @@ function MemberProgressPanel({ member, orgId, branchId, onBack }: {
           : <>
             {activeTab==='overview' && <MPOverview d={d} onGoNotes={()=>setActiveTab('notes')} />}
             {activeTab==='workouts' && <MPWorkouts d={d} onManual={()=>setWorkoutModal(true)} onAI={()=>setAiWorkoutModal(true)} onDeleted={()=>reloadTab('workouts')} />}
-            {activeTab==='biomarkers' && <BioMarkersPage memberId={member.userId} readOnly />}
+            {activeTab==='biomarkers' && <BioMarkersPage memberId={client.userId} readOnly />}
             {activeTab==='diet' && <MPDiet d={d} onManual={()=>setDietModal(true)} onAI={()=>setAiDietModal(true)} onDeleted={()=>reloadTab('diet')} />}
             {activeTab==='measurements' && <MPMeasurements d={d} onAdd={()=>setMeasurementModal(true)} />}
             {activeTab==='body-composition' && <MPBodyComp d={d} />}
             {activeTab==='health' && <MPHealth d={d} />}
             {activeTab==='attendance' && <MPAttendance d={d} />}
             {activeTab==='photos' && <MPPhotos d={d} />}
-            {activeTab==='notes' && <MPNotes d={d} memberId={member.userId}
+            {activeTab==='notes' && <MPNotes d={d} memberId={client.userId}
               search={noteSearch} setSearch={setNoteSearch}
               typeFilter={noteType} setTypeFilter={setNoteType}
               catFilter={noteCat} setCatFilter={setNoteCat}
@@ -1713,12 +1714,12 @@ function MemberProgressPanel({ member, orgId, branchId, onBack }: {
         }
       </div>
 
-      <WorkoutFormModal open={workoutModal} onClose={()=>setWorkoutModal(false)} memberId={member.userId} orgId={orgId} branchId={branchId} onSaved={()=>reloadTab('workouts')} />
-      <AIWorkoutGeneratorModal open={aiWorkoutModal} onClose={()=>setAiWorkoutModal(false)} memberId={member.userId} orgId={orgId} branchId={branchId} onSaved={()=>reloadTab('workouts')} />
-      <DietPlanModal open={dietModal} onClose={()=>setDietModal(false)} memberId={member.userId} orgId={orgId} branchId={branchId} onSaved={()=>reloadTab('diet')} />
-      <AIDietGeneratorModal open={aiDietModal} onClose={()=>setAiDietModal(false)} memberId={member.userId} orgId={orgId} branchId={branchId} onSaved={()=>reloadTab('diet')} />
-      <MeasurementModal open={measurementModal} onClose={()=>setMeasurementModal(false)} memberId={member.userId} onSaved={()=>reloadTab('measurements')} />
-      <AddNoteModal open={noteModal} onClose={()=>setNoteModal(false)} memberId={member.userId} onSaved={()=>reloadTab('notes')} />
+      <WorkoutFormModal open={workoutModal} onClose={()=>setWorkoutModal(false)} memberId={client.userId} orgId={orgId} branchId={branchId} onSaved={()=>reloadTab('workouts')} />
+      <AIWorkoutGeneratorModal open={aiWorkoutModal} onClose={()=>setAiWorkoutModal(false)} memberId={client.userId} orgId={orgId} branchId={branchId} onSaved={()=>reloadTab('workouts')} />
+      <DietPlanModal open={dietModal} onClose={()=>setDietModal(false)} memberId={client.userId} orgId={orgId} branchId={branchId} onSaved={()=>reloadTab('diet')} />
+      <AIDietGeneratorModal open={aiDietModal} onClose={()=>setAiDietModal(false)} memberId={client.userId} orgId={orgId} branchId={branchId} onSaved={()=>reloadTab('diet')} />
+      <MeasurementModal open={measurementModal} onClose={()=>setMeasurementModal(false)} memberId={client.userId} onSaved={()=>reloadTab('measurements')} />
+      <AddNoteModal open={noteModal} onClose={()=>setNoteModal(false)} memberId={client.userId} onSaved={()=>reloadTab('notes')} />
     </div>
   );
 }
@@ -1732,7 +1733,7 @@ function MPOverview({ d, onGoNotes }: { d: any; onGoNotes: () => void }) {
   const health = d.healthOverview || {};
   const meas = d.recentMeasurements || {};
   const lifestyle = d.lifestyle || {};
-  const tn = d.trainerNotes || {};
+  const resourceNotes = d.resourceNotes || {};
   const analytics = d.progressAnalytics || {};
   const total = Math.abs((wt.startWeightKg||0)-(wt.targetWeightKg||0));
   const done  = Math.abs((wt.startWeightKg||0)-(wt.currentWeightKg||0));
@@ -1848,9 +1849,9 @@ function MPOverview({ d, onGoNotes }: { d: any; onGoNotes: () => void }) {
         </div>
 
         <div style={{ background:'var(--bg-card)',borderRadius:14,padding:18,border:'1px solid var(--border)',display:'flex',flexDirection:'column',gap:10 }}>
-          <div style={{ fontWeight:800,fontSize:14 }}>Trainer Notes</div>
-          <div style={{ fontSize:12,color:'var(--text-secondary)',flex:1 }}>{tn.body||tn.text||analytics.notes||'No recent notes.'}</div>
-          {tn.nextReview&&<div style={{ fontSize:11,color:'var(--text-muted)' }}>Next review: {tn.nextReview}</div>}
+          <div style={{ fontWeight:800,fontSize:14 }}>Resource Notes</div>
+          <div style={{ fontSize:12,color:'var(--text-secondary)',flex:1 }}>{resourceNotes.body||resourceNotes.text||analytics.notes||'No recent notes.'}</div>
+          {resourceNotes.nextReview&&<div style={{ fontSize:11,color:'var(--text-muted)' }}>Next review: {resourceNotes.nextReview}</div>}
           <OutlineBtn onClick={onGoNotes} style={{ fontSize:11,padding:'5px 10px' }}><Edit2 size={11}/> Edit Note</OutlineBtn>
         </div>
       </div>
@@ -1954,7 +1955,7 @@ function MPWorkouts({ d, onManual, onAI, onDeleted }: { d:any; onManual:()=>void
                   <div style={{ fontSize:11,color:'var(--text-muted)' }}>{w.goal?.replace('_',' ')} · {w.level}</div>
                   <div style={{ marginTop:8,display:'flex',gap:8,justifyContent:'space-between',alignItems:'center' }}>
                     <StatusBadge status={w.status}/>
-                    <button onClick={()=>api.trainer.deleteWorkout(w.id).then(onDeleted)} style={{ fontSize:10,padding:'3px 8px',borderRadius:6,color:'var(--danger)',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.15)',cursor:'pointer' }}>Remove</button>
+                    <button onClick={()=>api.resource.deleteWorkout(w.id).then(onDeleted)} style={{ fontSize:10,padding:'3px 8px',borderRadius:6,color:'var(--danger)',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.15)',cursor:'pointer' }}>Remove</button>
                   </div>
                 </div>
               ))}
@@ -2043,7 +2044,7 @@ function MPDiet({ d, onManual, onAI, onDeleted }: { d:any; onManual:()=>void; on
             <div key={dp.id} style={{ background:'var(--bg-base)',borderRadius:10,padding:12,border:'1px solid var(--border)',marginBottom:8 }}>
               <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
                 <div style={{ fontWeight:700,fontSize:13 }}>{dp.title}</div>
-                <button onClick={()=>api.trainer.deleteDietPlan(dp.id).then(onDeleted)} style={{ fontSize:10,color:'var(--danger)',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:6,padding:'3px 8px',cursor:'pointer' }}>Remove</button>
+                <button onClick={()=>api.resource.deleteDietPlan(dp.id).then(onDeleted)} style={{ fontSize:10,color:'var(--danger)',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.15)',borderRadius:6,padding:'3px 8px',cursor:'pointer' }}>Remove</button>
               </div>
               <div style={{ fontSize:11,color:'var(--text-muted)',marginTop:4 }}>{dp.goal?.replace('_',' ')} · {dp.calorieTarget} kcal</div>
             </div>
@@ -2385,6 +2386,15 @@ function MPAttendance({ d }: { d:any }) {
 // ─── MP Photos ────────────────────────────────────────────
 function MPPhotos({ d }: { d:any }) {
   const photos:any[]=d.photos||[]; const stats=d.stats||{}; const insights:any[]=d.insights||[];
+  const [preview, setPreview] = useState<any | null>(null);
+  const photosByDate = photos.reduce((acc: Record<string, any[]>, photo: any) => {
+    const key = String(photo.date || photo.photoDate || photo.photo_date || photo.created_at || 'Undated').slice(0, 10);
+    acc[key] = [...(acc[key] || []), photo];
+    return acc;
+  }, {});
+  const photoRows = Object.entries(photosByDate).sort(([a], [b]) => b.localeCompare(a));
+  const photoUrl = (photo: any) => photo.url || photo.fileUrl || photo.file_url || photo.photo_url || photo.imageUrl || photo.image_url;
+  const photoLabel = (photo: any) => photo.viewType || photo.view_type || photo.side || 'Photo';
   return (
     <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
       <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
@@ -2403,17 +2413,35 @@ function MPPhotos({ d }: { d:any }) {
         ))}
       </div>
       {photos.length>0?(
-        <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:12 }}>
-          {photos.map((photo:any,i:number)=>(
-            <div key={i} style={{ background:'var(--bg-card)',borderRadius:14,overflow:'hidden',border:'1px solid var(--border)',position:'relative' }}>
-              {photo.url?<img src={photo.url} alt={photo.date} style={{ width:'100%',height:220,objectFit:'cover',display:'block' }}/>:<div style={{ width:'100%',height:220,background:'var(--metric-bg)',display:'flex',alignItems:'center',justifyContent:'center' }}><Camera size={36} style={{ opacity:0.3 }}/></div>}
-              {photo.isLatest&&<span style={{ position:'absolute',top:8,right:8,fontSize:10,padding:'2px 8px',borderRadius:20,background:'var(--accent)',color:'#000',fontWeight:800 }}>Latest</span>}
-              <div style={{ padding:12 }}>
-                <div style={{ fontSize:12,fontWeight:700 }}>{photo.date}</div>
-                <div style={{ display:'flex',gap:12,marginTop:6,fontSize:11,color:'var(--text-muted)' }}>
-                  {photo.weightKg&&<span>⚖️ {photo.weightKg} kg</span>}
-                  {photo.bodyFatPercent&&<span>📊 {photo.bodyFatPercent}%</span>}
+        <div style={{ display:'grid',gap:12 }}>
+          {photoRows.map(([date, rowPhotos])=>(
+            <div key={date} style={{ background:'var(--bg-card)',borderRadius:14,border:'1px solid var(--border)',padding:14 }}>
+              <div style={{ display:'flex',justifyContent:'space-between',gap:10,alignItems:'center',marginBottom:12,flexWrap:'wrap' }}>
+                <div>
+                  <div style={{ fontSize:13,fontWeight:900 }}>{date}</div>
+                  <div style={{ fontSize:11,color:'var(--text-muted)',marginTop:2 }}>{rowPhotos.length} thumbnail{rowPhotos.length===1?'':'s'}</div>
                 </div>
+                {rowPhotos.some((p:any)=>p.isLatest)&&<span style={{ fontSize:10,padding:'3px 9px',borderRadius:20,background:'var(--accent)',color:'#000',fontWeight:900 }}>Latest</span>}
+              </div>
+              <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(112px,1fr))',gap:10 }}>
+                {rowPhotos.map((photo:any,i:number)=>{
+                  const src = photoUrl(photo);
+                  return (
+                    <button key={photo.id || `${date}-${i}`} onClick={()=>setPreview(photo)} style={{ textAlign:'left',background:'var(--metric-bg)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden',cursor:'pointer',padding:0,color:'var(--text-primary)' }}>
+                      <div style={{ position:'relative',aspectRatio:'1 / 1',background:'var(--bg-base)' }}>
+                        {src?<img src={src} alt={`${photoLabel(photo)} ${date}`} style={{ width:'100%',height:'100%',objectFit:'cover',display:'block' }}/>:<div style={{ width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center' }}><Camera size={28} style={{ opacity:0.35 }}/></div>}
+                        <span style={{ position:'absolute',left:7,bottom:7,fontSize:10,padding:'2px 7px',borderRadius:20,background:'rgba(0,0,0,.62)',color:'#fff',fontWeight:800 }}>{photoLabel(photo)}</span>
+                      </div>
+                      <div style={{ padding:9,display:'grid',gap:4 }}>
+                        <div style={{ display:'flex',gap:8,flexWrap:'wrap',fontSize:11,color:'var(--text-muted)' }}>
+                          {photo.weightKg&&<span>⚖️ {photo.weightKg} kg</span>}
+                          {photo.bodyFatPercent&&<span>📊 {photo.bodyFatPercent}%</span>}
+                        </div>
+                        {photo.notes&&<div style={{ fontSize:11,color:'var(--text-secondary)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{photo.notes}</div>}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -2435,6 +2463,27 @@ function MPPhotos({ d }: { d:any }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {preview&&(
+        <div onClick={()=>setPreview(null)} style={{ position:'fixed',inset:0,zIndex:10001,background:'rgba(0,0,0,.78)',display:'flex',alignItems:'center',justifyContent:'center',padding:18 }}>
+          <div onClick={e=>e.stopPropagation()} style={{ width:'min(980px,96vw)',maxHeight:'92vh',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:16,overflow:'hidden',boxShadow:'var(--shadow-lg)',display:'flex',flexDirection:'column' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,padding:'12px 14px',borderBottom:'1px solid var(--border)' }}>
+              <div>
+                <div style={{ fontWeight:900,fontSize:14 }}>{photoLabel(preview)} Progress Photo</div>
+                <div style={{ fontSize:12,color:'var(--text-muted)',marginTop:2 }}>{String(preview.date || preview.photoDate || preview.photo_date || preview.created_at || '').slice(0,10)}</div>
+              </div>
+              <button onClick={()=>setPreview(null)} style={{ width:34,height:34,borderRadius:9,display:'grid',placeItems:'center',background:'var(--metric-bg)',color:'var(--text-primary)' }}><X size={18}/></button>
+            </div>
+            <div style={{ overflow:'auto',display:'grid',placeItems:'center',background:'var(--bg-base)',padding:12 }}>
+              {photoUrl(preview)?<img src={photoUrl(preview)} alt="Progress full preview" style={{ maxWidth:'100%',maxHeight:'72vh',objectFit:'contain',borderRadius:12 }}/>:<div style={{ padding:80,color:'var(--text-muted)' }}><Camera size={44}/></div>}
+            </div>
+            <div style={{ padding:'12px 14px',display:'flex',gap:14,flexWrap:'wrap',fontSize:12,color:'var(--text-secondary)' }}>
+              {preview.weightKg&&<span>Weight: <strong>{preview.weightKg} kg</strong></span>}
+              {preview.bodyFatPercent&&<span>Body Fat: <strong>{preview.bodyFatPercent}%</strong></span>}
+              {preview.notes&&<span style={{ flexBasis:'100%' }}>{preview.notes}</span>}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -2464,8 +2513,8 @@ function MPNotes({ d, memberId, search, setSearch, typeFilter, setTypeFilter, ca
       <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(145px,1fr))',gap:10 }}>
         {[
           { label:'Total Notes', value:ov.total??notes.length, icon:<FileText size={14} color="#0ea5e9"/> },
-          { label:'Trainer Notes', value:ov.trainerNotes??notes.filter((n:any)=>n.authorType==='trainer').length, icon:<Edit2 size={14} color="#f59e0b"/> },
-          { label:'Member Notes', value:ov.memberNotes??notes.filter((n:any)=>n.authorType==='member').length, icon:<BookOpen size={14} color="#22c55e"/> },
+          { label:'Resource Notes', value:ov.resourceNotes??notes.filter((n:any)=>n.authorType==='resource').length, icon:<Edit2 size={14} color="#f59e0b"/> },
+          { label:'Client Notes', value:ov.memberNotes??notes.filter((n:any)=>n.authorType==='client').length, icon:<BookOpen size={14} color="#22c55e"/> },
           { label:'Important Notes', value:ov.importantNotes??notes.filter((n:any)=>n.isImportant).length, icon:<Star size={14} color="#a78bfa"/> },
         ].map(c=>(
           <div key={c.label} style={{ background:'var(--bg-card)',borderRadius:12,padding:'14px 16px',border:'1px solid var(--border)',display:'flex',gap:10,alignItems:'center' }}>
@@ -2480,7 +2529,7 @@ function MPNotes({ d, memberId, search, setSearch, typeFilter, setTypeFilter, ca
           <Search size={13} style={{ position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)' }}/>
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search notes..." style={{ ...inputStyle,paddingLeft:30,width:'100%' }}/>
         </div>
-        {[{v:typeFilter,s:setTypeFilter,opts:['All Types','Trainer','Member']},{v:catFilter,s:setCatFilter,opts:['All Categories','General','Nutrition','Performance','Injury / Pain','Personal','Other']},{v:priFilter,s:setPriFilter,opts:['All Priorities','High','Medium','Low','No Priority']}].map((f,i)=>(
+        {[{v:typeFilter,s:setTypeFilter,opts:['All Types','Resource','Client']},{v:catFilter,s:setCatFilter,opts:['All Categories','General','Nutrition','Performance','Injury / Pain','Personal','Other']},{v:priFilter,s:setPriFilter,opts:['All Priorities','High','Medium','Low','No Priority']}].map((f,i)=>(
           <select key={i} value={f.v} onChange={e=>f.s(e.target.value)} style={{ ...inputStyle,minWidth:130 }}>{f.opts.map(o=><option key={o}>{o}</option>)}</select>
         ))}
         <PrimaryBtn onClick={onAdd} style={{ fontSize:12 }}><Plus size={13}/> Add New Note</PrimaryBtn>
@@ -2532,7 +2581,7 @@ function MPNotes({ d, memberId, search, setSearch, typeFilter, setTypeFilter, ca
           </div>
           <div style={{ background:'rgba(245,158,11,0.05)',borderRadius:14,padding:16,border:'1px solid rgba(245,158,11,0.2)' }}>
             <div style={{ fontWeight:800,fontSize:13,marginBottom:8 }}>💡 Note Tips</div>
-            <div style={{ fontSize:11,color:'var(--text-secondary)' }}>Use notes to track observations, member feedback, and actionable steps. Well-documented notes lead to better results.</div>
+            <div style={{ fontSize:11,color:'var(--text-secondary)' }}>Use notes to track observations, client feedback, and actionable steps. Well-documented notes lead to better results.</div>
           </div>
         </div>
       </div>
@@ -2541,19 +2590,19 @@ function MPNotes({ d, memberId, search, setSearch, typeFilter, setTypeFilter, ca
 }
 
 
-// ─── Members Tab ──────────────────────────────────────────
+// ─── Clients Tab ──────────────────────────────────────────
 function MembersTab({ orgId, branchId, onSelectMember }: {
   orgId: string; branchId: string; onSelectMember: (m: any) => void;
 }) {
-  const [members, setMembers] = useState<any[]>([]);
+  const [clients, setMembers] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
-    api.trainer.listMembers().then(d => {
-      setMembers((d.members || []).map(normalizeMember));
+    api.resource.listMembers().then(d => {
+      setMembers((d.clients || []).map(normalizeMember));
       setTotal(d.total || 0);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
@@ -2561,20 +2610,20 @@ function MembersTab({ orgId, branchId, onSelectMember }: {
   useEffect(() => { load(); }, [load]);
 
   const filtered = search
-    ? members.filter(m => `${m.firstName} ${m.lastName} ${m.userName}`.toLowerCase().includes(search.toLowerCase()))
-    : members;
+    ? clients.filter(m => `${m.firstName} ${m.lastName} ${m.userName}`.toLowerCase().includes(search.toLowerCase()))
+    : clients;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Assigned Members</h2>
-          <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{total} members assigned to you</p>
+          <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Assigned Clients</h2>
+          <p style={{ margin: '2px 0 0', color: 'var(--text-muted)', fontSize: 13 }}>{total} clients assigned to you</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ position: 'relative' }}>
             <Search size={14} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members..."
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search clients..."
               style={{ ...inputStyle, paddingLeft: 32, width: 200 }} />
           </div>
           <OutlineBtn onClick={load}><RefreshCw size={13} /></OutlineBtn>
@@ -2620,7 +2669,7 @@ function MembersTab({ orgId, branchId, onSelectMember }: {
           {filtered.length === 0 && (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
               <Users size={40} style={{ opacity: 0.3, marginBottom: 12 }} />
-              <p>No members assigned yet. Contact your branch manager.</p>
+              <p>No clients assigned yet. Contact your branch manager.</p>
             </div>
           )}
         </div>
@@ -2629,8 +2678,8 @@ function MembersTab({ orgId, branchId, onSelectMember }: {
   );
 }
 
-// ─── Main TrainerDashboard ────────────────────────────────
-export default function TrainerDashboard() {
+// ─── Main ResourceDashboard ────────────────────────────────
+export default function ResourceDashboard() {
   const { user } = useApp();
   const orgId    = user?.organizationId || '';
   const branchId = user?.branchId       || '';
@@ -2643,11 +2692,11 @@ export default function TrainerDashboard() {
 
   const loadDashboard = useCallback(() => {
     setLoadingDash(true);
-    api.trainer.getDashboard().then(setDashData).catch(() => {}).finally(() => setLoadingDash(false));
+    api.resource.getDashboard().then(setDashData).catch(() => {}).finally(() => setLoadingDash(false));
   }, []);
 
   const loadMembers = useCallback(() => {
-    api.trainer.listMembers().then(d => setAllMembers((d.members || []).map(normalizeMember))).catch(() => {});
+    api.resource.listMembers().then(d => setAllMembers((d.clients || []).map(normalizeMember))).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -2663,7 +2712,7 @@ export default function TrainerDashboard() {
   return (
     <BrandingProvider orgId={orgId} branchId={branchId}>
       <LabelProvider organizationId={orgId} branchId={branchId}>
-        <TrainerPortalContent
+        <ResourcePortalContent
           orgId={orgId} branchId={branchId}
           user={user} activeTab={activeTab} setActiveTab={setActiveTab}
           dashData={dashData} loadingDash={loadingDash}
@@ -2677,24 +2726,34 @@ export default function TrainerDashboard() {
 }
 
 // ── Inner portal that can read branding context ──────────────────────────
-function TrainerPortalContent({ orgId, branchId, user, activeTab, setActiveTab, dashData, loadingDash, selectedMember, setSelectedMember, allMembers, handleSelectMember, onRefreshDashboard }: any) {
+function ResourcePortalContent({ orgId, branchId, user, activeTab, setActiveTab, dashData, loadingDash, selectedMember, setSelectedMember, allMembers, handleSelectMember, onRefreshDashboard }: any) {
   const { branding } = useBranding();
   const { t } = useLabels();
-  const navItems = NAV.map(item => ({ ...item, label: t(`trainer.menu.${item.id}`, item.label) }));
+  const { isVisible } = useOrgAppFunctions(orgId);
+  const navItems = useMemo(() => NAV
+    .filter(item => isVisible(item.label))
+    .map(item => ({ ...item, label: t(`resource.menu.${item.id}`, item.label) })), [isVisible, t]);
+
+  useEffect(() => {
+    if (navItems.length && !navItems.some(item => item.id === activeTab)) {
+      setSelectedMember(null);
+      setActiveTab(navItems[0].id);
+    }
+  }, [navItems, activeTab, setActiveTab, setSelectedMember]);
 
   return (
     <PortalLayout
       title={branding.appName || "FitPulseBot"}
-      subtitle={t('trainer.dashboard.title', 'Trainer Portal')}
+      subtitle={t('resource.dashboard.title', 'Resource Portal')}
       accentColor={branding.primaryColor || "#f59e0b"}
       logoUrl={branding.logoUrl}
       navItems={navItems} activeTab={activeTab}
       onTabChange={(tab: string) => { if (tab !== 'progress') setSelectedMember(null); setActiveTab(tab); }}
-      roleBadge={t('trainer.role_badge', 'TRAINER')} roleBadgeColor={branding.accentColor || branding.primaryColor || "#f59e0b"}
+      roleBadge={t('resource.role_badge', 'RESOURCE')} roleBadgeColor={branding.accentColor || branding.primaryColor || "#f59e0b"}
     >
       {/* DASHBOARD */}
       {activeTab === 'dashboard' && (
-        <TrainerDashboardHome
+        <ResourceDashboardHome
           user={user}
           dashData={dashData}
           loadingDash={loadingDash}
@@ -2705,7 +2764,7 @@ function TrainerPortalContent({ orgId, branchId, user, activeTab, setActiveTab, 
         />
       )}
 
-      {activeTab === 'members' && (
+      {activeTab === 'clients' && (
         <MembersTab orgId={orgId} branchId={branchId} onSelectMember={handleSelectMember} />
       )}
 
@@ -2714,8 +2773,8 @@ function TrainerPortalContent({ orgId, branchId, user, activeTab, setActiveTab, 
           <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Workout Plans</h2>
           <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 32, border: '1px solid var(--border)', textAlign: 'center' }}>
             <Dumbbell size={40} style={{ color: '#f59e0b', opacity: 0.5, marginBottom: 12 }} />
-            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Go to <strong>My Members</strong>, select a member, then use <strong>AI Generate Plan</strong> or create manually.</p>
-            <PrimaryBtn onClick={() => setActiveTab('members')} style={{ margin: '16px auto 0' }}><Users size={14} /> Go to My Members</PrimaryBtn>
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Go to <strong>My Clients</strong>, select a client, then use <strong>AI Generate Plan</strong> or create manually.</p>
+            <PrimaryBtn onClick={() => setActiveTab('clients')} style={{ margin: '16px auto 0' }}><Users size={14} /> Go to My Clients</PrimaryBtn>
           </div>
         </div>
       )}
@@ -2725,14 +2784,14 @@ function TrainerPortalContent({ orgId, branchId, user, activeTab, setActiveTab, 
           <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Diet Plans</h2>
           <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 32, border: '1px solid var(--border)', textAlign: 'center' }}>
             <Salad size={40} style={{ color: '#f59e0b', opacity: 0.5, marginBottom: 12 }} />
-            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Go to <strong>My Members</strong>, select a member, then use <strong>AI Generate Diet</strong> or create manually.</p>
-            <PrimaryBtn onClick={() => setActiveTab('members')} style={{ margin: '16px auto 0' }}><Users size={14} /> Go to My Members</PrimaryBtn>
+            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Go to <strong>My Clients</strong>, select a client, then use <strong>AI Generate Diet</strong> or create manually.</p>
+            <PrimaryBtn onClick={() => setActiveTab('clients')} style={{ margin: '16px auto 0' }}><Users size={14} /> Go to My Clients</PrimaryBtn>
           </div>
         </div>
       )}
 
       {activeTab === 'plateau' && (
-        <PlateauDashboard members={allMembers.length ? allMembers : []} orgId={orgId} branchId={branchId} />
+        <PlateauDashboard clients={allMembers.length ? allMembers : []} orgId={orgId} branchId={branchId} />
       )}
 
       {activeTab === 'reports' && (
@@ -2742,16 +2801,16 @@ function TrainerPortalContent({ orgId, branchId, user, activeTab, setActiveTab, 
       {activeTab === 'progress' && (
         selectedMember ? (
           <MemberProgressPanel
-            member={selectedMember} orgId={orgId} branchId={branchId}
-            onBack={() => { setSelectedMember(null); setActiveTab('members'); }}
+            client={selectedMember} orgId={orgId} branchId={branchId}
+            onBack={() => { setSelectedMember(null); setActiveTab('clients'); }}
           />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <h2 style={{ fontSize: 20, fontWeight: 900, margin: 0 }}>Progress Tracking</h2>
             <div style={{ background: 'var(--bg-card)', borderRadius: 16, padding: 32, border: '1px solid var(--border)', textAlign: 'center' }}>
               <TrendingUp size={40} style={{ color: '#f59e0b', opacity: 0.5, marginBottom: 12 }} />
-              <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Click any member card to open their full progress dashboard.</p>
-              <PrimaryBtn onClick={() => setActiveTab('members')} style={{ margin: '16px auto 0' }}><Users size={14} /> Select a Member</PrimaryBtn>
+              <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Click any client card to open their full progress dashboard.</p>
+              <PrimaryBtn onClick={() => setActiveTab('clients')} style={{ margin: '16px auto 0' }}><Users size={14} /> Select a Client</PrimaryBtn>
             </div>
           </div>
         )
