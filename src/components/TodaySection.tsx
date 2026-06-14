@@ -346,6 +346,15 @@ function seedSpark(current: number, count = 7): number[] {
   return pts;
 }
 
+/* ─── Status helpers ─────────────────────────────────────────── */
+function apiStatusToTier(s: string | undefined): 'good' | 'ok' | 'bad' {
+  if (!s) return 'ok';
+  const lower = s.toLowerCase();
+  if (lower === 'on track') return 'good';
+  if (lower === 'behind') return 'bad';
+  return 'ok';
+}
+
 /* ─── Status row (reference style: icon + label + status + chevron) ── */
 function StatusRow({ label, status, iconEmoji }: { label:string; status:'good'|'ok'|'bad'; iconEmoji:string }) {
   const cfg = {
@@ -365,7 +374,7 @@ function StatusRow({ label, status, iconEmoji }: { label:string; status:'good'|'
   );
 }
 
-/* ─── Score label ────────────────────────────────────────────── */
+/* ─── Score label fallback (used only if API does not return focus) ── */
 function scoreLabel(pct: number): string {
   if (pct >= 80) return 'Excellent';
   if (pct >= 65) return 'Good';
@@ -580,14 +589,22 @@ export default function TodaySection({ range }: Props) {
   );
   if (!data) return <div style={{ minHeight:100, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-muted)', fontSize:13, border:'1px dashed var(--border)', borderRadius:16 }}>No data for today.</div>;
 
-  const { ringPct, streak, bars, goals, netCalories, meals, activity } = data;
+  const {
+    ringPct, dailyScore, focus,
+    streak, bars, goals, netCalories, meals, activity,
+    activityStatus, sleepStatus: sleepStatusApi, nutritionStatus, waterStatus, weightStatus,
+  } = data;
+  const displayScore = dailyScore ?? ringPct;
+  const displayFocus = focus || scoreLabel(displayScore);
   const hr = new Date().getHours();
   const name = localStorage.getItem('fitpulse_firstName') || '';
 
-  /* Derived status */
-  const actStatus: 'good'|'ok'|'bad' = bars.calBurnPct >= 80 ? 'good' : bars.calBurnPct >= 40 ? 'ok' : 'bad';
-  const sleepStatus: 'good'|'ok'|'bad' = bars.sleepHrs >= goals.sleepGoalHrs || bars.sleepPct >= 100 ? 'good' : bars.sleepPct >= 50 ? 'ok' : 'bad';
-  const nutStatus: 'good'|'ok'|'bad' = bars.calInPct >= 60 && bars.calInPct <= 105 ? 'good' : bars.calInPct >= 30 ? 'ok' : 'bad';
+  /* Status from API — no client-side recalculation */
+  const actStatus   = apiStatusToTier(activityStatus);
+  const sleepStatus = apiStatusToTier(sleepStatusApi);
+  const nutStatus   = apiStatusToTier(nutritionStatus);
+  const hydStatus   = apiStatusToTier(waterStatus);
+  const wgtStatus   = apiStatusToTier(weightStatus);
 
   /* Macro ring pct */
   const proteinPct = Math.min(100, Math.round((bars.protein || 0) / 80 * 100));
@@ -602,13 +619,14 @@ export default function TodaySection({ range }: Props) {
   const glassCount = 8;
   const filledGlasses = Math.round((bars.waterMl / goals.waterGoalMl) * glassCount);
 
-  /* AI recs derived from data */
+  /* AI recs — driven by API status fields, amounts from bars/goals */
   const recs = [
-    bars.proteinPct < 70 && { icon:'🥩', title:'Eat More Protein', desc:`Add ~${Math.round((80 - bars.protein) / 1)}g of protein to meet your daily goal.`, btn:'Suggestions', color:'#3dbf96' },
-    bars.waterPct < 80   && { icon:'💧', title:'Hydration Boost', desc:`Drink ~${Math.round((goals.waterGoalMl - bars.waterMl) / 100) * 100}ml more water to hit your goal.`, btn:'Log Water', color:'#2d6fd6' },
-    bars.sleepPct < 80   && { icon:'🌙', title:'Improve Sleep', desc:`Aim for ${goals.sleepGoalHrs} hours tonight for better recovery.`, btn:'Sleep Tips', color:'#7f77dd' },
-    bars.calBurnPct >= 80 && { icon:'🏃', title:'Stay Active', desc:'Great job! Keep your momentum going tomorrow.', btn:'View Plan', color:'#d97706' },
-    bars.calBurnPct < 40 && { icon:'⚡', title:'Move More', desc:`Burn ${goals.calBurnGoal - bars.calBurn} more kcal to hit today's activity goal.`, btn:'Log Activity', color:'#d97706' },
+    nutStatus === 'bad' && bars.proteinPct < 100 && { icon:'🥩', title:'Eat More Protein', desc:`Add ~${Math.round(Math.max(0, 80 - (bars.protein || 0)))}g of protein to meet your daily goal.`, btn:'Suggestions', color:'#3dbf96' },
+    hydStatus === 'bad' && { icon:'💧', title:'Hydration Boost', desc:`Drink ~${Math.round((goals.waterGoalMl - bars.waterMl) / 100) * 100}ml more water to hit your goal.`, btn:'Log Water', color:'#2d6fd6' },
+    sleepStatus === 'bad' && { icon:'🌙', title:'Improve Sleep', desc:`Aim for ${goals.sleepGoalHrs} hours tonight for better recovery.`, btn:'Sleep Tips', color:'#7f77dd' },
+    actStatus === 'good' && { icon:'🏃', title:'Stay Active', desc:'Great job! Keep your momentum going tomorrow.', btn:'View Plan', color:'#d97706' },
+    actStatus === 'bad' && { icon:'⚡', title:'Move More', desc:`Burn ${Math.round(Math.max(0, goals.calBurnGoal - bars.calBurn))} more kcal to hit today's activity goal.`, btn:'Log Activity', color:'#d97706' },
+    wgtStatus === 'bad' && { icon:'⚖️', title:'Weight Goal', desc:`You're at ${bars.weightKg} kg. Target is ${goals.weightTarget} kg — stay consistent.`, btn:'Log Weight', color:'#9f7aea' },
   ].filter(Boolean).slice(0, 4) as any[];
 
   /* Sparkline seeds */
@@ -679,13 +697,13 @@ export default function TodaySection({ range }: Props) {
         {/* Daily Score ring */}
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, flexShrink:0, zIndex:1 }}>
           <div style={{ position:'relative' }}>
-            <Ring pct={ringPct} color={['#3dbf96','#5bc8e0']} size={110} stroke={10}>
-              <text x="55" y="50" textAnchor="middle" fontSize="26" fontWeight="800" fill="white">{ringPct}</text>
+            <Ring pct={displayScore} color={['#3dbf96','#5bc8e0']} size={110} stroke={10}>
+              <text x="55" y="50" textAnchor="middle" fontSize="26" fontWeight="800" fill="white">{displayScore}</text>
               <text x="55" y="66" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.45)">Daily Score</text>
             </Ring>
           </div>
-          <div style={{ fontSize:12, fontWeight:700, color: ringPct >= 65 ? '#3dbf96' : ringPct >= 45 ? '#d97706' : '#e53e3e', background: 'rgba(255,255,255,0.06)', padding:'3px 12px', borderRadius:99, border:'1px solid rgba(255,255,255,0.1)' }}>
-            {scoreLabel(ringPct)}
+          <div style={{ fontSize:12, fontWeight:700, color: displayScore >= 65 ? '#3dbf96' : displayScore >= 45 ? '#d97706' : '#e53e3e', background: 'rgba(255,255,255,0.06)', padding:'3px 12px', borderRadius:99, border:'1px solid rgba(255,255,255,0.1)' }}>
+            {displayFocus}
           </div>
         </div>
 
@@ -694,6 +712,8 @@ export default function TodaySection({ range }: Props) {
           <StatusRow label="Activity"  status={actStatus}   iconEmoji="🔥"/>
           <StatusRow label="Sleep"     status={sleepStatus} iconEmoji="🌙"/>
           <StatusRow label="Nutrition" status={nutStatus}   iconEmoji="🍽️"/>
+          <StatusRow label="Hydration" status={hydStatus}   iconEmoji="💧"/>
+          <StatusRow label="Weight"    status={wgtStatus}   iconEmoji="⚖️"/>
         </div>
       </div>
 

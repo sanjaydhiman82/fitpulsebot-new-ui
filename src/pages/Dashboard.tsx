@@ -24,6 +24,7 @@ import SettingsPage from '../components/SettingsPageFull';
 import JoinGymPage from '../components/JoinGymPage';
 import PartnerBranchProfile from '../components/PartnerBranchProfile';
 import BioMarkersPage from '../components/BioMarkersPage';
+import CoachAgentChat from '../components/CoachAgentChat';
 import { useOrgAppFunctions } from '../utils/useOrgAppFunctions';
 
 export type DashTab = string;
@@ -62,6 +63,7 @@ export default function Dashboard() {
   const [credit, setCredit] = useState<UserCredit | null>(null);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [partnerBranches, setPartnerBranches] = useState<any[]>([]);
+  const [coachOpen, setCoachOpen] = useState(false);
 
   const refreshUnreadCount = useCallback(() => {
     if (user?.userId) {
@@ -141,6 +143,13 @@ export default function Dashboard() {
           })}
         </nav>
         <div className={styles.sidebarBottom}>
+          <button
+            className={`${styles.navItem} ${coachOpen ? styles.navActive : ''}`}
+            onClick={() => { setCoachOpen(o => !o); setSidebarOpen(false); }}
+          >
+            <Sparkles size={16} />
+            <span>iCoach</span>
+          </button>
           <button className={styles.navItem} onClick={toggleTheme}>
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
@@ -263,6 +272,7 @@ export default function Dashboard() {
           {tab === 'settings' && <SettingsPage />}
         </div>
       </main>
+      <CoachAgentChat open={coachOpen} onOpenChange={setCoachOpen} />
     </div>
   );
 }

@@ -1,0 +1,520 @@
+.chatPanel {
+  display: flex;
+  flex-direction: column;
+  width: min(430px, calc(100vw - 28px));
+  height: min(680px, calc(100vh - 104px));
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  flex-shrink: 0;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.floatingCoach {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.closeBtn {
+  width: 34px;
+  height: 34px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  background: var(--metric-bg);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.floatingCta {
+  height: 50px;
+  min-width: 132px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 12px 34px rgba(61,191,150,.28);
+}
+
+.messageList {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: var(--bg-base);
+}
+
+.message {
+  display: flex;
+  gap: 10px;
+  max-width: min(960px, 100%);
+}
+
+.userMessage {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.coachMessage {
+  align-self: flex-start;
+}
+
+.messageIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--metric-bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.bubble {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.userMessage .bubble {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.bubble p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.response {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.scoreRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scoreDial {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-light);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.scoreDial span {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.scoreDial small {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.responseTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.responseSummary {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.metricTile {
+  padding: 11px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--metric-bg);
+  min-width: 0;
+}
+
+.metricHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.metricValue {
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.metricValue span,
+.metricMeta {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.progressTrack {
+  height: 6px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--border);
+  margin-top: 9px;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+}
+
+.statusPill {
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.status_on_track {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.status_low {
+  background: rgba(217,119,6,.14);
+  color: var(--warning);
+}
+
+.status_high {
+  background: rgba(229,62,62,.12);
+  color: var(--danger);
+}
+
+.nextAction {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 12px;
+  border-radius: var(--radius-md);
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.splitBlocks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.listBlock,
+.planBox {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--metric-bg);
+  border: 1px solid var(--border);
+}
+
+.listTitle,
+.planTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.listItem,
+.planText {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.listItem:first-of-type,
+.planText:first-of-type {
+  border-top: none;
+}
+
+.mealGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mealTile {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.mealTile strong {
+  display: block;
+  font-size: 12px;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.mealTile span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.mealTile p {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.composer {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+}
+
+.composer input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 0 14px;
+  font-size: 14px;
+  outline: none;
+}
+
+.composer input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.composer button {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.composer button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.loadingLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.thinkingBlock {
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.progressRail {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--accent-light);
+}
+
+.progressRail span {
+  display: block;
+  width: 46%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  animation: coachProgress 1.25s ease-in-out infinite;
+}
+
+.thinkingDots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.thinkingDots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .35;
+  animation: coachDot 1s ease-in-out infinite;
+}
+
+.thinkingDots span:nth-child(2) {
+  animation-delay: .16s;
+}
+
+.thinkingDots span:nth-child(3) {
+  animation-delay: .32s;
+}
+
+.loadingLine svg,
+.sending svg {
+  animation: spin 900ms linear infinite;
+}
+
+.errorText {
+  margin-top: 8px;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes coachProgress {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(55%); }
+  100% { transform: translateX(230%); }
+}
+
+@keyframes coachDot {
+  0%, 80%, 100% { opacity: .3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (max-width: 760px) {
+  .chatPanel {
+    width: min(420px, calc(100vw - 28px));
+    height: min(640px, calc(100vh - 96px));
+  }
+  .header { align-items: flex-start; padding: 14px; }
+  .header h2 { font-size: 18px; }
+  .header p { font-size: 12px; }
+  .messageList { min-height: 360px; max-height: none; padding: 12px; }
+  .metricGrid,
+  .splitBlocks,
+  .mealGrid { grid-template-columns: 1fr; }
+  .message { max-width: 100%; }
+}
+
+@media (max-width: 460px) {
+  .floatingCoach {
+    right: 14px;
+    bottom: 14px;
+  }
+  .floatingCta {
+    min-width: 118px;
+    height: 46px;
+  }
+  .chatPanel {
+    width: calc(100vw - 28px);
+    height: calc(100vh - 92px);
+  }
+}

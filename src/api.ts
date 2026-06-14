@@ -363,6 +363,12 @@ export const api = {
       const url = `${API_ORIGIN.replace(/\/$/, '')}/api/ai/v1/dashboard/insight?${q}`;
       return apiFetch(url);
     },
+    healthAgent: (data: any) =>
+      apiFetchAI('/health-agent', {
+        method: 'POST',
+        body: JSON.stringify({ ...data, userId: data.userId || getUserId() }),
+        showSpinner: false,
+      }),
   },
 
   notifications: {
